@@ -1,0 +1,39 @@
+---
+description: QS-WMS 海外仓原型前端规范（shadcn/ui + TanStack Table + i18n/多币别/多时区）
+globs: 09-产品原型/qs-wms-demo/src/**
+alwaysApply: false
+---
+
+# QS-WMS 前端规范
+
+工程目录 `09-产品原型/qs-wms-demo`。完整规范见 `docs/02-设计规范.md`，写页面前先读。
+
+## 必须遵守
+
+- 界面文字全部 `t('key')`，`zh-CN.ts` 与 `en-US.ts` 同时补 key。
+- 金额 `<Money value={{amount, currency}} />`；时间存 UTC、用 `<DateTime>`；重量存克用 `<Weight>`；尺寸存厘米用 `<Dimension>`；数量用 `<Num>`。
+- 业务数据按 `useCurrentWarehouse().code` 过滤。
+- 状态用 `<StatusBadge>`，颜色映射只写在 `src/config/status.ts`。
+- 颜色用语义 token（`primary`、`muted-foreground`、`success`、`warning`、`destructive`、`bg-canvas`），不写 `bg-blue-500` 之类的原始色。
+- 表格用 `components/biz/data-table.tsx` 的 `DataTable` + `createDataColumns<T>()`，数字列 `meta: { align: 'right' }`，首列 `pin: 'left'`，操作列 `pin: 'right'`。
+- 改数据只能通过 `mock/db.ts` 里的 action（返回 `{ok}|{ok:false,errorKey}`）；改了 `seed.ts` 要把 persist `version` +1。
+- `components/ui/` 是 shadcn 源码，尽量不改；业务组件放 `components/biz/`。
+
+## 照着样板写
+
+| 要做的 | 样板 |
+|---|---|
+| 列表页 | `pages/wms/inbound/inbound-list-page.tsx` |
+| 详情抽屉 | `pages/wms/inbound/inbound-detail-sheet.tsx` |
+| 统计卡片 + 表格 | `pages/wms/inventory/stock-page.tsx` |
+| PDA 扫码流程 | `pages/pda/receive-page.tsx` |
+
+新页面要在 `config/menu.ts` 有菜单项，并在 `app/router.tsx` 的 `wmsPages` 注册。
+
+## 完成前自检
+
+```bash
+npx tsc -p tsconfig.app.json --noEmit && npm run build
+```
+
+然后在浏览器里切换英文、切换到 `DE-FRA-01`（欧元、公制、柏林时区）各看一遍。

@@ -1,0 +1,1106 @@
+[
+  {
+    "pageIndex": 1,
+    "title": "【NEW】面单水印升级｜可按仓库单独设置模板，一张面单可打印更多SKU！",
+    "fullText": "功能更新\n【NEW】面单水印升级｜可按仓库单独设置模板，一张面单可打印更多SKU！\n来自极风WMS团队2026-09-22 01:12:48\n🔶新功能\n\n【面单水印】\n\n面单水印能力升级，支持多仓库配置不同水印模板，并且优化水印打印效果。减少水印报错、内容遮挡，节约打印纸张。具体优化如下：\n\n \n\n✅ 水印模板可按仓库单独设置，同一渠道不同仓库可使用不一样的水印样式\n\n \n\n \n\n✅ 表格水印支持双列排版，商品明细、订单总件数可分开选择是否打印；面单纵向缩放最低可到 60%，一张面单容纳更多SKU，减少额外配货单打印\n\n \n\n \n\n✅ 水印新增【订单备注】信息，可把订单备注打印到面单水印上\n\n \n\n \n\n✅ 模板编辑增加越界提醒；水印生成失败展示具体原因，调整模板后支持重新生成面单打印\n\n \n\n \n\n✅ 面单顶部打印序号、时间支持自定义对齐位置，避免序号被遮挡看不清\n\n \n\n \n\n✅ 自定义水印长文本自动换行，支持直接拖拽到缩放后的面单上，不再报拖拽错误\n\n \n\n🔶问题修复\n\n✅修复代理仓备货中转入库单箱唛打印问题，代理仓OMS打印该类单据箱唛时，改为使用主仓箱唛数据打印，确保箱唛与主仓一致，主仓可正常扫描收货。\n\n1/50\n关闭\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260922091127/f735de4a7b5cc181390a5a7f4ee18c94.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260922091115/7dae6a9011514d223280830c14035c08.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260922091152/664d590eded6c15d60225fdc94c4b51b.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260922091205/c363040411c9536a370d07a7f0c8a32e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260922091224/4f789691736c751d1a92603ce5ebef4d.jpg"
+    ]
+  },
+  {
+    "pageIndex": 2,
+    "title": "【NEW】自动获取分区规则支持合并或覆盖原规则，更新更灵活",
+    "fullText": "功能更新\n【NEW】自动获取分区规则支持合并或覆盖原规则，更新更灵活\n来自极风WMS团队2026-09-21 01:10:06\n🔶新功能\n\n【计费-分区规则】\n\n自动获取分区规则支持将新获取规则和原有规则合并，也支持直接替换全部旧规则，灵活满足分区规则的补充或整体更新需求。\n\n \n\n \n\n \n\n【仓库-商品】\n\nWMS商品列表和编辑商品页面支持查看卖家端的商品备注，并支持按备注搜索商品，便于仓内人员查阅商品相关信息或特殊作业要求。\n\n \n\n \n\n🔶问题修复\n\n✅修复黑猫物流下单时未传递街道及街道号的问题，确保收件地址信息完整。\n\n✅优化提拆派单箱的体积计算精度，从2位提到6位，避免小体积数据被归零，确保体积数据准确。\n\n✅优化代理仓报错提示，方便快速定位异常。\n\n✅修复OMS入库单页面不展示上架数量的问题，入库单据可正常查看上架数量。\n\n✅修复代理授权主仓渠道为空异常，过滤无效渠道；单个仓库渠道同步失败时不再中断整次同步，提升同步稳定性。\n\n2/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260921025444/482332d2b95ba4709a17b8752e5eb749.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260921025507/6c59285bdd58caa99b6350a8f9ea254f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260921025517/f7893d325afc95386a7c168c1f264da1.jpg"
+    ]
+  },
+  {
+    "pageIndex": 3,
+    "title": "【NEW】PDA收货签单可拍照留证，便于核验与问题追溯",
+    "fullText": "功能更新\n【NEW】PDA收货签单可拍照留证，便于核验与问题追溯\n来自极风WMS团队2026-09-18 01:12:01\n\n🔶【PDA】\n\nPDA收货支持拍照，WMS和OMS对应的一件代发/备货中转入库单详情页可查看收货照片，便于留存现场凭证和后续核验与问题追溯。\n\n \n\n \n\n🔶【一件代发出库】\n\n生成波次时，[SKU*数量] 筛选条件支持在列表里直接勾选，提升波次创建效率。\n\n \n\n \n\n🔶【仓库-商品库龄】\n\nWMS商品库龄新增 [财务库龄] ，系统区分两套库龄数据：[真实库龄] 跟随仓库实际出库作业，记录真实库存时流转间，[财务库龄]按先入先出规则计算，用于仓租及相关费用结算；财务库龄数据同步至OMS，帮助仓库灵活出库，同时保证库龄和费用对账一致。\n\n \n\n \n\n🔶【仓库-库存盘点】\n\n库存盘点单增加动销货架位筛选，可按按时间筛选近期有动销的货架位，便于定向盘点，提升盘点作业针对性与效率。\n\n \n\n3/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260918090906/98c5e4e4e53dcd21a5dde67eea5a789d.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260918091110/db583b721cc93275af00bbe20d3ae717.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260918091117/4b0b7f04d12f0a5febb7c89a6664d908.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260918091131/6726c85129cf898425dc4cdb2ed1c49a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260918091149/9522d4689de853a6ac5d71dd2b5ad95f.jpg"
+    ]
+  },
+  {
+    "pageIndex": 4,
+    "title": "【NEW】已被引用的分区规则可修改，高效应对海外邮编频繁变动",
+    "fullText": "功能更新\n【NEW】已被引用的分区规则可修改，高效应对海外邮编频繁变动\n来自极风WMS团队2026-09-17 00:49:35\n🔶新功能\n\n【物流】\n\n分区 / 偏远地区规则优化：\n\n①已被计费策略、物流成本引用的分区及偏远地区规则支持编辑修改，适配海外邮编频繁变更场景。\n\n \n\n \n\n②分区/偏远地区规则列表新增物流成本引用信息，且规则支持导出，方便线下核对邮编地区配置，快速确认规则引用范围。\n\n \n\n \n\n🔶问题修复\n\n✅优化代理仓状态同步逻辑，不再扫描处理获取失败的订单，减少无效同步任务。\n\n✅修复代理仓备货中转出库按箱单据编辑后，同步至主仓失败的问题，保障跨仓单据数据一致。\n\n✅修复箱库存初始化导入时，箱内 SKU 含空格被误判为格式错误的问题，提升导入兼容性。\n\n4/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260917084850/5b88fa5ba7c08e575a653d0e17a9df51.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260917084923/eb5bdf85d47dcb579c0e91d5cee0004c.jpg"
+    ]
+  },
+  {
+    "pageIndex": 5,
+    "title": "【NEW】爆款波次支持批量验货，提升出库作业效率",
+    "fullText": "功能更新\n【NEW】爆款波次支持批量验货，提升出库作业效率\n来自极风WMS团队2026-09-16 01:02:18\n🔶新功能\n【一件代发出库】\n\n1️⃣Web端与PDA扫描验货支持爆款波次一键批量验货，完成至少一个包裹验货后即可一键批量通过整波次，提升出库效率。\n\n \n\n \n\n2️⃣一件代发出库列表新增附件下载入口，可直接下载物流面单等附件，无需进入详情页查找，方便仓库快速调取附件资料。\n\n \n\n \n🔶问题修复\n\n✅优化分拣架设置，支持最多30行20列，波次最大包裹量提升至600个，满足大批量波次的分拣需求。\n\n✅优化分销商品API推单专享库存锁定逻辑，推单即锁定库存，减少因库存状态变动引发的发货失败。\n\n✅修复 Y2 直邮单费用重算异常问题，保障订单费用重新计算准确。\n\n✅物流产品比价优化\n\n1️⃣修复物流商停用后现存物流商授权的客户的订单推送会报错的问题，确保订单正常推送；\n\n2️⃣物流产品未配置计费策略，依据各渠道配置的物流成本自动选择最低价渠道。\n\n✅修复分销商品列表查询接口异常问题，保障列表数据正常加载。\n\n✅提拆派装柜信息单元格支持提示和复制，方便快速获取装柜数据。\n\n✅优化供货单业务流程，新增兜底定时任务，降低异常情况下流程中断的风险。\n\n5/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260916061921/6bc97ceb69d4d5f3b7c24b7c5249ee9a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260916064907/167af5daa38533fcc2a8e3c3323cb052.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260916062134/a71fd80f90b9a4e05d7ea312f1d6e6e4.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260916062150/8990b9c9ece0179cae0a81903e96143c.jpg"
+    ]
+  },
+  {
+    "pageIndex": 6,
+    "title": "【NEW】出库费可按商品分类收取，实现品类差异化计费！",
+    "fullText": "功能更新\n【NEW】出库费可按商品分类收取，实现品类差异化计费！\n来自极风WMS团队2026-09-15 21:59:29\n🔶新功能\n\n【计费】\n\n一件代发和备货中转出库操作费自定义规则新增“商品分类”条件，支持按订单内 SKU 所属分类进行匹配计费，满足不同商品类别的差异化计费需求。\n\n \n\n \n\n【出库-物流追踪】\n\n物流追踪批量搜索支持一次性查询500条数据，方便集中查询多票包裹的物流状态，提升批量查件效率。\n\n \n\n \n\n🔶问题修复\n\n✅修复更换货架位后无法正常拣货的问题，确保货架位调整后拣货任务能够顺利执行。\n\n6/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260915083634/9482f922478754176f05efe03680faa1.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260915083649/5c4ca8220bfa2d326367efbab2043df7.jpg"
+    ]
+  },
+  {
+    "pageIndex": 7,
+    "title": "【NEW】PDA入库单优先展示未完成任务，收货上架更高效",
+    "fullText": "功能更新\n【NEW】PDA入库单优先展示未完成任务，收货上架更高效\n来自极风WMS团队2026-09-14 01:10:47\n🔶新功能\n\n【PDA】\n\nPDA已部分收货、部分上架的入库单优先靠前展示，方便快速找到未完成单据继续作业，提升入库处理效率。\n\n \n\n🔶问题修复\n\n✅优化提拆派唛头录入规则，字符长度放宽至100位，适配更多唛头录入场景。\n\n✅优化巴西物流下单时的省份信息处理，自动转换为物流商要求的省二字码，提升下单成功率。\n\n✅修复 GOFO 物流响应解析异常导致运单号获取失败的问题，确保物流下单后能够正常获取运单号。\n\n7/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260914084649/7ac41e0c1461b955ea7ef80793578e24.jpg"
+    ]
+  },
+  {
+    "pageIndex": 8,
+    "title": "【NEW】新增库内热力图！智能诊断优化货位，提升拣货效率",
+    "fullText": "功能更新\n【NEW】新增库内热力图！智能诊断优化货位，提升拣货效率\n来自极风WMS团队2026-09-11 01:51:01\n🔶新功能\n\n【仓库-库内作业】\n\n新增库内热力图功能，支持2D/3D可视化查看货架位使用率与SKU销售热度，搭配智能诊断给出库存、货位优化建议，辅助调整SKU存放位置，缩短拣货路径，提升仓库仓储与拣货作业效率。\n\n👉点击查看功能操作详情\n\n \n\n \n\n【计费】\n\n入库操作费自定义规则计费，按托盘维度新增【单托商品种类数】计费单位，可根据每个托盘内的 SKU 种类数量计费，满足多 SKU 混托场景的差异化计费需求。\n\n \n\n \n\n【PDA】\n\n按箱预报的入库单打托收货支持扫描SKU，扫描SKU后自动匹配对应未收货箱唛并登记收货数量，提升打托收货环节操作灵活性。\n\n \n\n \n\n🔶问题修复\n\n✅修复主仓调整单等库存变动未触发代理仓库存自动同步的问题，确保主仓与代理仓库存及时同步。\n\n✅修复代理仓备货中转入库单未下发主仓时补录运单号报错的问题，确保仓库可以正常更新单据运单号。\n\n✅修复代理仓备货中转按箱出库时箱库存信息缺失导致提交失败的问题，确保库存数据完整，避免主仓已生成出库单而代理仓提交失败。\n\n✅存量订单新增商品支持自动补配 SKU，减少人工配对操作，确保新增商品能够正常流转。\n\n✅修正UpSeller开票请求中的门牌号字段拼写错误，确保门牌号信息正常传递，避免影响发票提交。\n\n✅修复开发者对接配置更新失败的问题，确保对接信息正常保存，业务数据能够顺利回传。\n\n8/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260911074019/7773e1dbf3513358df8a731a678d816f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260911074038/cbb06bff73f5942d3afe4ae7ca6fe5a8.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260911074142/36cf5aab90da17cf8540aacf020dbde7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260911074158/723d34d3d1e768c1f278e6056853a805.jpg"
+    ]
+  },
+  {
+    "pageIndex": 9,
+    "title": "【NEW】一件代发导出新增包裹尺寸与物流标识，统计复盘更高效！",
+    "fullText": "功能更新\n【NEW】一件代发导出新增包裹尺寸与物流标识，统计复盘更高效！\n来自极风WMS团队2026-09-10 03:06:53\n🔶新功能\n\n【一件代发出库】\n\n一件代发订单导出增加包裹尺寸与物流方式类型，方便快速区分线上线下物流、核对包裹规格，提升订单统计与复盘效率。\n\n \n\n🔶问题修复\n\n✅修复领星代理仓一件代发入库单点击发货后状态未及时更新的问题，确保系统状态与实际发货进度一致。\n\n✅修复代理仓备货中转按箱出库单提交异常问题，确保两端单据和库存状态一致。\n\n✅修复代理仓一件代发订单收件地址相同时的单据查询异常问题，避免相同地址订单被漏查和处理。\n\n✅修复买家退货入库时序列号状态校验异常问题，确保序列号商品正常完成退货入库。\n\n✅修复领星 UPS STD 打单渠道推单后，待获取面单状态误判为创建失败的问题，确保订单状态准确展示。\n\n9/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260910092031/4186bae006b948a81d8e95dd10eaf861.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260910092114/3b49d21f41b10184b88991fe41cd5b85.jpg"
+    ]
+  },
+  {
+    "pageIndex": 10,
+    "title": "【NEW】业务单据号支持一键跳转，费用核对更高效",
+    "fullText": "功能更新\n【NEW】业务单据号支持一键跳转，费用核对更高效\n来自极风WMS团队2026-09-09 02:42:32\n🔶新功能\n【财务】\n\n业务费用页面，点击业务单据号能直接跳转到对应的详情页（无单据、跨境直邮和仓租账单除外），方便快速核对单据与费用信息。\n\n \n\n【代理仓】\n\n1️⃣代理仓箱库存配对：支持建立主仓箱唛号与代理仓箱唛号的对应关系，确保后续库存同步和备货中转业务能够准确关联同一箱货物。👉点击查看功能操作详情\n\n \n\n \n\n2️⃣支持代理仓手动同步主仓箱库存：代理仓可在箱库存页面手动选择箱库存同步至主仓，及时更新主仓对应箱库存数据，便于主仓准确掌握库存情况。👉点击查看功能操作详情\n\n \n\n \n\n【新增物流商】\n\nDPD-DE(Cloud、WebService)\n\n \n\n🔶问题修复\n\n✅修复业务费用导出时仓租费重复累计，导致总表与明细表金额不一致的问题，确保仓租费用数据准确，便于客户对账。\n\n✅修复标准入库单收货时，SKU 禁止收货场景提示异常问题，作业时可清晰获知禁止收货原因。\n\n✅优化波次生成货架位编码排序规则，支持复杂格式货架位正确排序，匹配仓库实际拣货作业顺序。\n\n✅修复 Netshoes 平台面单、发票生成异常问题，保障面单与发票可正常打印使用。\n\n✅修复Wildberries 平台 API 接口限流问题，降低订单同步失败概率。\n\n10/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260909090222/3e1c1665e544ec9e0df7c81c1fdc433e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260909090117/cee2a152c76c53568b8e11fd95c96b37.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260909090130/c71b121a0ff45ae3da469a00db4232e9.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260909090135/8d30323dd0e06ad098b7e84ea64d9bd0.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260909090058/5ba3135353c94d310b249d7fcf79dd79.jpg"
+    ]
+  },
+  {
+    "pageIndex": 11,
+    "title": "【NEW】箱库存初始化支持导入SKU，批量录入箱内商品更高效",
+    "fullText": "功能更新\n【NEW】箱库存初始化支持导入SKU，批量录入箱内商品更高效\n来自极风WMS团队2026-09-08 04:05:04\n🔶新功能\n【库存管理】\n\n箱库存初始化支持导入箱内 SKU 信息，减少手工维护，提升箱库存初始化效率和准确性。\n\n \n\n \n🔶问题修复\n\n✅修复 API 退货入库接口不支持商品序列号扫描的问题，保障序列号管控类商品退货入库数据正常采集。\n\n✅修复物流产品分配客户权限异常的问题，避免未分配给客户的物流渠道仍可在OMS中被选择，确保客户仅能使用已分配的物流渠道。\n\n11/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260908054429/6139f94efba055ba2b6f9730613b1be8.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260908054435/7c048767d3570b59ef9a64efe4fc8799.jpg"
+    ]
+  },
+  {
+    "pageIndex": 12,
+    "title": "【NEW】扣费申请可上传附件，费用凭证直接同步客户！",
+    "fullText": "功能更新\n【NEW】扣费申请可上传附件，费用凭证直接同步客户！\n来自极风WMS团队2026-09-07 04:36:21\n🔶新功能\n【财务】\n\n扣费申请支持上传附件并同步至OMS，仓库可随费用单上传海关费等第三方支付凭证，方便客户查看核对，减少线下沟通。\n\n \n\n \n🔶问题修复\n\n✅修复极风代理仓备货中转入库草稿提交时，系统箱唛号未同步至主仓自定义箱号的问题，保障代理仓与主仓之间箱号数据流转准确。\n\n✅优化 PDA 拣货详情的展示排序，与纸质拣货单打印顺序保持一致，提升仓内拣货作业核对效率。\n\n✅修复代理仓入库单箱唛打印顶部元素错位问题，保证箱唛打印格式正常，便于仓库识别。\n\n✅修复仓租重新计费后，导出的批次明细仍显示 SKU 旧尺寸的问题，确保导出尺寸与重新计费时的商品数据一致。\n\n12/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260907091758/b9597685e886b436d1b1e10df93f1d28.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260907091805/4ddb91f07ece70d0af9020140164fb36.jpg"
+    ]
+  },
+  {
+    "pageIndex": 13,
+    "title": "【NEW】扣费申请支持填写负数，赔付和费用返还处理更方便！",
+    "fullText": "功能更新\n【NEW】扣费申请支持填写负数，赔付和费用返还处理更方便！\n来自极风WMS团队2026-09-04 01:56:04\n🔶新功能\n【财务】\n\n扣费申请金额支持填写负数，可用于处理赔付、费用返还等场景，便于进行费用冲减和账务调整。\n\n \n\n \n\n【一件代发出库】\n\nWildberries (WB) 平台订单支持组包，在 OMS 将待处理订单加入供货单并完成组包后推送至WMS，仓库发货后自动向 WB 平台标发并获取供货二维码，支持查看与打印，适配WB的FBS供货出库流程。\n\n \n\n \n🔶问题修复\n\n✅修复 B2B 出库单打印拣货单时货架位信息缺失或显示不存在的问题，确保拣货单上的库位信息准确。\n\n✅修复 OMS 业务费用导出为空的问题，确保符合条件的费用数据可以正常导出。\n\n✅修复代理仓定时任务重新计算实际体积重异常的问题，确保体积重数据计算准确。\n\n \n\n13/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260904095352/0540e65675118b957b4bfc4913732495.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260904095400/d1e6059a459ee27cd729086f7966a984.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260904095444/63c69d549dc8eb675b309e5562be3436.jpg"
+    ]
+  },
+  {
+    "pageIndex": 14,
+    "title": "【NEW】新增物流分析，出库、上网、签收时效和异常一目了然！",
+    "fullText": "功能更新\n【NEW】新增物流分析，出库、上网、签收时效和异常一目了然！\n来自极风WMS团队2026-09-02 02:42:49\n🔶新功能\n✅【数据】\n\n新增物流统计分析看板，支持多维度查看出库、上网、签收时效指标与异常监控，并可自定义超时规则及导出数据，帮助仓库监控物流履约质量与及时处理异常订单。\n\n \n\n✅【出库】\n\n日本地区乐天订单创建出库单时，支持将指定送达日期及送达时间段传给黑猫物流，满足黑猫物流下单要求，便于按预约时段安排配送。\n\n \n\n🔶问题修复\n\n✅修复 SHEIN 订单同步过程中商品信息被误删除问题，保障订单商品数据完整。\n\n✅修复包装扫描商品时SKU中间空格被自动去除问题，保障SKU识别匹配准确。\n\n✅放宽巴西发票 A1 密码输入长度至20位，适配更长税务密码录入场景。\n\n✅修复退货扫描跨仓库操作校验缺失问题，规避跨仓误操作，保证退货订单归属正确。\n\n✅修复按托新品维护公英制重复转换问题，防止商品尺寸、重量计算出现偏差。\n\n✅更新印尼极兔 cargo 物流面单打印样式，适配物流商面单格式要求。\n\n14/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260902085824/10ec675cc9cbf7d5f3840b9ff59c9e00.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260902085830/ff9119511c7bdc78ac1b9e3162045ae3.jpg"
+    ]
+  },
+  {
+    "pageIndex": 15,
+    "title": "【NEW】备货中转箱库存导出可按SKU拆分，箱内明细核对更清楚",
+    "fullText": "功能更新\n【NEW】备货中转箱库存导出可按SKU拆分，箱内明细核对更清楚\n来自极风WMS团队2026-09-01 03:24:21\n🔶新功能\n【备货中转】\n\n备货中转箱库存导出表格支持按SKU拆分，可直观看到SKU及数量信息，便于仓库核对每个箱内的商品明细和库存数量。\n\n \n\n \n\n【计费】\n\n操作费规则中的体积重系数支持根据计量单位自动带出对应默认值，并支持精确配置，适配英制英尺体系体积重计费场景。\n\n \n\n🔶问题修复\n\n1️⃣修复代理仓入库单箱唛打印时SKU信息缺失的问题，确保箱唛内容完整，方便仓库识别和入库作业。\n\n2️⃣修复DHL德国地址门牌号拆分异常问题，确保收货地址信息准确传递，减少物流下单或面单生成错误。\n\n3️⃣优化速卖通订单同步时的物流类型判断逻辑，提升线上、线下物流类型识别的准确性。\n\n4️⃣优化标准出库单订单号长度校验，统一页面创建、导入及异常单据编辑的订单号长度上限为50位，避免导入超长订单号后提交报错。\n\n15/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260901083819/5813521b2d024f3dc787c37603064114.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260901083830/2e974e97b02dabfbbf6b28e993621487.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260901083836/54232b36376a39380ef969be62c384ca.jpg"
+    ]
+  },
+  {
+    "pageIndex": 16,
+    "title": "【NEW】重新计费支持同步头程账单，费用核算更精准！",
+    "fullText": "功能更新\n【NEW】重新计费支持同步头程账单，费用核算更精准！\n来自极风WMS团队2026-08-31 03:37:19\n🔶新功能\n✅【业务费用】\n\n重新计费支持拉取物流账单费用（暂只支持头程物流系统），可自动同步头程费用进行单据重算，便于准确核对和结算。\n\n \n\n \n\n✅【代理仓】\n\n代理仓入库单箱唛打印样式调整为与主仓一致，按主仓箱唛模板生成打印文件。统一箱唛格式，便于仓库识别、打印和入库作业。\n\n \n\n✅【新增物流】\n\nSHAOKE(捎客物流)\n\n \n\n \n\n🔶问题修复：\n\n✅修复退货签收扫描异常，已预报的退货运单号扫描时被提示“单号不存在”的问题。确保仓库可正常扫描签收退货包裹。\n\n16/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260831085421/e803a5e5662b4c139878930499c0db5f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260831085407/989925746c40ac9d0b10e051c6db945a.jpg"
+    ]
+  },
+  {
+    "pageIndex": 17,
+    "title": "【NEW】移货任务可批量指定认领人，移货作业更高效！",
+    "fullText": "功能更新\n【NEW】移货任务可批量指定认领人，移货作业更高效！\n来自极风WMS团队2026-08-27 03:15:57\n\n🔶【库内移货】\n\n待移货单支持批量指定认领人，可将多条移货任务一次分配给指定人员，减少逐单操作，提升移货作业效率。\n\n \n\n \n\n🔶【备货中转】\n\n备货中转操作费增加[物流]条件，支持按不同物流方式匹配对应操作费规则，满足不同物流渠道差异化计费需求。\n\n \n\n \n\n🔶【新增平台对接】\n\nAllegro（波兰主流电商平台）\n\nYandex（俄罗斯主流电商平台）\n\n17/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260827055616/c67d4bd11df932817b9e1f700b86721a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260827055632/57fadd867cfbe51aba539f1fd32cba88.jpg"
+    ]
+  },
+  {
+    "pageIndex": 18,
+    "title": "【NEW】新增海外仓公告管理，重要通知可直接推送货主！",
+    "fullText": "功能更新\n【NEW】新增海外仓公告管理，重要通知可直接推送货主！\n来自极风WMS团队2026-08-25 04:33:24\n\n🔶【WMS公告】\n\n新增海外仓公告管理，海外仓可新建发布海外仓公告，定向或全部推送至OMS客户，可用于告知收发货暂停、爆仓等业务通知。👉点击查看功能操作详情\n\n \n\n \n\n🔶【物流】\n\n1、备货中转出库单支持线下物流子母件（即一票多件）发货，依据装箱信息可为同一个出库单批量生成多个运单和面单，适配多包裹发货场景。👉点击查看功能操作详情\n\n \n\n \n\n \n\n2、物流计费策略的各类超长超重附加费支持配置最小计费重，包裹命中对应附加费规则后，基础运费取实际计费重与配置最小计费重的最大值核算，避免超长、超重、超大等特殊包裹运费偏低、计费不准确。👉点击查看功能操作详情\n\n \n\n \n\n🔶【PDA】\n\nPDA扫描验货支持扫描序列号，针对开启序列号管理的商品，需扫描序列号完成验货，保障序列号出库核验准确。\n\n👉点击查看功能操作详情\n\n \n\n🔶【新增物流商】\n\nFlash\n\nJ&T CARGO（BR）\n\n魔方\n\n18/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260825122705/faa31e5395735b44a7ec7ff219e1890f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260825122714/56e2253804f293972160294ef9e1d9a4.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260825122816/848df5a2a9eca94811852f8a463c8622.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260825122825/8f6292f7c74c7b2a902aea39c9dd9fbc.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260825122855/465b8d812f9950347d9717a5eae6adcf.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260825122911/8cb819b90cdd4263c1b1789333c5d721.jpg"
+    ]
+  },
+  {
+    "pageIndex": 19,
+    "title": "【NEW】PDA可查箱库存，大货作业更便捷！",
+    "fullText": "功能更新\n【NEW】PDA可查箱库存，大货作业更便捷！\n来自极风WMS团队2026-08-18 02:40:53\n\n🔶【PDA】\n\n备货中转（B2B）箱库存支持PDA端查询，仓库人员可手持PDA完成整箱库存查询、移货等操作，不用依赖电脑网页端，提升大货仓内作业效率。\n\n🔶【备货中转】\n\n备货中转出库单支持仓库WMS端上传、编辑、删除附件，仓库可在出库单中补充POD、BOL、装车照片等出库凭证，方便交付确认和异常追溯。\n\n \n\n \n\n🔶【财务】\n\n仓租费导出模板支持按商品批次查看明细，精准追溯各批次商品仓租开销，便于对账排查费用差异。\n\n \n\n \n\n🔶【新增物流商】\n\nAeroYee\n\n环至美(宁波)\n\n19/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260818080319/047e1eac70d33f2d792d4b706aa911ee.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260818080416/c5bf621ea5493257dc84b71e18290a5f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260818080439/18d3164f700d33b803419fa0d065bc37.jpg"
+    ]
+  },
+  {
+    "pageIndex": 20,
+    "title": "【NEW】退货签收可录视频留证，售后纠纷有据可查！",
+    "fullText": "功能更新\n【NEW】退货签收可录视频留证，售后纠纷有据可查！\n来自极风WMS团队2026-08-13 01:28:24\n\n📦【退货】\n\n退货入库支持视频录制，视频可回传OMS，留存凭证便于售后举证、纠纷处理和作业追溯。👉点击查看功能操作详情\n\n \n\n \n\n \n\n📦【新增物流商】\n\nJ&T CARGO (ID)\n\n20/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260813032746/97994dfa088d1f8308816cd2ee539d21.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260813032753/0263b524c1675e87aa3dd6a762543045.jpg"
+    ]
+  },
+  {
+    "pageIndex": 21,
+    "title": "【NEW】分销商品可设置专享库存，为重点客户预留货源！",
+    "fullText": "功能更新\n【NEW】分销商品可设置专享库存，为重点客户预留货源！\n来自极风WMS团队2026-08-11 03:54:25\n\n🔶【货盘分销】\n\n分销商品支持专享库存划分，可对分销货品做库存隔离管控，为指定客户预留专属可售库存，避免不同分销商之间库存互相占用，保障分销业务库存数据准确。👉点击查看功能操作详情\n\n \n\n \n\n🔶【一件代发出库】\n\n1️⃣WMS标记缺货订单时可登记具体缺货SKU、对应缺货数量和异常备注，信息可同步至OMS，展示可用库存、缺货明细与自定义异常备注；同时，PDA支持快速筛选和查看异常订单。降低沟通成本，提升异常订单处理效率。👉点击查看功能操作详情\n\n \n\n \n\n2️⃣WMS出库包裹待获取运单号页面新增物流渠道编辑功能，支持修改包裹尺寸重量、切换物流渠道并重新试算运费，仓库可在获取面单前按最新包裹信息重新选择更合适的物流方式，减少运费偏差和渠道选择错误。\n\n \n\n \n\n🔶【PDA】\n\nPDA扫描退货支持添加商品，可直接选择或扫描商品条码添加，仓库无需切换网页端也能完成退货商品补录。\n\n \n\n🔶【新增物流商】\n\n韩进\n\nBatch\n\n21/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260811114412/7fa675b569f3921b9259a38a583bb44c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260811114612/d8837827b6afb2424596d302685cc03a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260811114622/2e6969eba308208cdbf7c52c023904bc.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260811114748/3875abcae74ba309577bc985a622100c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260811114753/f0e93fc48a98c42533aaeb04ae80ce2a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260811114830/da4572b8655772bfce7b6539f315efd4.jpg"
+    ]
+  },
+  {
+    "pageIndex": 22,
+    "title": "【重要通知】SHEIN美区客户请尽快切换线上物流，避免发货受影响",
+    "fullText": "功能更新\n【重要通知】SHEIN美区客户请尽快切换线上物流，避免发货受影响\n来自极风WMS团队2026-08-11 02:54:02\n\n尊敬的各位用户：\n\n \n\n根据SHEIN平台通知，2026年8月13日20:00（UTC+8）起，SHEIN美国（US）市场相关订单将无法继续使用线下物流发货。\n\n如仓库有SHEIN美区客户订单，请及时提醒客户提前完成线上物流配置，并在发货前确认订单物流方式，避免后续出现无法下单、无法获取发货信息或订单卡单等情况。\n\n22/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 23,
+    "title": "【NEW】扫描收货可提前预选货架位，入库上架效率高且省人力！",
+    "fullText": "功能更新\n【NEW】扫描收货可提前预选货架位，入库上架效率高且省人力！\n来自极风WMS团队2026-08-04 03:17:52\n\n🔶【入库】\n\n1️⃣扫描收货支持提前预选货架位，后续扫描上架自动带入预选库位，减少重复选择并提升收货上架效率，节约仓库人力成本。👉点击查看功能操作详情\n\n \n\n \n\n \n\n2️⃣OMS标准入库单支持按SKU预报，入库全流程无需扫描箱唛、不生成箱数据，适配大件无独立外箱货物，提升入库预报和作业处理灵活性。👉点击查看功能操作详情\n\n \n\n🔶【出库】\n\n波次生成和波次策略新增“按货架位编码顺序排序”规则，可按库位路径顺序生成包裹拣货顺序，帮助拣货员减少往返走动并提升波次拣货效率。👉点击查看功能操作详情\n\n \n\n \n\n🔶【打印】\n\n1️⃣配货单支持自定义模板配置，可按需勾选配置公共信息与货品信息、自由设置拣货信息字体大小，让配货单信息更清晰，提升仓库拣货识别效率。👉点击查看功能操作详情\n\n \n\n \n\n2️⃣拣货单模板增加Ozon平台订单码打印选项，仓库可根据拣货单上的发货码快速匹配对应面单并贴到正确包裹，提升Ozon订单打包发货准确性和效率。\n\n \n\n🔶【PDA】\n\nPDA支持箱库存移货，可直接扫描箱唛完成快速移货或任务移货，方便仓库整理分散箱库存、并托理货，提升库位利用率和现场移货效率。👉点击查看功能操作详情\n\n \n\n🔶【财务】\n\n1️⃣业务费用批量导出模板增加一件代发仓租SKU明细，便于核对仓租计费、排查费用差异以及和客户对账。\n\n \n\n \n\n2️⃣一件代发、备货中转、退货、FBA退货等入库单创建环节取消账户余额大于0的校验，同时新建备货中转入库单不再冻结预估费用，客户账户无余额/余额为负也可正常建单，依托库存管控把控财务风险，降低客户下单门槛。\n\n23/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110147/65ba3ca9e0c5d6d5d16bdec67034e65c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110152/04ad2e59624badee43d832140301d694.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110247/6c3507b517f6617eb4a063a239aac4cc.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110435/4bb783557e4cf99463f43de0e869d576.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110443/f5cd15c561236293e5d8d91bface719f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110514/13ab40ca8d855e3579b221d012dbb8da.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110520/9a5d00395e90ab484d69a22118bd1a69.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110632/f4925a2b4f6eff173e8142cec85d111c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110638/8eb59f5c29e07f870e6d47e246c5ef27.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804110947/6b3cfdf4d297b9dd94a8e47e707c9826.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804111147/60a44c659536ac927d5d372e0cdf7812.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260804111152/e8150e79437029b74957e3d900babadb.jpg"
+    ]
+  },
+  {
+    "pageIndex": 24,
+    "title": "【NEW】客户结算支持多币种！多仓库可分币种计费扣费",
+    "fullText": "功能更新\n【NEW】客户结算支持多币种！多仓库可分币种计费扣费\n来自极风WMS团队2026-07-29 04:45:03\n\n💰【财务】\n\n客户结算支持多币种，同一客户不同海外仓可设置独立结算币种，按仓库对应币种计费和扣费，方便多国家地区仓库本地化报价结算，降低汇率换算和对账成本。👉点击查看功能使用详情\n\n \n\n24/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260729124415/dfbc34a5f5a9cd0b0124730cb21a5401.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260729124428/76e5c7cf3e9586bb828091db04d94618.jpg"
+    ]
+  },
+  {
+    "pageIndex": 25,
+    "title": "【重要通知】极风WMS旧版导航栏即将停用！",
+    "fullText": "功能更新\n【重要通知】极风WMS旧版导航栏即将停用！\n来自极风WMS团队2026-07-28 23:38:00\n\n尊敬的各位用户：\n\n您好！\n\n \n\n为提供更简洁、高效的操作体验，我们已全新上线新版导航栏。新版导航栏优化了菜单布局与操作路径，整体操作更流畅高效，推荐您切换使用。\n\n \n\n💡特别提醒：\n\n旧版导航栏将于北京时间8月4日00：00正式停用，届时将无法再切换回旧版界面。为确保您的日常操作不受影响，请您尽快切换至新版导航栏，逐步适应新的操作路径。\n\n \n\n✅切换入口：\n\n您可在系统界面的导航栏区域找到切换按钮，具体位置可参考下图👇（建议尽快完成切换，避免频繁切回旧版）。\n\n \n\n \n\n感谢您一直以来的理解与支持！如有任何使用疑问，欢迎随时联系极风WMS客服团队咨询。\n\n \n\n极风WMS团队\n\n25/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616032808/01c3667ad9f2001c9da6d1e0a052af1e.jpg"
+    ]
+  },
+  {
+    "pageIndex": 26,
+    "title": "【NEW】波次列表可直接查看对应拣货车，优先打包订单一眼分清",
+    "fullText": "功能更新\n【NEW】波次列表可直接查看对应拣货车，优先打包订单一眼分清\n来自极风WMS团队2026-07-27 21:40:54\n\n🔶【一件代发出库】\n\n1️⃣波次管理列表新增拣货车信息展示，打包员无需进入波次详情即可快速确认波次对应的拣货车，提升打包出库效率。👉点击查看功能使用详情\n\n \n\n \n\n2️⃣一件代发出库【待发货】和【已发货】页面支持手动标记订单为已交运，便于仓库在平台交运状态未及时同步时主动更新包裹交运状态，减少待处理订单卡点。👉点击查看功能使用详情\n\n \n\n \n\n3️⃣拣货单打印支持展示平台商品图片和平台商品名称，仓库可直接根据平台订单图片识别比如POD加工内容，提升拣货和定制加工准确性。👉点击查看功能使用详情\n\n \n\n \n\n🔶【物流】\n\n可在仓库和发货地址编辑页面维护录入IOSS 税号，跨境发往欧盟的订单在使用相关物流渠道下单时可自动带出税号信息，减少因税号缺失导致的清关打单报错，提升发货效率。👉点击查看功能使用详情\n\n \n\n \n\n🔶【新增物流商】\n\n易境通\n\n26/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260728033326/2d381ab38c6157f347efadf54c9b5687.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260728033337/d0d47fec346a242beb2d9840e1a3e7be.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260728033349/15e7c0340503d3047198daafd5aabea7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260728033403/83421fa4dd2bb148694efd207114b2df.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260728033410/4fac396297c85cb6017a3252a4de009c.jpg"
+    ]
+  },
+  {
+    "pageIndex": 27,
+    "title": "【重要通知】速卖通美国托管订单将升级平台官方配送，请提醒客户配置仓库类型！",
+    "fullText": "功能更新\n【重要通知】速卖通美国托管订单将升级平台官方配送，请提醒客户配置仓库类型！\n来自极风WMS团队2026-07-22 03:13:55\n\n尊敬的各位用户：\n\n您好！\n\n \n\n速卖通出台履约新规，北京时间2026年8月初起，海外托管-美国市场的订单仅支持平台官方物流履约，线下第三方自发货渠道会被拦截（超大件订单除外）。\n\n \n\n规则适用两类商家：26年8月后新入驻美托管商家、近 30 天 NR 指标≥5% 的存量商家。\n\n \n\n速卖通将于2026年7月30日上线API接口校验，相关商家需在这之前在速卖通卖家后台完成仓库地址类型的配置，未配置会导致订单无法发货或卡单的情况。\n\n \n\n如仓库有速卖通美国托管客户，请提醒客户及时配置，避免影响履约。\n\n \n\n27/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260722080550/35479cec2db038539207149b14ef82a3.jpg"
+    ]
+  },
+  {
+    "pageIndex": 28,
+    "title": "【NEW】退货堆仓不用愁！到期未处理的待销毁货品系统可自动清理",
+    "fullText": "功能更新\n【NEW】退货堆仓不用愁！到期未处理的待销毁货品系统可自动清理\n来自极风WMS团队2026-07-20 23:51:57\n\n🔶【入库】\n\nWMS新增待销毁退货商品过期自动销毁设置，开启后系统会在收货满7个日历日后自动销毁未处理商品，减少人工跟进和超期积压。👉点击查看功能使用详情\n\n \n\n \n\n🔶【PDA】\n\nPDA扫描退货新增支持“销毁”处理方式，可扫描并确认销毁类退货数据，便于现场直接完成待销毁退货的收货和处理。👉点击查看功能使用详情\n\n \n\n🔶【新增物流商】\n\n乾力\n\n新智慧\n\n28/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260721074725/5c86f7228281cfa1769e39bff4d8b034.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260721074735/2ef035852206191ba1d874b6554f470d.jpg"
+    ]
+  },
+  {
+    "pageIndex": 29,
+    "title": "【NEW】无自动生成费用的旧单可重新核算，财务对账零遗漏",
+    "fullText": "功能更新\n【NEW】无自动生成费用的旧单可重新核算，财务对账零遗漏\n来自极风WMS团队2026-07-20 04:36:25\n\n💰【财务】\n\n支持对原先没有自动扣费类型费用和没有历史成本明细的单据进行重新计费与重算成本，保障账单与利润数据完整准确。\n\n \n\n \n\n \n\n📦【备货中转】\n\n备货中转出库单按产品出库装箱后，可根据箱规条件自动计费，计费更精准！\n\n29/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260720123346/ce1fef0d6cb48673858c3d14b1c68355.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260720123350/f9d6040dcce50810f6a10fff0bb874f9.jpg"
+    ]
+  },
+  {
+    "pageIndex": 30,
+    "title": "【NEW】生成波次新增重量/体积区间筛选，分货规整拣货更快！",
+    "fullText": "功能更新\n【NEW】生成波次新增重量/体积区间筛选，分货规整拣货更快！\n来自极风WMS团队2026-07-15 22:20:43\n\n🔶【波次】\n\n生成波次新增包裹重量、体积区间筛选及平台下单时间筛选维度，可按货品规格、订单下单时间精准分组建波次，规整拣货任务、提升仓库拣货效率与订单处理时效。\n\n \n\n \n\n🔶【入库】\n\n扫描上架支持批量清空货架位，可一键清空未上架货品的推荐库位，无需逐个手动清空，方便重新自选合适货架位，简化上架调整操作。\n\n \n\n \n\n🔶【计费】\n\n燃油规则支持配置多时段燃油附加费费率，支持自动拉取FedEx官方费率，系统按订单下单时间匹配对应周期费用，完整留存全部历史费率，历史订单重算成本计费精准无偏差。👉点击查看功能使用详情\n\n \n\n \n\n🔶【PDA】\n\nPDA商品查询支持直接修改商品规格，无需切换电脑操作就能快速维护货品信息。\n\n \n\n30/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260716061735/8c7188a81550dd20789082c72dec475b.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260716061752/e6475ca0ea447c45802e7628c169f4c0.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260716061807/40356847ca7f3eb8299e182a5bd67b53.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260716061845/0dff270fd971d1111c2f0502ddcf406c.jpg"
+    ]
+  },
+  {
+    "pageIndex": 31,
+    "title": "【NEW】新增下载中心，数据报表导出无需在页面等待，记录可追溯！",
+    "fullText": "功能更新\n【NEW】新增下载中心，数据报表导出无需在页面等待，记录可追溯！\n来自极风WMS团队2026-07-14 04:05:40\n\n🔶【下载中心】\n\n新增任务式下载中心，大批量报表由后台处理生成，提交导出后无需停留等待、不卡顿阻塞页面，可继续其他操作，所有下载任务统一留存、状态可查，大幅提升大批量数据导出的稳定性与操作效率。👉点击查看功能使用详情\n\n \n\n \n\n🔶【入库】\n\n一件代发入库扫描上架环节新增货架位标签打印按钮，选好库位后可直接打印标签，优化上架操作流程。\n\n \n\n \n\n🔶【波次】\n\n1️⃣波次设置增加拣货信息开关，可自主开启 / 关闭面单配套拣货单打印，按需适配不同仓库打印需求。👉点击查看功能使用详情\n\n \n\n \n\n2️⃣波次管理页面表格支持拖动调整列宽，可自由适配内容长度，完整展示相关波次信息，方便仓管快速核对数据。\n\n \n\n \n\n🔶【退货】\n\n新增退货商品优先出库开关，开启后物流退货继承原出库批次，非物流商退货默认最远批次实现优先拣货出库，满足退货商品优先发货与仓租精准核算需求。👉点击查看功能使用详情\n\n \n\n \n\n🔶【备货中转】\n\n备货中转出库支持批量装箱，可导出模板统一填写同款箱规后进行导入，自动批量生成货箱。不用逐箱手动录入，大幅提升大批量装箱作业效率。👉点击查看功能使用详情\n\n \n\n \n\n🔶【货架位】\n\n货架位列表新增商品混放、批次混放开关列，无需进入编辑页即可查看、切换混放规则，提升货架配置效率。\n\n \n\n \n\n🔶【日本佐川插件下单】\n\n支持导出订单模板用于佐川系统下单，上传运单和面单后同步信息给卖家，适配佐川线下手动打单场景。👉点击查看功能使用详情\n\n \n\n \n\n🔶【业务费用】\n\n业务费用页面仓库、单据类型等筛选条件支持多选，可批量组合筛选多类费用单据，快速完成对账统计。\n\n \n\n \n\n🔶【平台订单】\n\nOMS支持TikTok平台在授权店铺的时候进行仓库配对映射，订单自动匹配平台指定仓库，杜绝错仓推单、减少手工订单操作。👉点击查看功能使用详情\n\n \n\n31/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120111/8e35057d5fa3aa9640adead795b42501.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120120/2c0ca58d3d6435900e19a429b413c228.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120144/66295f828372c593902a10a852f16b20.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120211/949c6813976aadc256ee2fa9672a4f60.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120338/fa351843ceeb4952a9e33052a7947a5f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120358/031c625d71607934d1c349978d33ae05.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120422/b3846cf28d6367535c5617d0eac31e9c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120446/d67bcba29f3ade4bf146f818df798be6.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120500/8d80d7534ebd73c9beae8530dc56bae4.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120513/2cab64e6f20d1ec6472964dcdb391113.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260714120529/299f11daa5d30cfb7860820832e5a9aa.jpg"
+    ]
+  },
+  {
+    "pageIndex": 32,
+    "title": "【NEW】全场景智能预警提醒，有效规避仓内各类经营风险！",
+    "fullText": "功能更新\n【NEW】全场景智能预警提醒，有效规避仓内各类经营风险！\n来自极风WMS团队2026-07-08 17:42:35\n\n🔶【预警提醒】\n\n新增全场景智能预警提醒功能，支持自定义库存滞销、仓租阶梯变更、余额不足、收货未上架、发货超时、未交运等预警规则，可自由设置提醒对象、频率和提醒强度，提前发现仓内作业异常、库存积压、余额不足等问题，减少人工巡检，降低发货出错和客户损失。👉点击查看余额不足预警功能使用详情（注：此功能需在服务群@客服开通）\n\n \n\n \n\n🔶【出库】\n\n波次列表前置打印面单时，同步输出同尺寸配套拣货信息单，方便仓库快速区分匹配对应波次，适配PDA边拣边分前置打单作业，提升拣货核对效率。👉点击查看功能使用详情\n\n \n\n \n\n🔶【入库】\n\n入库认领单支持导出，可快速导出单据做库存核对、统计销毁扣费数据。👉点击查看功能使用详情\n\n \n\n \n\n🔶【代理仓】\n\n标准入库代理仓业务支持自定义外部箱号，且可同步箱号信息至主仓，代理仓一件代发可沿用自有箱号全流程作业，方便跨仓核对货物。👉点击查看功能使用详情\n\n \n\n \n\n🔶【跨境直邮】\n\n跨境直邮订单签收完成后自动扣除入库费用，不受后续取消、退款等操作影响，替代手工录费，避免漏单、价格偏差与回款滞后问题。👉点击查看功能使用详情\n\n \n\n🔶【新增物流商】\n\nCoordinadora（哥伦比亚）\n\n32/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260707062409/ccda33e7d5305a4e167b58e7221e42d7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260707055607/ade2d831aab417fed72ee965dd4427bc.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260707055614/d011e14b484d4ad4be913a2087012cdf.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260707055629/4ddc6500b58bb6630862be94e9611822.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260707055639/2c07b2e99ca491882f6bc1bdca6d54aa.jpg"
+    ]
+  },
+  {
+    "pageIndex": 33,
+    "title": "【NEW】出库多作业场景支持录像，视频可同步卖家端，售后维权有依据！",
+    "fullText": "功能更新\n【NEW】出库多作业场景支持录像，视频可同步卖家端，售后维权有依据！\n来自极风WMS团队2026-07-01 18:35:51\n\n🔶【出库】\n\n1️⃣支持扫描包装中扫描分拣筐出面单以及复核验货中扫描出面单的过程中，进行视频录制。出库视频可允许OMS查看，售后纠纷可调取打包录像用于申诉索赔。👉点击查看功能使用详情\n\n \n\n \n\n2️⃣新增面单打印记录功能，完整留存每一批面单打印任务明细与成败状态，打印异常时可快速定位失败包裹、一键重打，无需重新筛选订单，高效处理卡纸、断网等打印故障。\n\n \n\n \n\n \n\n🔶【入库】\n\n1️⃣OMS创建标准入库单可自定义箱号，WMS全流程支持扫描、搜索、打印自定义箱号完成签收、收货、上架操作，仓库可直接用客户自有箱号作业，不用依赖系统原生箱号，提升入库分拣核对效率。👉点击查看功能使用详情\n\n \n\n \n\n2️⃣认领单新增“处理方式”筛选项，可快速筛选上架/销毁类型认领单，便于针对性处理单据，比如针对销毁类单据核算额外扣费。\n\n \n\n\n🔶【库内移货】\n\n库内移货支持分配操作人，指定后非管理员和被指定人可见外其他子账号不可见。避免多员工之间大海捞针的找移货单，只移货自己这部分。👉点击查看功能使用详情\n\n \n\n33/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112501/af0275a3ee4c972c2d36ba55e79808f2.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112510/9469037d1a0fa9f705ed5e4e62b89b2c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112531/a116b3cf7350ef00c088c02e813a6494.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112537/fea8003d9a88c2c4cfa12a4c9dcbb680.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112547/49ec3822ec05aa7fdd60bf2ff453008c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112557/c2088b1d3ee14285f64ac0a22c4c3625.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112610/16352df20d1a76fa4df4cecdb8254152.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260630112616/768e15cbd9f8dc23abc58e9193c1eac4.jpg"
+    ]
+  },
+  {
+    "pageIndex": 34,
+    "title": "【NEW】物流商退货可跨仓入库，A仓货品可退回B仓！",
+    "fullText": "功能更新\n【NEW】物流商退货可跨仓入库，A仓货品可退回B仓！\n来自极风WMS团队2026-06-25 03:08:49\n\n🔶【退货】\n\n物流商退货支持A仓发出的货品退回B仓，不用人工协调调拨再入库，简化跨仓售后流程。点此查看功能操作详情（注：标准退货仍需单据与当前仓库一致）\n\n \n\n \n\n🔶【出库】\n\n出库列表与波次创建页面新增订单配送时效筛选功能，可按时效区分加急订单、单独创建优先波次，方便仓库优先处理急单，提升履约效率。点此查看功能操作详情（注：目前仅支持TikTok Shop平台订单）\n\n \n\n \n\n🔶【货盘分销】\n\n支持定向分销，可设置分销商品针对哪些分销商可见或不可见，精准管控不同客户的分销商品展示权限。点此查看功能操作详情\n\n \n\n \n\n🔶【交运】\n\n首页交运统计展示今天和昨天的交运数据，点击对应的数据可直接跳转快速查看当日或前一天的交运订单，实时把控发货交付进度。\n\n \n\n34/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://wms-1382655522-cos.jfwms.com/prod/temp/system/img/81/20260625113401/160e211e658dc67ea7d8c92e96ffc428.tmp",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260625060546/a055e9f3bcd8a1bb7caea2e4ebd8aef7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260625060554/5f2f9a42aee7b036c0e4f7a8f023ce8e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260625060643/aacca96e645428f409281222e9347766.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260625060656/c42fd17dec83f438f7c7e4839eca0a6d.jpg"
+    ]
+  },
+  {
+    "pageIndex": 35,
+    "title": "【NEW】出库新增打印面单权限管控，先扫码再打印，避免错发！",
+    "fullText": "功能更新\n【NEW】出库新增打印面单权限管控，先扫码再打印，避免错发！\n来自极风WMS团队2026-06-17 23:39:00\n\n🔶【出库】\n\n设置-权限设置-角色设置的出库权限新增扫描包装手动打印面单管控项，没有该权限的账号会隐藏波次明细里的打印面单按钮，约束员工必须完成扫码流程才能打印面单，避免跳过扫码直接打单引发的发货差错。\n\n \n\n \n\n🔶【品牌管理】\n\n新增品牌信息设置功能，支持自定义品牌 LOGO、品牌名称与系统域名，打造专属品牌展示界面，提升企业仓库品牌形象。👉点此查看功能操作详情\n\n \n\n35/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260618030949/f409bde2b98b4c82a342255368ebce02.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260618030958/7fcf5d39d1af2bbd493919a7a831682a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260618031010/3c4f887470f1349ce45b828fc6ffb65f.jpg"
+    ]
+  },
+  {
+    "pageIndex": 36,
+    "title": "【NEW】出库包裹支持批量复制单号，订单对账查询效率翻倍！",
+    "fullText": "功能更新\n【NEW】出库包裹支持批量复制单号，订单对账查询效率翻倍！\n来自极风WMS团队2026-06-16 21:39:51\n\n🔶【一件代发出库】\n\n1️⃣一件代发出库包裹列表支持批量复制包裹号、运单号、平台订单号，无需逐条复制，方便批量粘贴至外部去核对单据，大幅提升订单对账查询效率。\n\n \n\n \n\n2️⃣一件代发出库支持COD货到付款，手工单、ERP 推送、平台订单均可录入代收货款信息，以及把COD 信息传给已对接且支持COD的物流商（目前支持J&T EXPRESS-TH、brt、CTT EXPRESS和自定义物流商），满足跨境线下代收货款派送需求。点此查看功能操作详情\n\n \n\n（该界面为OMS端创建出库单页面）\n\n \n\n3️⃣一件代发出库包裹列表新增运单号前缀检索，快速筛选目标订单，提升订单查询核对效率。\n\n \n\n \n\n🔶【一件代发入库】\n\n一件代发入库单支持同时勾选多种单据状态进行查询，减少多次切换筛选条件的操作，提升入库单据查找效率。\n\n \n\n \n\n🔶【库内移货】\n\n库内移货-移货单页面增加【移出货架位】、【移入货架位】筛选项，方便快速筛选对应货区单据、按库位有序处理移货，提升库内移货作业效率。\n\n \n\n \n\n🔶【PDA】\n\nPDA盘点支持添加商品，用PDA 随机盘点、按单盘点时，扫描到不属于该货架的商品时，可直接新增该商品。无需先做移货调整，简化账实不符货品的盘点操作。\n\n \n\n \n\n🔶【业务费用】\n\n业务费用列表新增运单号的前缀搜索，便于快速匹配对应费用单据，提升对账效率。\n\n \n\n \n\n36/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616083520/9e3d47294447e583bc4c2055ae876336.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616083545/64e9223b1073ee6877a07a2f86768cad.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260617053859/2514a82174bde814578b1806b592bc69.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616083555/861c7b480bc55ce83a45495a7f173381.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616083606/6852540e2d8dde3c195aa4b88431ed78.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616083619/6f39f6a69c16838341864a3e6bea8d22.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616083629/482c7ab93a7503f921c6fccdf688fe43.jpg"
+    ]
+  },
+  {
+    "pageIndex": 37,
+    "title": "【重要通知】极风WMS旧版导航栏即将停用！",
+    "fullText": "功能更新\n【重要通知】极风WMS旧版导航栏即将停用！\n来自极风WMS团队2026-06-15 21:24:45\n\n尊敬的各位用户：\n\n您好！\n\n \n\n为提供更简洁、高效的操作体验，我们已全新上线新版导航栏。新版导航栏优化了菜单布局与操作路径，整体操作更流畅高效，推荐您切换使用。\n\n \n\n💡特别提醒：\n\n旧版导航栏将于北京时间8月4日00：00正式停用，届时将无法再切换回旧版界面。为确保您的日常操作不受影响，请您尽快切换至新版导航栏，逐步适应新的操作路径。\n\n \n\n✅切换入口：\n\n您可在系统界面的导航栏区域找到切换按钮，具体位置可参考下图👇（建议尽快完成切换，避免频繁切回旧版）。\n\n \n\n \n\n感谢您一直以来的理解与支持！如有任何使用疑问，欢迎随时联系极风WMS客服团队咨询。\n\n \n\n极风WMS团队\n\n37/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260616032808/01c3667ad9f2001c9da6d1e0a052af1e.jpg"
+    ]
+  },
+  {
+    "pageIndex": 38,
+    "title": "【NEW】支持商品效期管理，杜绝过期库存损耗！",
+    "fullText": "功能更新\n【NEW】支持商品效期管理，杜绝过期库存损耗！\n来自极风WMS团队2026-06-11 02:41:34\n\n📢极风WMS新功能来啦！\n\n \n\n🔶【效期管理】\n\n1️⃣支持仓库给客户开启效期管控，货主在OMS可给商品维护效期规则。2️⃣收货、退货、上架等全入库环节强制录入效期信息；出库自动遵循效期优先规则。3️⃣系统可自动识别临期/过期商品并移至不良品区，同时提供批次库存明细，支持效期查询、批量调整与数据导出，库存流转全程可追溯。\n\n此功能适用于食品、美妆、保健品等时效性商品的精细化管理，有效避免过期货品误发误售，杜绝库存损耗。✅详细功能操作可点此查看\n\n \n\n \n\n🔶【出库】\n\n1️⃣波次管理新增【完结波次】操作按钮，可一键结束波次，系统自动校验当前波次单的面单打印状态，流转正常包裹、把未打印面单包裹标记异常，批量收尾波次，省去逐个手动改单，加快出库流程。\n\n \n\n \n\n2️⃣简易打单增加【SKU*数量】排序功能，可按商品订购总量重新排列出库包裹列表，批量打单、归集同SKU订单更便捷，方便拣货员集中处理同款货品，提升出库作业效率。\n\n \n\n \n\n38/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260609105340/12aa8c62648f728258582eddf73dc70f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260609105359/4aa0e9f11f95d847989370770707e376.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260609105418/27e8845947f8fd5eff09e6a71a664578.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260611032741/aeb59b6f0dd675944d4fdac94d74cd62.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260611032752/08876e1f92bdd2eacbc644c7c1aa9ffd.jpg"
+    ]
+  },
+  {
+    "pageIndex": 39,
+    "title": "【NEW】面单水印列宽布局灵活调、表头可切英文，打印更省心！",
+    "fullText": "功能更新\n【NEW】面单水印列宽布局灵活调、表头可切英文，打印更省心！\n来自极风WMS团队2026-06-05 00:23:40\n\n🔶【面单水印】\n\n本次对面单水印做了如下优化：\n\n1️⃣表格表头支持切换成英文，无需修改系统整体语种，适配海外操作人员作业需求；\n\n2️⃣表格可以自由调列宽、内容对齐布局样式灵活选，适配不同海外仓排版和阅读习惯；\n\n3️⃣实现水印全区域覆盖，拣货信息、包裹信息、自定义文本在预览和打印时统一白底置顶，避免内容重叠影响查看。\n\n \n\n \n\n🔶【出库】\n\n出库支持[库存分配节点]配置，新增[WMS包裹创建波次成功即占用货架位库存]模式，即WMS接入订单后，只锁定仓库总库存，生成波次时可自主选择库存分配规则，由系统统一规划拣货货位，波次生成后再锁定货架位库存。能够优化拣货动线，减少多货架零散拣货，提升出库效率。此模式适用于管理复杂的中大件仓库以及单量高的仓库。\n\n（💡注：①此功能需在服务群@客服开通；②点此查看该功能详细说明）\n\n \n\n \n\n🔶【新增物流】\n\nLastmile\n\n39/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260605082245/b4d5cbfc4d5bc0ef155c9293167c7f34.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260605082256/0f9f0fbd924b3e90b478042707da1565.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260605082306/9b65cf58587fbdb34e3342df4553c5bd.jpg"
+    ]
+  },
+  {
+    "pageIndex": 40,
+    "title": "【NEW】爆款单品波次新增扫商品标签逐个打印，边包装边核验，有效规避错发",
+    "fullText": "功能更新\n【NEW】爆款单品波次新增扫商品标签逐个打印，边包装边核验，有效规避错发\n来自极风WMS团队2026-06-02 02:37:46\n\n🔶【波次】\n\n爆款单品波次面单打印方式增加【扫描商品标签逐个打印】模式，拣货包装时逐码核验货品，有效规避错发风险。\n\n \n\n \n\n🔶【打印】\n\n在打印设置新增面单加打信息配置，可自定义勾选波次 / 非波次面单加打信息打印选项「序号 + 时间 / 仅序号 / 仅时间」，便于仓内单据追溯管控。\n\n \n\n \n\n🔶【代理仓】\n\n代理仓创建备货中转（B2B）出库单支持按箱出库模式，适配整箱批量调拨场景，提升跨仓调拨效率与仓储周转速度。\n\n \n\n \n\n🔶【新增物流】\n\nJ&T EXPRESS-VN(old)\n\n40/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260602064859/cdb8dde413e56a011de3c9a88f3383c0.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260602064908/03b956dcdd5002121d0933372c5e4278.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260602064925/9fbbbd6ac5aff66621ebea8073ad5e62.jpg"
+    ]
+  },
+  {
+    "pageIndex": 41,
+    "title": "【NEW】备货中转支持PDA扫码拣货发货，出库又快又准！",
+    "fullText": "功能更新\n【NEW】备货中转支持PDA扫码拣货发货，出库又快又准！\n来自极风WMS团队2026-06-01 01:19:47\n\n📦【备货中转】\n\n1、备货中转支持PDA拣货出库，PDA新增B2B出库模块，支持扫码拣货、扫码发货。系统自动推荐最优拣货路线，全程扫码核验货品与货位，自动核对数量、拦截错拣、多拣问题；完成拣货后可直接扫码完成发货出库。实现仓库无纸化作业，既规范作业流程，又大幅提升操作准确率与出库效率。\n\n \n\n \n\n2、备货中转入库新增打印入库单功能，可勾选单据后一键打印，方便仓库快速获取入库纸质凭证，提升备货中转场景处理效率。\n\n \n\n \n\n📦【库存】\n\n库存流水增加批次号查询，覆盖商品库存、箱库存、FBA 退货库存，可快速定位批次级库存变动记录，方便批次管理与溯源。\n\n \n\n \n\n📦【物流】\n\n物流渠道中的发货地址支持物流仓库ID填写，对接物流商时能精准匹配仓库，减少异常。\n\n \n\n \n\n📦【代理仓】\n\n代理仓支持创建备货中转（B2B）出库单，可直接调拨货品至平台仓，单据信息、状态全程与主仓实时同步，完善跨仓补货业务流程。（注：目前只支持按产品出库）\n\n \n\n \n\n📦【新增物流】\n\nJ&T EXPRESS-PH\n\n41/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260601091713/23db82305708dc6d9fd67a0dccf12ed7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260601091822/49c7f5b2d44cd3a821aab315cb5cabca.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260601091835/10df7b23a8b1fafa0ebd44b0339447d4.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260601091848/42ca3187244612ae752654eeb8ab94cd.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260601091857/7aaccbebed98e98d49d324a3f2721d49.jpg"
+    ]
+  },
+  {
+    "pageIndex": 42,
+    "title": "【NEW】仓库获取新线上物流可设置默认开关，无需逐一手动设置！",
+    "fullText": "功能更新\n【NEW】仓库获取新线上物流可设置默认开关，无需逐一手动设置！\n来自极风WMS团队2026-05-26 02:43:47\n\n📦【物流】\n\n新增【获取最新线上物流默认开关】，可设置仓库获取到最新线上物流后，默认开启/默认不开启，新渠道无需逐一手动设置，适配不同仓库业务场景。\n\n \n\n \n\n📦【商品】\n\nSKU 支持多语言，支持多语言SKU展示、搜索与导入导出，兼容海外多语种货品管理，大幅降低商家商品迁移成本和海外仓管理难度。\n\n \n\n📦【跨境直邮】\n\n跨境直邮订单在签收环节对接测量设备回传的包裹长宽高及体积数据，在跨境直邮订单列表与导出报表统一展示，方便核对尺寸、精准核算物流费用。\n\n \n\n42/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260526033702/0f28d6e05ffedfd56a395973177aabe9.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260526033717/cd6980f2d3d2563b389b8a2943cd1a04.jpg"
+    ]
+  },
+  {
+    "pageIndex": 43,
+    "title": "【NEW】PDA手持作业优化升级，仓内作业更省心！",
+    "fullText": "功能更新\n【NEW】PDA手持作业优化升级，仓内作业更省心！\n来自极风WMS团队2026-05-19 01:09:47\n\n🔶【物流】\n\n分区规则与偏远地区规则新增邮编前缀匹配方式，支持通过邮编前缀模糊匹配订单，简化邮编录入操作，大幅提升英国等邮编规则复杂地区的分区与偏远地区计费配置效率。\n\n \n\n \n\n🔶【PDA优化】\n\n本次优化升级PDA仓库作业各项操作能力，提升仓内实操效率，减少电脑端来回切换，仓库现场作业更灵活便捷。优化包含：\n\n①退货扫SKU自动带出客户；②快速移货可选多个货架；③自由更换移出货位；④支持部分移货强制完结；⑤优化拣货按钮；⑥新增一键批量验货等。\n\n \n\n \n\n🔶【订单】\n\n新增订单发货类型校验与过滤能力，OMS增加【跨境发货】和【官方仓发货】订单识别，支持区分本地 / 跨境发货、官方仓 / 三方仓发货订单，可拦截不符合发货规则的订单推送，避免重复发货、无效履约，保障仓库作业精准高效。（注意：需仓库和卖家协商确认是否开启过滤）\n\n \n\n（图为OMS端平台订单流程设置页）\n\n \n\n \n\n🔶【导航栏】\n\n导航栏改版优化，精简梳理菜单层级、统一规范功能命名，移除首页并改用常驻页签展示，新增全局搜索功能，界面更清爽整洁，提升用户操作体验。（此功能需在服务群@客服开通）\n\n \n\n \n\n🔶【新增物流】\n\nInter rapidísimo\n\n43/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260519062808/ed73b62cf8febe6a7ca350fb2acbaa33.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260519062608/ac63155229f456680eca7fbcd01ecdb2.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260519062829/063e3b46f8c89eb93c697122d277a433.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260519062756/3c7aacc14d5af99b3ae95a32aa8e513e.jpg"
+    ]
+  },
+  {
+    "pageIndex": 44,
+    "title": "【NEW】物流旺季附加费同一个费用项可配置多个时间段价格，无需重复创建费用项！",
+    "fullText": "功能更新\n【NEW】物流旺季附加费同一个费用项可配置多个时间段价格，无需重复创建费用项！\n来自极风WMS团队2026-05-14 02:57:18\n\n🔶【物流计费】\n\n1️⃣物流旺季附加费优化：「按附加费计费」支持同一个附加费费用项配置多个时间段+阶梯价格，轻松适配旺季不同时段的差异化定价，无需重复创建多个费用项。\n\n \n\n \n\n2️⃣超长/超重附加费优化：支持将多个附加费加入同一「计费分组」，同一分组内的附加费同时命中时，只按最高金额的一项计费，不重复累加。若金额相同则按优先级顺序（超体积 > 超限制 > 超大 > 超重 > 超长）选择。避免同一包裹命中多个条件时重复叠加收费，减少费用争议。\n\n \n\n \n\n🔶【跨境直邮计费】\n\n跨境直邮出入库操作费按商品总重量阶梯计费时，会优先按商品实际重量计算，无实际重量时再取申报重量；费用项计费策略详情，将按生成费用时的记录数据展示计费过程，确保费用核算与记录的一致性与准确性。\n\n \n\n \n\n🔶【面单水印】\n\n表格排版面单水印时，可灵活调整字体大小，加粗和斜体，提升面单信息的可读性与打印适配性。\n\n \n\n44/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260514105604/de1442f0a7fde2107d0921c33e90a061.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260514105616/d5827b0e8f64b465f630dc6c36bc36b9.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260514105627/26c614369fc0f7906d0910e5da4ed03a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260514105636/6afb745b614e07822973db2757144cf8.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260514105647/c9e0ab4c1bf0d2c6dd035639673f7f1a.jpg"
+    ]
+  },
+  {
+    "pageIndex": 45,
+    "title": "极风 WMS × 趣分销 深度打通，邀您开启全球分销！",
+    "fullText": "活动邀约\n极风 WMS × 趣分销 深度打通，邀您开启全球分销！\n来自极风WMS团队2026-05-13 03:10:08\n\n店小秘旗下全自动现货分销平台 —— 趣分销，与极风WMS深度协同，为您一站式解决分销难题，助力仓配业务持续增长。目前平台已开放美国站点，其他地区将陆续开通。\n\n \n\n📢入驻即享：\n\n【百万流量】 | 店小秘生态卖家池，触达380万+ 跨境卖家\n\n【极风协同】 | 一键授权，商品/库存快速同步\n\n【轻量托管】 | 全平台订单，一站式处理\n\n【高效增长】 | 多平台分销，助力业务出海\n\n \n\n📢即刻入驻，享限时免佣权益\n\n  限时免佣政策\n\n5.18日0点前刊登的商品：免佣至10.31日，11.1 起按 2% 收佣\n\n5.31日24点前刊登的商品：免佣至8.31日，9.1 起按 2% 收佣\n\n6.1日0点后刊登的商品：无免佣期，按 3% 收佣\n\n  佣金计算方式：商品结算价格 × 佣金比例\n\n \n\n>>立即入驻趣分销\n\n45/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260513110441/b193b120c92321dd4e560bf94b5c48ae.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260513110517/1ff63df1e17fb71a9a900f1be8a4da9d.jpg"
+    ]
+  },
+  {
+    "pageIndex": 46,
+    "title": "【NEW】物流计费策略可按包裹尺寸三边和来配置，运费核算更精准！",
+    "fullText": "功能更新\n【NEW】物流计费策略可按包裹尺寸三边和来配置，运费核算更精准！\n来自极风WMS团队2026-04-30 01:06:00\n\n🔶【物流计费】\n\n物流计费策略新增按包裹尺寸三边和计费模式，基础运费支持按尺寸区间配置运费，适配更多渠道计费规则，提升运费核算精准度。\n\n \n\n \n\n🔶【包材】\n\n商品包材标签打印新增二维码条码类型，优化扫码体验，提升作业效率。\n\n \n\n \n\n🔶【新增物流商】\n\nLoggi（巴西）\n\n46/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260430090406/65183191bb0614555c7e798999fb4abd.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260430090420/841575ce536598450c673c0b579253c3.jpg"
+    ]
+  },
+  {
+    "pageIndex": 47,
+    "title": "【NEW】扫描包装支持视频录制，包裹问题有据可查！",
+    "fullText": "功能更新\n【NEW】扫描包装支持视频录制，包裹问题有据可查！\n来自极风WMS团队2026-04-28 02:44:25\n\n🔶【出库】\n\n扫描包装增加视频录制功能，视频录制可在出库列表【待发货/已发货】中查看，方便后续仓库快速排查包裹是否漏发错发等异常问题。\n\n \n\n \n\n \n\n🔶【B2B】\n\n1️⃣B2B箱库存入库支持存放备货区，有效释放转运区空间，提升仓库利用率。\n\n2️⃣B2B 库存出库逻辑优化：1）B2B按产品出库，优先备货区拣货出库，不受备货区出库开关限制，避免 B2B 业务占用拣货区资源，保障一件代发出库效率。2）B2B按箱出库，优先使用转运区箱库存，减少整箱货跨区拣货路径，提升 B2B 大件业务出库效率。\n\n \n\n \n\n47/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260428080606/cce071f3fb65fef15e1c909c4c1e9ff7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260428080625/743b4a3efcc15c0213d6090709db9afd.jpg"
+    ]
+  },
+  {
+    "pageIndex": 48,
+    "title": "【NEW】业务费用导出增加物流费明细，费用核对更清晰！",
+    "fullText": "功能更新\n【NEW】业务费用导出增加物流费明细，费用核对更清晰！\n来自极风WMS团队2026-04-23 03:13:06\n\n🔶【业务费用】\n\n业务费用导出模板中增加物流费各项明细，费用构成一目了然，便于费用核对和数据追溯。\n\n \n\n \n\n🔶【B2B计费】\n\n1️⃣B2B出库单支持换标自动收取换标费，业务费用板块查看详情可以看到换标数量，核算更清晰。\n\n \n\n \n\n2️⃣B2B出库单按产品出库，装箱完成后支持自动计算装箱费，减少人工核算，提升仓内计费效率。\n\n \n\n \n\n🔶【FBA计费】\n\nFBA退货入库单支持按单个商品阶梯计费，计费规则更灵活，适配不同业务场景。\n\n \n\n \n\n🔶【新增物流商】\n\n昊坤达\n\n48/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260423105801/7f562b5a139606e33947190e8829ce88.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260423105815/e932f21e441b3f8b49ce47e8b26a8b28.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260423105828/b4fabe220281755c1525223600ea0c79.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260423105847/7eb241895b84931f6fc1a98db3ade289.jpg"
+    ]
+  },
+  {
+    "pageIndex": 49,
+    "title": "【重要】关于极风WMS付费截止时间提醒",
+    "fullText": "功能更新\n【重要】关于极风WMS付费截止时间提醒\n来自极风WMS团队2026-04-20 18:51:01\n\n \n\n亲爱的海外仓朋友们：\n\n感谢大家一直以来对极风WMS的关注与支持。自发布付费公告以来，已有大量客户积极完成VIP版本的订购，衷心感谢大家的信任与认可。\n\n \n\n现就付费安排作如下重要补充提醒：\n\n \n\n📅 付费截止时间：北京时间 2026年4月30日（星期四）\n\n请计划继续使用极风WMS的客户，务必在北京时间4月30日24:00前完成VIP版本的订购，避免因逾期未办理影响系统正常使用。\n\n \n\n若您对套餐、权益等事宜有任何疑问，欢迎随时联系极风WMS客服团队咨询。\n\n \n\n极风WMS团队\n\n \n\n49/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 50,
+    "title": "【NEW】扫描退货支持批量填写规格数量，退货入库效率翻倍！",
+    "fullText": "功能更新\n【NEW】扫描退货支持批量填写规格数量，退货入库效率翻倍！\n来自极风WMS团队2026-04-14 02:42:21\n\n📦【退货】\n\n扫描退货支持批量填写规格数量（体积，重量等），不用逐件手动录入，大幅提升退货入库效率。\n\n \n\n \n\n📦【新增物流】\n\nVite(Fedex)\n\nGoshipx\n\n云途\n\n50/50\n关闭\n上一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260414024618/13449ac0d525d7e3bc730c6281f60f4e.jpg"
+    ]
+  },
+  {
+    "pageIndex": 1,
+    "title": "【重要通知】Temu 半托管 + 本本 - 美国站 USPS 交运规则调整",
+    "fullText": "功能更新\n【重要通知】Temu 半托管 + 本本 - 美国站 USPS 交运规则调整\n来自极风WMS团队2026-04-09 23:42:58\n\n各位海外仓用户：\n自2026 年 4 月 7 日起，针对Temu 半托管 + 本本 - 美国站、采用Temu 线上发货且USPS 承运的订单，交运规则有明确调整，请务必按要求操作，避免影响包裹正常揽收与时效。\n\n \n\n🔍 核心调整要点\n1.禁止直接交运 USPS：此类订单不可直接交运至 USPS，需统一交运至平台指定服务商 SpeedX 或 SwiftX。\n2.面单标识识别规则：请以面单上的标识为准，对应关系如下：\n●面单标识 0024-01 → 交运至 SpeedX\n●面单标识 0024-02 → 交运至 SwiftX\n\n3.影响范围：Temu 半托管 / 本土、线上发货、USPS 渠道的订单。\n4.系统影响：面单可能出现揽收单号与接口尾程单号不一致的情况，属正常现象。\n\n \n\n⚠注意事项\n请严格按照面单标识交运，交运错误可能导致包裹无法扫描、延误或平台扣罚。\n\n1/50\n关闭\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 2,
+    "title": "【重要公告】关于巴西邮政新规通知",
+    "fullText": "功能更新\n【重要公告】关于巴西邮政新规通知\n来自极风WMS团队2026-04-08 19:44:24\n\n巴西邮政系统近期更新，收发地址新增校验规则：收件地址与发件地址均不支持特殊字符（含中文字符），填写含此类字符将会导致异常报错。\n\n \n\n若有使用巴西邮政物流下单异常的用户，可检查地址是否含特殊字符，并及时修改地址信息，以免影响包裹正常发货。\n\n2/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 3,
+    "title": "【NEW】按箱上架支持批量添加货架位，大大提升入库上架效率！",
+    "fullText": "功能更新\n【NEW】按箱上架支持批量添加货架位，大大提升入库上架效率！\n来自极风WMS团队2026-04-08 03:54:18\n\n📦【入库】\n\n扫描上架按箱上架支持批量添加货架，无需逐箱手动操作，大幅提升入库上架效率。\n\n \n\n \n\n📦【新增物流商】\n\nDHL-express\n\n3/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260408015301/5bd9b8a4556e4d0335e8883429e8f745.jpg"
+    ]
+  },
+  {
+    "pageIndex": 4,
+    "title": "【重要】付费公告",
+    "fullText": "功能更新\n【重要】付费公告\n来自极风WMS团队2026-04-06 22:00:10\n\n亲爱的海外仓朋友们：\n\n \n\n极风WMS自2023年底上线以来，我们已携手相伴近三年时光。忠心感谢每一位海外仓朋友的信任与支持，是大家的陪伴与反馈，见证了产品从初版到逐步完善的每一步成长，这份信任我们始终铭记于心。\n\n \n\n为持续打磨产品性能、为大家提供更好的使用体验，极风WMS VIP付费版将于北京时间2026年5月7日（星期四）正式上线，助力海外仓实现精细化运营、提质增效。\n\n \n\n📅 套餐正式生效时间\n北京时间2026年5月7日（星期四）\n\n本次上线多梯度VIP套餐，精准匹配不同订单体量、不同规模海外仓的需求：\n●功能无差别：各等级VIP套餐均开放全功能使用权限，不做功能阉割\n●服务有梯度：套餐等级越高，可享受的专属增值服务越丰富，全方位适配高阶运营需求\n\n \n\n🎁 福利活动\n为回馈老客户一路以来的支持与信任，极风WMS同时推出福利活动，可在服务群咨询领取福利！\n\n未来，我们会持续优化产品、升级服务，做大家靠谱的生意伙伴。\n\n若您对套餐、权益等事宜有任何疑问，欢迎随时联系极风WMS客服团队咨询。\n\n \n\n极风WMS团队\n\n4/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 5,
+    "title": "【NEW】一件代发仓租可按 SKU 计费，仓储定价更精准！",
+    "fullText": "功能更新\n【NEW】一件代发仓租可按 SKU 计费，仓储定价更精准！\n来自极风WMS团队2026-04-02 00:45:50\n\n🔶【计费】\n\n一件代发仓租计费新增「不同 SKU 不同计费」模式，可针对危险品、大体积、慢动销等不同类型商品，设置专属仓租阶梯与单价，让仓储定价更精准、成本核算更灵活。\n\n \n\n \n\n🔶【财务】\n\n一件代发仓租费导出支持按商品批次查看明细，精准定位各批次商品的仓租成本，让仓储费用核算更精细、追溯更清晰。\n\n \n\n \n\n🔶【订单】\n\n一件代发支持跨国家地区下单发货，解除仓库与收件人需同国的限制，全面适配多区域业务需求，发货更灵活顺畅。\n\n5/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260402062550/ead262a7ce41e7ccc842ce17a3a30f1a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260402062604/9d39a99c984dcbb25b85e782ac32d89a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260402062623/6c248c6a94b919b5ecb19e14143b6f17.jpg"
+    ]
+  },
+  {
+    "pageIndex": 6,
+    "title": "USPS 查询新规与极风 WMS 调整说明",
+    "fullText": "功能更新\nUSPS 查询新规与极风 WMS 调整说明\n来自极风WMS团队2026-04-01 00:14:21\n\n尊敬的用户：\n您好！\n\n由于 USPS 官方的重大政策调整，从 2026 年 4 月 1 日起，USPS 开始对所有的物流查询数据实行严格管控。为了顺应行业发展规范，并在全新的框架下切实保障您的数据安全与查询链路稳定， 极风 WMS 的相关查询功能也在今天同步进行了调整。\n\n为了不影响您的日常业务，我们第一时间把具体的变化和替代方案为您梳理如下：\n \n一、USPS 官方政策的主要变化 \nUSPS 此次全面收紧了轨迹查询权限，核心变化可以归纳为以下三点：\n●需要绑定身份标识：所有的查询请求都需要关联您专属的 MID（Mailer ID）或 CRID（客户注册 ID）。\n●需要获得官方授权：原有的开放式查询接口关闭，官方的规范授权是正常获取轨迹的前提。\n●非自有链路查询受限：不在发货链路内的查询会被官方限制或者需要支付额外查询费用。\n\n二、极风 WMS 的相应调整与替代方案 \n●受此新规影响，自2026年4月1日起，极风 WMS 内部原有的 USPS 免费物流追踪服务将限制使用。对于功能受限给您带来的不便，我们感到非常抱歉。\n●为了不影响您的日常业务，如果您接下来需要查询 USPS 物流轨迹，建议您移步至 17TRACK 平台进行操作。17TRACK 针对此次新规已经梳理了清晰的应对方案，可以帮您理清不同条件下的可用查询方式。\n \n我们会持续关注 USPS 的政策动向，若有进一步调整或优化，将第一时间通过官方渠道通知您。再次感谢您的理解、支持与配合，我们将全力保障您的物流操作顺畅！\n \n极风 WMS \n2026.04.01\n \n\n6/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 7,
+    "title": "【NEW】包装包裹推荐包材+多品包裹绑定包材计费，出库更省心！",
+    "fullText": "功能更新\n【NEW】包装包裹推荐包材+多品包裹绑定包材计费，出库更省心！\n来自极风WMS团队2026-03-31 03:44:36\n\n📦【出库】\n\n \n\n1️⃣在【出库设置】中可开启【推荐包材】功能，开启后在扫描包装/验货环节，会自动推荐包裹内 SKU 绑定包材中尺寸最大的包材，帮仓库快速选择包材，提升打包效率。\n\n \n\n \n\n \n\n2️⃣多品包裹支持商品绑定包材计费，让包材计费更灵活、核算更精准。\n\n \n\n7/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260331110240/05562ab37d576acd19c5cb858b8a1504.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260331110315/a26a8b774ba922c2c4103de8c0bd965b.jpg"
+    ]
+  },
+  {
+    "pageIndex": 8,
+    "title": "【NEW】智能物流比价全面升级，自动筛选最优渠道，发货更省更稳！",
+    "fullText": "功能更新\n【NEW】智能物流比价全面升级，自动筛选最优渠道，发货更省更稳！\n来自极风WMS团队2026-03-26 04:36:35\n\n1️⃣原【客户物流渠道】统一更名为【物流产品】\n\n \n\n \n\n2️⃣物流产品支持一对多绑定多个物流渠道，一个渠道可被多个物流产品引用。满足同一物流渠道在不同仓库有不同价格体系的需求。同一个物流产品关联多个渠道，支持对不同渠道增加重量、体积等限制条件，下单时系统会自动筛选符合限制条件的渠道。\n\n \n\n \n\n3️⃣支持在【新建物流产品】页和【物流产品列表】设置物流产品未设置计费策略时是否允许推单，可灵活适配不同管理需求，比如自营仓允许先推单、三方仓禁止未计费推单等。\n\n \n\n \n\n4️⃣物流计费策略支持绑定物流产品，一个策略绑定一个产品，相同计费规则无需重复创建策略，大幅提升配置效率。\n\n \n\n \n\n5️⃣计费计算公式新增物流成本来源选项，按费率可取接口运费、按规则可取系统维护成本，同时增加低价风险提醒，避免仓库亏本发货。\n\n \n\n8/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123457/9136d0a75611d29a42023daa5f50be62.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123508/5aeeacae9e0b2207391c9b2ca9450a20.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123518/0b3d0be0463baca255df49d876c17a30.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123527/a5bd387f58f03f3af775e7ff3763a374.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123537/7a5b1a2ab0e8847e47e4d626f8696b8a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123547/365ac3e7f1e65c3cab10598bcf128bd3.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123558/77686c9e273b423bf583ec15987f920c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260326123606/140e3439b01693ba661d2054ce417662.jpg"
+    ]
+  },
+  {
+    "pageIndex": 9,
+    "title": "【NEW】交运全链路升级！交运状态与平台订单取消状态实时同步，订单处理更高效！",
+    "fullText": "功能更新\n【NEW】交运全链路升级！交运状态与平台订单取消状态实时同步，订单处理更高效！\n来自极风WMS团队2026-03-17 02:37:57\n\n📦【交运】\n\n为进一步提升交运作业效率与订单状态透明度，对交运全链路多系统协同升级，具体优化如下：\n\n \n\n1️⃣完成与 Bigseller、Upseller 的深度对接，实现交运状态全链路打通，确保10 分钟内交运状态同步，且增加重试兜底机制避免状态延迟或漏传。\n\n \n\n \n\n2️⃣目前API对外开放交运状态对接。其他外部ERP目前不传交运的，建议商家先与ERP沟通对接交运状态API接口，或店铺授权OMS【仅获取交运状态】的方式解决。仅获取交运状态目前支持TikTok、Temu、 Lazada、 Shopee平台，可覆盖绝大部分业务场景。\n\n \n\n \n\n3️⃣订单支持同步平台已取消订单状态，方便仓库第一时间识别平台取消订单，提前拦截无效包裹，减少误发与损耗。除OMS平台订单已支持同步平台订单取消订单外，同时已开放 API【平台订单取消】对接，目前Bigseller、Upseller 已对接，其他ERP建议商家与ERP沟通进行对接。\n\n \n\n \n\n4️⃣交运统计可视化，首页可直观查看当天[已交运 / 未交运/订单取消]的包裹数，支持一键跳转到对应订单页面，订单处理更高效。\n\n \n\n \n\n📃【面单水印】\n\n表格展示面单水印时，支持拖拽表格自定义表格位置。提升模板编辑的灵活性，充分利用面单留白区域，避免空间浪费。\n\n \n\n \n\n📦【物流】\n\n在业务费用、业务详情、应收账单、出库包裹详情等页面，对物流计费金额增加悬浮查看明细，支持展示基础运费、各类附加费及变更金额，并支持按费用明细导出完整物流费用拆分数据。实现运费透明可查、对账更精准。\n\n \n\n \n\n \n\n9/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080702/e157e0d6a982beb61af2b4447f400204.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080715/aa579d3df47f9edb1a33042e8ee84492.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080728/f1856d2b577cb3825317f39eb3c74f83.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080743/6e7508e0d5d26953186a1903ef80bf20.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080751/b3c76b64cb90620a911407c5bec1bce8.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080812/31781961c1ef78fc71e05801a924b76e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260317080801/0c4cea175a27b41050d687863c6b573a.jpg"
+    ]
+  },
+  {
+    "pageIndex": 10,
+    "title": "【NEW】新增智能策略！多维度自定义分波，拣货不用来回跑，紧急单优先发！",
+    "fullText": "功能更新\n【NEW】新增智能策略！多维度自定义分波，拣货不用来回跑，紧急单优先发！\n来自极风WMS团队2026-03-12 22:51:49\n\n🔶【出库】\n\n1️⃣新增“智能策略 - 波次策略”模块，支持按货区 / 巷道、订单优先级、包裹结构等多维度自定义分波规则，可自动分配拣货员、定时/定量触发执行，有效减少拣货无效走动，保障紧急订单优先履约，大幅提升仓库出库作业效率。（此功能需在服务群@客服开通）\n\n \n\n \n\n \n\n2️⃣出库设置新增“交运配置-自动发货”功能，可将交运状态为【已交运】和包裹状态为【待发货】/【异常】的包裹自动标记为发货，减少人工操作，提升出库履约效率。\n\n \n\n \n\n🔶【新增物流商】\n\nShipbae\n\n递界\n\n10/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260312054348/835d07849591d23379194e69e8c48056.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260312054357/b26bce26291a8642abb67437ec903280.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260312054406/b64a8eb17ab6eeea195ac469067deaa6.jpg"
+    ]
+  },
+  {
+    "pageIndex": 11,
+    "title": "【重要通知】Temu在线下单的 USPS Ground Advantage 物流渠道即将停止服务！",
+    "fullText": "功能更新\n【重要通知】Temu在线下单的 USPS Ground Advantage 物流渠道即将停止服务！\n来自极风WMS团队2026-03-10 00:17:29\n\n尊敬的用户：\n\nTemu 在线下单的 USPS Ground Advantage 物流渠道即将停止服务，如需继续使用该渠道，必须先申请成为Temu 认证合作仓。\n\n为了不影响您的发货进度，极风 WMS 可免费协助您完成认证，如有需要可联系客服！\n\n \n\n\n（极风WMS客服微信）\n\n11/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260310081541/33596013a8c62a60a4a28069f40c2480.jpg"
+    ]
+  },
+  {
+    "pageIndex": 12,
+    "title": "【NEW】跨境直邮支持多平台换单发货！海外仓履约效率拉满！",
+    "fullText": "功能更新\n【NEW】跨境直邮支持多平台换单发货！海外仓履约效率拉满！\n来自极风WMS团队2026-03-05 02:58:10\n\n🔶【跨境直邮】\n\n支持跨境直邮单的扫码签收称重、按包裹重量计费、海外仓一键换单及尾程面单打印，实现了对独立站及多平台跨境直邮业务的全链路履约支持，同时提升了计费准确性与业务数据完整性。点此查看操作详情\n\n \n\n \n\n🔶【B2B】\n\nB2B出库单新增“按sku计费”计费方式，实现对不同 SKU 的精细化、精准化计费，提升 B2B 业务的费用核算准确性与灵活性。\n\n \n\n \n\n🔶【新增物流商】\n\nSpeedex\n\n12/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260305105723/00f911174858089b917f798ebde45997.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260305105732/015ff73f8e01afca2e0c77fbeae020ef.jpg"
+    ]
+  },
+  {
+    "pageIndex": 13,
+    "title": "【NEW】支持入库清分！扫描 SKU / 箱唛自动组托，告别肉眼分拣少错漏",
+    "fullText": "功能更新\n【NEW】支持入库清分！扫描 SKU / 箱唛自动组托，告别肉眼分拣少错漏\n来自极风WMS团队2026-03-02 23:16:31\n\n🔶【入库】\n\n新增入库清分功能，通过扫描 SKU / 箱唛自动分配组托区，把原本靠人工肉眼分拣的低效打托流程，变成了高效、精准、可视化的智能清分，让海外仓整柜卸货打托又快又准，大幅节省人工和时间成本。\n\n \n\n \n\n🔶【盘点】\n\n库存盘点商品列表新增货架位排序功能，优化盘点路径，避免操作员因来回跑动，提升盘点便捷性与效率。\n\n \n\n \n\n🔶【B2B】\n\nB2B库存流水支持按商品SKU检索，精准定位含目标 SKU 的箱号，大幅提升库存对账与溯源效率。\n\n \n\n \n\n🔶【新增物流】\n\nDPD-IE\n\nGOFO Europe\n\n13/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260303023518/3dd4abc4ad7ab1a20da439c25eef63f8.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260303023539/62a2c517382da16a3969dcbb50ad7fcc.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260303023555/99eaf0be044154487b993fe412eed43b.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260303023608/f53b0816b620d96288c7bd6c64fb8f34.jpg"
+    ]
+  },
+  {
+    "pageIndex": 14,
+    "title": "【NEW】出库单新增下单时间，精准控时效，发货效率拉满",
+    "fullText": "功能更新\n【NEW】出库单新增下单时间，精准控时效，发货效率拉满\n来自极风WMS团队2026-02-24 18:25:07\n\n📃【出库】\n\n出库单新增买家下单时间，帮助精准匹配 TikTok 等平台春节订单时效要求，按买家下单时序高效处理待打单、待发货订单。\n\n \n\n14/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260225021951/38c8221ac83df6f07aa0e12f95f31557.jpg"
+    ]
+  },
+  {
+    "pageIndex": 15,
+    "title": "春节假期值班安排",
+    "fullText": "功能更新\n春节假期值班安排\n来自极风WMS团队2026-02-13 23:03:01\n\n15/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260214070135/fefd8e870ce0255fb0c7a79c475f727e.jpg"
+    ]
+  },
+  {
+    "pageIndex": 16,
+    "title": "【NEW】支持货主直接分销货盘，海外仓仅需订单履约，省心又省力！",
+    "fullText": "功能更新\n【NEW】支持货主直接分销货盘，海外仓仅需订单履约，省心又省力！\n来自极风WMS团队2026-02-10 03:06:59\n\n⭐【分销】\n\n支持卖家通过极风代理仓功能进行分销，海外仓无需参与货主与分销商的分销对接和结算对账，仅负责订单履约，降低运营成本，增强货主合作粘性。点击查看此功能详情和操作流程\n\n \n\n \n\n⭐【库存】\n\n库存板块新增”库间调拨“模块，支持按产品 / 箱进行调拨，精准管控库间货物流转并同步库存流水，解决海外仓调货难题，既提升调货效率，也规范了流转流程。（此功能需在服务群@客服开通）\n\n \n\n16/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260210110527/a3fba6f39d302b6cd3fef3e0c7278503.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260210110541/8754aacb0f08fc98e78b77c64e821a63.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260210110552/aeb61a9333267e5372405d5aafb899a2.jpg"
+    ]
+  },
+  {
+    "pageIndex": 17,
+    "title": "【NEW】业务费用按出账状态精准筛选，找单不费力，对账超高效！",
+    "fullText": "功能更新\n【NEW】业务费用按出账状态精准筛选，找单不费力，对账超高效！\n来自极风WMS团队2026-02-05 02:31:33\n\n📢功能更新清单来啦！\n\n \n\n📄【业务费用】\n\n1、业务费用生成账单支持账单预览和编辑折扣/备注，确保金额准确，避免账单错漏返工，减少对账争议。\n\n \n\n \n\n \n\n2、可按“未出账、未对账、已对账”3种出账状态筛选业务费用，方便快速定位特定状态的账单，提升费用对账与管理效率。\n\n \n\n \n\n3、业务费用分页数据量增加至5000条/页，减少翻页次数，批量筛选及处理费用账单更顺畅。\n\n \n\n \n\n4、业务费用详情页点击【详情】可直接查看仓租明细，快速追溯费用构成，提升财务结算效率。\n\n \n\n \n\n✨【新增物流】\n\n澎泽科技\n\n云仓\n\n17/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260205103245/3c9ab38da6baf8b697afbecdb6e6e35a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260205103253/026acfd6cf42038c10ccf18ff35a22ba.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260205103302/742a16c48a40148ed39dfe7edae60b35.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260205103317/137f7b5b6e19449d525b899ba6270d63.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260205103327/dc478af9e22989c6c8b8e2e515dc4481.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260205103337/8e59911cb20976a0a6bd834f0b62b97f.jpg"
+    ]
+  },
+  {
+    "pageIndex": 18,
+    "title": "【NEW】PDA支持按箱移货，扫描箱唛批量调拨整箱库存，补货毫不费力！",
+    "fullText": "功能更新\n【NEW】PDA支持按箱移货，扫描箱唛批量调拨整箱库存，补货毫不费力！\n来自极风WMS团队2026-01-29 02:40:57\n\n📢功能更新来啦！\n\n \n\n【PDA】\n\nPDA 快速移货支持按箱移货，可扫描入库箱唛号完成商品库存批量移货，大幅提升一件代发场景下的库存调拨及补货效率。\n\n \n\n \n\n【代理仓】\n\n代理仓出库单交运状态更新可同步至主仓（极风对极风），避免信息脱节，提升履约的整体可控性与协同管理效率。\n\n \n\n【新增物流】\n\nShipboxs\n\n18/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260129104031/896e55fb3d63a5937c45e4cf10a5e182.jpg"
+    ]
+  },
+  {
+    "pageIndex": 19,
+    "title": "【NEW】用运单号前缀快速筛选指定物流渠道的出库包裹，分组打印高效不出错！",
+    "fullText": "功能更新\n【NEW】用运单号前缀快速筛选指定物流渠道的出库包裹，分组打印高效不出错！\n来自极风WMS团队2026-01-22 03:45:50\n\n🔶【出库】\n\n在出库列表的“待发货 ”和“待打单”中支持按运单号前缀对包裹进行搜索，可快速筛选出指定物流渠道的包裹分组打印，提升仓库物流分组效率并降低出错风险卖家分销\n\n详情查看\n\n \n\n🔶【新增物流】\n\nVite USPS\n\nAllied Express\n\n19/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260122114459/0dd5763d1fc4548efbe03f253ed92be2.jpg"
+    ]
+  },
+  {
+    "pageIndex": 20,
+    "title": "【NEW】波次包裹可按物流方式排序！同渠道集中处理，发货效率拉满",
+    "fullText": "功能更新\n【NEW】波次包裹可按物流方式排序！同渠道集中处理，发货效率拉满\n来自极风WMS团队2026-01-19 18:03:18\n\n📣新功能来啦！\n\n \n\n🔶【出库】\n\n生成波次包裹支持按物流渠道顺序排序，实现同渠道包裹集中处理，提升仓内拣货打包及物流交接效率。\n\n \n\n \n\n🔶【PDA】\n\npda签收、收货、上架支持扫描B2B自定义箱号，可适配不同客户的箱唛编码规则，增强对多样化业务场景的适配能力，提升仓内操作效率与灵活性。\n\n \n\n20/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260120020109/44b7817ce9df7d8b42d3e61cb3d39f54.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260121034235/47512fc7c51d8b4a8723b87d4f0b584f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260121034323/7fa40470cdeee9344ac7c9231e64294d.jpg"
+    ]
+  },
+  {
+    "pageIndex": 21,
+    "title": "【NEW】告别面单水印乱糟糟！表格化展示拣货和包裹信息，拣货更高效！",
+    "fullText": "功能更新\n【NEW】告别面单水印乱糟糟！表格化展示拣货和包裹信息，拣货更高效！\n来自极风WMS团队2026-01-12 00:51:59\n\n📢本周功能更新清单来啦！\n\n \n\n🔶【面单水印】\n\n新增面单水印表格排版模式，支持勾选展示拣货信息与包裹信息，表格化清晰呈现让拣货员快速识别商品、货架位等关键信息，提升拣货效率与打单操作体验。\n\n \n\n \n\n🔶【temuY2】\n\n支持欧洲半托管店 Y2 模式及线下物流面单获取业务，入库操作费增加单据类型【TEMU直邮单】，支撑 Y2 模式仓内履约，完成收货计费闭环，保障履约顺畅。\n\n \n\n \n\n🔶【数据】\n\n1、新增仓库分析，可按仓库、客户、商品维度统计，助力精准掌握商品动销、客户业务量及仓库吞吐情况，为库存优化、定价及运营调整提供数据支撑，实现精细化运营。\n\n \n\n \n\n2、新增员工统计，新增员工售后（退货单创建、签收、上架等）及日常操作（收货、拣货、打包等）的数据统计，解决人工统计计件工资繁琐的问题，便于绩效考核与生产效率分析，提升仓内作业效率。\n\n \n\n \n\n🔶【新增物流】\n\nChinaCourierUK\n\nJ&T EXPRESS-TH（极兔-泰国）\n\n乐代\n\n21/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260112085346/86cbdcf09ff398b33ca6d7f3b717e547.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260112085358/d5f851d15df6c361ddfd40ea44ea3f1d.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260112085407/ff8c73ed3f72a1b176706be9d7662a5c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20260112085415/6ed53b8bc4e50c38ac308428372596ba.jpg"
+    ]
+  },
+  {
+    "pageIndex": 22,
+    "title": "【NEW】帮助中心新增教学视频！分模块细致讲解，一看就会，效率翻倍！",
+    "fullText": "功能更新\n【NEW】帮助中心新增教学视频！分模块细致讲解，一看就会，效率翻倍！\n来自极风WMS团队2025-12-30 01:15:07\n\n📢本周功能更新清单来啦！\n\n \n\n🔶【帮助中心】\n\n帮助中心新增视频教程，分模块细致讲解，帮助快速掌握系统使用方法，学习系统更简单高效，遇到具体操作问题时可快速定位解决方案。\n\n \n\n \n\n🔶【计费】\n\n支持配置各类型物流附加费规则，包括超长超重、偏远、燃油等，可按固定金额、费率、分区等多维度设置。解决仓库因附加费设置不完善导致的物流成本、利润核算不准确问题，实现附加费的精细化管控和规范化管理。\n\n \n\n \n\n🔶【出库】\n\n出库设置新增“仓库异常包裹推送OMS”，支持选择需推送的异常包裹原因。提升异常订单处理效率，降低仓配与卖家的沟通成本。\n\n \n\n \n\n🔶【退货】\n\n1）WMS支持创建退货单；2）新增暂存处理方式；3）扫描退货页可增加商品；4）能按退货处理方式进行计费。\n\n适配仓库实际作业场景，既提升了退货流程的灵活性与操作效率，也实现了退货成本的精细化核算。\n\n \n\n \n\n🔶【分销】\n\n分销商品退货后可自动退回商品分销价，规范退货环节的费用结算流程，提升分销商家的使用体验。\n\n \n\n \n\n22/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251230091416/99aef4ff7fab3a4167ab1008d49a02a1.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251230091423/d6cfbbbcaa62f5a1e8b5ffe6086e53d5.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251230091431/33e005cab9215f27e3f183ff09997fcf.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251230091440/d328156b7545d4a3fa8f2e2276ed774d.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251230091449/0ba465ff95844f902823026dbff03782.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251230091500/6ba510ca7d46a65d0e241c629dad6570.jpg"
+    ]
+  },
+  {
+    "pageIndex": 23,
+    "title": "【NEW】支持提拆派全流程管理！提柜 / 拆柜 / 派送轻松搞定，操作流畅又省心～",
+    "fullText": "功能更新\n【NEW】支持提拆派全流程管理！提柜 / 拆柜 / 派送轻松搞定，操作流畅又省心～\n来自极风WMS团队2025-12-21 23:50:38\n\n📢本周新功能清单来啦！\n\n\n🔶【提拆派】\n\n新增「提拆派」模块，覆盖提柜、拆柜、派送一体化业务场景全流程管理。无需切换多系统，减少信息差与沟通成本，实时追踪各环节运踪，提升全链路业务的操作与管理效率。\n\n \n\n \n\n🔶【订单】\n\n波次面单增加波次信息，均展示波次号、打印时间、波次内序号，方便仓库分拣、核对订单，减少操作混淆，提升履约效率。\n\n \n\n🔶【B2B】\n\n出库单列表可直接查看每个出库单对应的备注信息，方便仓库人员快速获取订单特殊说明，减少操作步骤，提升出库单的核对与处理效率。\n\n \n\n \n\n🔶【新增物流】\n\nltl\n\n23/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251222075030/6a7171559f124a7bca8a2e69cbec6432.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251222074936/a02dfbebb2141e2730a3d0074ace8897.jpg"
+    ]
+  },
+  {
+    "pageIndex": 24,
+    "title": "【NEW】分销商品按客户星级定价，分销积极性拉满，仓内库存周转快翻倍！",
+    "fullText": "功能更新\n【NEW】分销商品按客户星级定价，分销积极性拉满，仓内库存周转快翻倍！\n来自极风WMS团队2025-12-14 22:22:50\n\n📢本周功能更新来啦！\n\n \n\n⭐【分销】\n\n对分销客户进行分级管理，按不同星级设置分销商品价格\n\n规范分销价格体系，调动客户分销积极性，加速仓内库存消化，最大化分销收益。\n\n \n\n \n\n⭐【新增物流】\n\n京东国际\n\n24/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251215062402/102aab31b725b0532c9251f45907ff65.jpg"
+    ]
+  },
+  {
+    "pageIndex": 25,
+    "title": "【NEW】入库支持按托收货上架！入库更省心，效率还翻倍！",
+    "fullText": "功能更新\n【NEW】入库支持按托收货上架！入库更省心，效率还翻倍！\n来自极风WMS团队2025-12-08 00:43:52\n\n📢本周功能更新清单来啦！\n\n \n\n🔶【入库】\n\n支持按托收货上架，大幅提升整柜或整车到货的收货/上架效率，且满足按托计费需求，减少人工误差。\n\n \n\n \n\n🔶【B2B】\n\n出库单详情页及扫码换标/装箱页均展示卖家备注，通过备注明确操作需求，避免拣货、换标等环节混淆，提升 B2B 出库操作精准度与效率。\n\n \n\n🔶【物流】\n\n使用黑猫物流，面单上可展示买家【指定送达时间】，满足物流配送需求，减少沟通成本，提升黑猫物流订单的履约准确性。\n\n \n\n \n\n🔶【新增物流】\n\nBuffalo\n\nWestnovo ground\n\nJ&T EXPRESS-ID（极兔-印尼）\n\n25/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251208084304/d58149ba660835aab090ae6946d49fc7.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251208084313/bae0322ae7d48285a148ca46a31c405e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251208084322/06324bdfdd7d39f1c520f0952db18c31.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251208084331/690211fd1028e337d7e241d3c07f7709.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251208084339/0e7cfcf2b49079ce05bee417b25df8a6.jpg"
+    ]
+  },
+  {
+    "pageIndex": 26,
+    "title": "【NEW】平台订单支持智能分仓来发货！自动选有货低价仓，高效又省钱！",
+    "fullText": "功能更新\n【NEW】平台订单支持智能分仓来发货！自动选有货低价仓，高效又省钱！\n来自极风WMS团队2025-12-03 02:48:19\n\n📢多仓备货的卖家可在订单规则中开启 “智能分仓”，系统会自动筛选有库存的仓库并匹配运费最低的物流，不仅避免因仓库缺货导致订单规则失效的问题，又能节省发货成本。\n\n \n\n26/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251203104712/b12432ed715eb9870a09e8ca23cc6a85.jpg"
+    ]
+  },
+  {
+    "pageIndex": 27,
+    "title": "【NEW】Temu平台订单支持线下物流比价，轻松选出高性价比渠道",
+    "fullText": "功能更新\n【NEW】Temu平台订单支持线下物流比价，轻松选出高性价比渠道\n来自极风WMS团队2025-11-30 22:40:50\n\n📢本周功能更新清单来啦！\n\n \n\n🔶【物流】\n\ntemu平台订单支持线下物流比价，直观对比不同线下物流的预估价格，方便选择性价比更高的物流渠道。\n\n \n\n \n\n🔶【计费】\n\nFBA和B2B仓租支持成本设置，不用手动额外统计就能实现 FBA 退货、B2B 业务的仓租成本精准核算，让成本统计、对账分析更全面清晰。\n\n \n\n \n\n🔶【费用】\n\n支持导入表格批量修改未出账费用，替代手动逐条修改，大幅提升费用调整效率，同时保留变更记录和资金流水，确保费用修改可追溯。\n\n \n\n \n\n🔶【出库】\n\n波次拣货单支持生成二维码图形，满足不同仓库的扫码设备适配需求，让拣货流程更灵活顺畅。\n\n \n\n \n\n🔶【新增物流商】\n\nYWE（美国）\n\n来客\n\nship-233\n\n27/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251201063955/1fb31bdd17256158f8984c0de6d16375.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251201064003/ac9658cbd91f503948f16b114f9b4f11.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251201064012/2556ebe4d5f7a4d282cab9f77d6cf151.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251201064020/210ad2aa788b1b3fe1d42d4c01980517.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251201064028/21f46a6c04fb8a20cfede1966cd08b5a.jpg"
+    ]
+  },
+  {
+    "pageIndex": 28,
+    "title": "【NEW】平台订单包裹交运状态可查看，漏扫、丢件难题快速解决！",
+    "fullText": "功能更新\n【NEW】平台订单包裹交运状态可查看，漏扫、丢件难题快速解决！\n来自极风WMS团队2025-11-26 23:20:26\n\n🔎出库包裹列表页支持查看包裹的交运状态（数据来源于电商平台，准确率与平台同步），帮助仓库直观了解快递揽收情况，无需等卖家反馈就可快速定位漏扫/未揽收的包裹，及时跟进处理。\n\n \n\n28/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251127072010/877a6471373f43f55ef10b52131d5675.jpg"
+    ]
+  },
+  {
+    "pageIndex": 29,
+    "title": "【NEW】PDA 扫描退货页可快捷打印标签，操作丝滑效率飙升！",
+    "fullText": "功能更新\n【NEW】PDA 扫描退货页可快捷打印标签，操作丝滑效率飙升！\n来自极风WMS团队2025-11-24 04:49:05\n\n🔔本周功能更新清单来啦！\n\n \n\n🔶【入库】\n\n1️⃣标准入库和退货入库增加“沟通记录”功能，且支持上传和查看图片。方便仓库人员记录、查看入库相关沟通内容及凭证，明确入库过程中的需求或问题，提升入库协作效率。\n\n \n\n \n\n2️⃣首次进入仓库的新 SKU 在入库单中会自动标记，方便仓库人员提前准备标签、规划上架位置等库内操作，提升入库和补货的准确性与效率。\n\n \n\n \n\n🔶【PDA】\n\n1️⃣扫描退货商品详情页新增“标签打印”功能，无需切换操作页面，实现SKU标签的快捷打印，提升退货流程效率。\n\n \n\n \n\n2️⃣扫描收货和上架列表页展示每笔单据的总箱数和已收货 / 上架箱数，帮助仓库人员直观掌握每笔单据的收货、上架进度，清晰知晓任务的完成情况，避免漏收、漏上架。\n\n \n\n \n\n🔶【费用】\n\n在业务费用导出表格里新增“货主”信息列，方便在分销业务中明确费用归属的货主，方便费用的核对，让对账更简单高效。\n\n \n\n \n\n🔶【代理仓】\n\n支持代理仓直接使用自己的物流渠道下单，推单发货更灵活。\n\n \n\n🔶【新增物流】\n\nCJ（韩国）\n\n29/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251124124748/9bbdd3dd6e13aec96ee84cc9c5df1552.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251124124800/7f1b800a9dc59e799547e39e947c2422.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251124124809/d76e714e2ea8e967da401584608da9bc.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251124124817/ec015673866ec82f78c6082f79ae0099.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251124124825/15297d375cde3d36207d6215b795db76.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251124124833/bf80f5e362c0e608c6f39c0c24f402c0.jpg"
+    ]
+  },
+  {
+    "pageIndex": 30,
+    "title": "【NEW】系统支持查看不同国家仓库时区，时间节点把控更精准！",
+    "fullText": "功能更新\n【NEW】系统支持查看不同国家仓库时区，时间节点把控更精准！\n来自极风WMS团队2025-11-17 05:22:06\n\n本周功能更新清单来啦！\n \n\n【基础设置】\n\n系统支持查看不同国家仓库时区，便于跨国仓库运营人员准确掌握各地区时间，精准把控时间节点，提升跨国业务协作的效率。\n\n \n\n \n\n【代理仓】\n\nY2订单支持通过代理仓推送至主仓（极风对极风）完成换单发货，省去多余步骤，提升代理仓 Y2 订单换面单发货的操作效率与便捷性。\n\n \n\n【B2B】\n\n1、拣货单支持展示箱内SKU，方便仓库核对，减少误差，提升B2B出库的拣货准确性和效率。\n\n \n\n \n\n2、B2B入库支持扫描自定义箱号上架，提升B2B货物上架的便捷性，入库操作流程更灵活。\n\n \n\n【入库】\n\n1、搜索入库单支持批量搜索，方便一次性查询多个入库单的处理进度，无需逐个搜索，大幅提升查询效率，满足批量管理需求。\n\n \n\n \n\n2、入库单多SKU打印标签增加区分标识，帮助记录每个SKU标签数量，提升入库操作的准确性与效率。\n\n \n\n \n\n【费用】\n\n1、费用详情里可看到依据的计费策略，有利于快速核对费用准确性，提升费用管理效率。\n\n \n\n \n\n2、支持导入表格批量申请扣费，无需手动逐条申请，大幅提升扣费申请的效率，满足批量扣费的需求。\n\n \n\n \n\n3、待计费的扣费申请支持批量审核，减少重复操作，提升扣费申请的审核效率，加快费用处理的整体进度。\n\n \n\n \n\n【物流】\n\n物流分区规则、物流计费策略页分区规则支持分页展示，提升查看的效率，优化使用体验。\n\n \n\n \n\n【新增物流】\n\nAramex Australia\n\n晨宁（ICC）\n\nZappy NZ\n\n30/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117131757/086a7a09bb751e0b29f883e07458b64b.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117131808/df2957a70af4bc0265758c64b2be554c.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117131813/f7168a9fc3e6fd302599cddd3f70b36f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117131822/1a54d3fc5693416f4a85db9b5452d554.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117131841/4a43b244ffc1013ca532e1f50efb6370.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117131853/5635fc7a29ca4422d2b08d98ea645c34.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117132032/6a6ebe6daf2cd8725681dc0d25830079.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117132045/88d3ac104aed9cc41f6cd049dac3fdb2.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117132056/a65493730689cf2d55bbf8b35d7d3b50.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117132110/c67b1d0c856013104cee565d12d23c16.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251117132120/61ec36df1e48634cfa09648ba2f7f6b6.jpg"
+    ]
+  },
+  {
+    "pageIndex": 31,
+    "title": "【NEW】极风代理仓商品自动同步，数据准计费稳！",
+    "fullText": "功能更新\n【NEW】极风代理仓商品自动同步，数据准计费稳！\n来自极风WMS团队2025-11-10 04:48:50\n\n本周功能更新清单来啦！\n\n \n\n【代理仓】\n\n极风代理仓支持商品自动同步（极风对极风），保障商品数据精准性，避免因代理仓商品实际规格数据未更新导致的计费问题。\n\n \n\n【出库】\n\n1、支持按货架位生成波次，便于拣货人员在特定货架区域集中拣货，提升拣货效率，同时精细化波次管理，优化作业流程。\n\n \n\n \n\n2、生成波次选货区时支持选 “对应单个货区的包裹”，减少拣货路径分散，提升拣货效率，优化波次管理的精细化程度。\n\n \n\n \n\n3、出库单列表可按过期时间筛选包裹，方便快速了解订单时效信息，合理安排出库优先级，避免包裹过期影响履约，提升仓储出库的精准度与效率。\n\n \n\n \n\n【入库】\n\n标准入库和 B2B 入库上架时，支持批量添加货架位，大幅提升入库上架的操作效率，让入库上架流程更流畅。\n\n \n\n \n\n【库存】\n\n移货单增加移货条码和操作人展示，便于 PDA 快速识别移货单号，提升移货操作效率，同时增强库存管理操作的可追溯性。\n\n \n\n \n\n【B2B】\n\n出库单支持按“FULL入仓单号”查询，实现出库单与入仓单的关联追溯，出库单查询更快更准。\n\n \n\n \n\n【计费】\n\n业务费用列表支持申请手动扣费，且一件代发订单费用详情及导出新增 “平台”信息，整体提升业务费用管理的便捷性、精准度和灵活性。\n\n \n\n \n\n【新增物流】\n\nMondial Relay\n\nUSENT-Canada Post\n\n大迈未来\n\n31/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124725/ad628735e5a85abbe595434826f41841.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124735/9fa4c7307dad86d9b888f2e41d30d14f.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124743/a23bed03dc6b753a72fe33451802e35e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124805/153d27265eb840ad546a9d47d96d5b36.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124819/8d9ed80dad2e947db55f272177f2508e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124830/9a129de38f536dfcb44ebc70e53fe6a2.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251110124839/41665e6e8624a58e5024dbd883a9cd93.jpg"
+    ]
+  },
+  {
+    "pageIndex": 32,
+    "title": "【系统升级通知】极风WMS系统11月9日停服维护8小时",
+    "fullText": "功能更新\n【系统升级通知】极风WMS系统11月9日停服维护8小时\n来自极风WMS团队2025-11-07 02:32:31\n\n为适配业务规模扩大与数据量增长需求，极风 WMS 系统将进行服务器升级。本次升级旨在提升业务处理效率，为大家提供更流畅的操作体验。升级期间系统将暂停服务，具体安排如下：\n\n \n\n一、服务器升级及停服时间\n北京时间：2025 年 11 月 9 日（周日）09:00-17:00（共计 8 小时）\nUTC 时间：2025 年 11 月 9 日 01:00-09:00\n \n二、温馨提示\n\n若升级工作提前完成，我们将第一时间在服务群内通知大家，请留意群消息。\n\n \n\n感谢大家的理解与配合！\n\n32/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 33,
+    "title": "【NEW】面单水印可自定义缩放，一个模板适配全渠道，准确又高效！",
+    "fullText": "功能更新\n【NEW】面单水印可自定义缩放，一个模板适配全渠道，准确又高效！\n来自极风WMS团队2025-11-03 04:55:43\n\n本周功能更新清单来啦！\n\n \n【面单水印】\n\n支持面单自定义缩放，确保面单信息完整清晰，满足多平台多物流渠道的面单样式适配需求，大幅提升配置效率。\n\n \n\n \n【PDA】\n\n增加二次分拣功能\n\n可突破仓库打包区面积有限、爆单时打包台不足的限制，灵活通过移动端高效精准完成分拣流程。\n\n \n\n \n【计费】\n\n手动计费金额精确到4位小数，可减少金额误差，适配精细计费与财务对账需求。\n\n \n\n \n【物流】\n\n物流商分组优化\n\n物流商分为3个类型，添加时可快速定位物流商类型，减少在大量物流商中盲筛的时间，让物流商选择更精准高效。\n\n \n\n \n\n【新增物流】\n\nFastway IE\n\n哲盟\n\n鸣锐云\n\nMelhor Envio\n\nDPD Classic\n\nCORREOS-ES（西班牙邮政）\n\n33/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251103125504/5552973409d6de9593b3d7803259c5c8.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251103125510/a1778d3273828301a30bacf344ee8edf.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251103125517/14e8c6dd67548cddaea231a3dc69d869.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251103125523/ed7b0af064f50c3dcf5dc1e461620e02.jpg"
+    ]
+  },
+  {
+    "pageIndex": 34,
+    "title": "【NEW】退货单新增平台订单号！单据搜索选择更多样化",
+    "fullText": "功能更新\n【NEW】退货单新增平台订单号！单据搜索选择更多样化\n来自极风WMS团队2025-10-27 05:40:07\n\n本周功能更新来啦！\n\n \n\n【退货】\n\n退货新增平台订单号，搜索选择更多样化，方便快速定位到单据。\n\n \n\n【出库】\n\n出库单详情页展示备注详情，方便快速获取客户重要信息。\n\n \n\n \n\n【新增物流商】\n\neasypost\n\n3PL\n\n34/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251027133950/404dfaaa3955beacde0df8787a02e574.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251027133956/db01b7441ca98d8250cd8aaaed27841f.jpg"
+    ]
+  },
+  {
+    "pageIndex": 35,
+    "title": "【NEW】利润自动计算，每笔盈利都清晰，财务管理更省心",
+    "fullText": "功能更新\n【NEW】利润自动计算，每笔盈利都清晰，财务管理更省心\n来自极风WMS团队2025-10-20 01:26:22\n\n本周功能更新清单来啦！\n \n\n【利润计算】\n\n在利润计算列表可清晰看到每笔单据的成本、利润和利润率，方便财务统计和业务分析。\n\n \n\n \n\n【客户】\n\n客户开户选币种后，若该币种下无计费模板，可通过 “创建计费模板” 入口快速创建，使得开户计费配置流程更顺畅。\n\n \n\n \n\n【出库】\n\n1、扫描包装优化\n\n支持拣货单批量标记打印状态；扫描商品标签/分拣框，打印页面新增波次明细，分状态展示包裹；拆分爆款波次为 “爆款单品 / 多品波次”，分别提供打印方式选择；新增扫描拣货单打印面单时是否校验SKU的选项。整体提升扫描包装操作效率与准确性，让信息更清晰、场景适配性更强，减少人工成本。\n\n \n\n \n\n2、补发订单增加筛选条件及标识\n\n在出库单页面新增【是否补发单】筛选条件，并添加【补发】标识，能快速筛补发包裹，方便统计退费用。\n\n \n\n \n\n【新增物流】\n\n打单易\n\n35/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251020092440/5a95177580ee3a2abbcf9878fb707ab5.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251020092458/2cbc55508fdfbb1fe1adfa217543521b.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251020092513/d9cb1eb79bf8b20682ab1722da27cec6.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251020092525/5f446436db0cba4b81a14a564da39f0e.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251020092538/f51db8e5567859f95c05bb3f8135d122.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251020092549/c9b939fd021600aa033e9346d4e228b5.jpg"
+    ]
+  },
+  {
+    "pageIndex": 36,
+    "title": "【NEW】仓租计费可直接设旺季附加费，不用手动补算，灵活又省心～",
+    "fullText": "功能更新\n【NEW】仓租计费可直接设旺季附加费，不用手动补算，灵活又省心～\n来自极风WMS团队2025-10-13 04:43:18\n\n本周功能更新清单来啦！\n\n \n\n【计费】\n\n仓租费计算优化\n\n新增 FBA 退货、B2B 仓租类型，各业务类型的仓租分开创建策略和统计，且支持灵活设置库龄阶梯进行计费、还能设置旺季附加费，一件代发还支持首单免租。既能适配不同仓库的多样化收费场景，也让对账和统计各业务的仓租成本更省轻松高效。\n\n \n\n【出库】\n\n出库包裹列表显示交运状态\n\n在 “已发货” 状态的出库包裹列表中，新增【交运状态】列，快速了解包裹是否已交给物流商，高效掌握订单物流进度。\n\n \n\n【客户】\n\n客户开户增加<对接人>筛选条件，能快速通过对接人找到对应客户；列表<已分配仓库>可直接看到仓库及对应的计费模板，核对更高效，管理客户更省心。\n\n \n\n【退货】\n\n退货列表按筛选、勾选导出\n\n按照需求精准导出退货数据，提升退货数据管理的效率与精准度。\n\n \n\n【新增物流】\n\nNEO\n\n36/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251013124215/b9d6dc3ddf6e833d0f5a5cb5a83250cb.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251013124221/40855c141f539b525d16f78e5b32e497.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251013124230/7926191f060eec16dead13d300b1a773.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251013124238/899c0d11555ab8f9a66881dc36979305.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20251013124244/96f495aa3c716e76b0864d6af0b623b4.jpg"
+    ]
+  },
+  {
+    "pageIndex": 37,
+    "title": "国庆假期值班安排",
+    "fullText": "功能更新\n国庆假期值班安排\n来自极风WMS团队2025-09-30 02:01:47\n\n37/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250930100217/add92d3700a8f38f63eaec040267d79d.jpg"
+    ]
+  },
+  {
+    "pageIndex": 38,
+    "title": "【NEW】波次里的包裹、面单、拣货单都按货架位优先级统一排序，分拣打包更流畅少出错",
+    "fullText": "功能更新\n【NEW】波次里的包裹、面单、拣货单都按货架位优先级统一排序，分拣打包更流畅少出错\n来自极风WMS团队2025-09-29 04:11:55\n\n本周功能更新清单来啦！\n\n \n\n【出库】\n\n1、波次包裹排序规则保持一致\n\n生成波次包裹排序默认按 “货架位拣货优先级排序”，波次内包裹、面单、拣货单三者顺序完全一致，减少操作差错，提升分拣打包的准确性与流畅度。\n\n \n\n2、出库包裹 “截单成功” 页面新增 “面单取消” 状态，方便及时掌握面单取消情况，顺畅推进流程\n\n \n\n【库存】\n\n库存流水可以显示库存调整单备注，可快速获取调整说明，提升库存管理的效率与可追溯性。\n\n \n\n【PDA】\n\n支持物流单号截取\n\n物流单号扫描可做截取处理，适配物流商单号规则，解决物流单号无法匹配系统运单号的问题。\n\n \n\n【退货】\n\n退货流程优化\n\n“收货” 和 “上架” 步骤可分开，还能对退货单进行标记异常、强制完结、销毁等操作，也支持和客户端传文件沟通，让仓库处理退货流程更顺畅、少出错。\n\n \n\n【新增物流】\n\n上海锐诺\n\n38/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250930012317/598072cc5afac09dbe05731574aa72a0.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250930012328/578b43fcd2bae9d0e5a53d4af7669b66.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250930012342/b993495682e15547304ba69c9bb5303a.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250930012352/16aa368570df467a22d8f46480bb2792.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250930012402/5d0da162856ef2eb13eda5d69085f615.jpg"
+    ]
+  },
+  {
+    "pageIndex": 39,
+    "title": "【NEW】二次分拣支持查看商品图片和包裹详情，核对更精准，发货不出错",
+    "fullText": "功能更新\n【NEW】二次分拣支持查看商品图片和包裹详情，核对更精准，发货不出错\n来自极风WMS团队2025-09-22 03:02:47\n\n本周功能更新清单来啦！\n\n \n\n【出库】\n\n二次分拣优化\n\n1、波次列表能直接看分拣进度，方便核对和及时跟进；\n\n2、二次分拣可调整播种墙列数，且支持查看商品图片/sku/产品名称，减少发货错误。\n\n \n\n \n\n【PDA】\n\n1、PDA扫描发货后拍照支持上传多张\n\n方便完整记录发货过程，为售后溯源提供全面可视化依据，减少争议处理耗时。\n\n2、发货记录新增数据看板\n\n快速了解不同周期的发货量，助力及时调整仓储人力和备货计划，提升运营效率。\n\n \n\n \n\n【新增物流】\n\nDe-TWO-004\n\neasyshipping\n\nShipbuy\n\n \n\n【平台对接】\n\n乐天\n\nCoupang\n\n39/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250922104139/6a9a7e53202c3b93ed19dd6710abec1b.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250922110052/b80e66d680a44378945b1656817e4616.jpg"
+    ]
+  },
+  {
+    "pageIndex": 40,
+    "title": "【NEW】入库单一键上架；支持OMS授权shopify、ozon实现一件代发全流程",
+    "fullText": "功能更新\n【NEW】入库单一键上架；支持OMS授权shopify、ozon实现一件代发全流程\n来自极风WMS团队2025-09-15 00:27:24\n\n本周功能更新清单来啦！\n\n \n\n【入库】\n\n入库流程配置：入库单支持直接上架&分批签收\n\n可根据自身业务特点和需求，简化或调整入库流程，满足多样化业务场景需求\n\n \n\n【出库】\n\n面单水印支持设置商品名称水印\n\n方便仓储人员核对以及迅速拣货，提高出库效率\n\n \n\n【平台店铺对接】\n\nshopify\n\nozon\n\n \n\n【新增物流】\n\n颐龙国际\n\n联合数字\n\nShippSyS\n\nJ&T Express MY\n\n40/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250915103355/ec80f9e4bbd2b552446b9f3e3866c9c9.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250915103403/a64def4715737797a9889e2eede3f956.jpg"
+    ]
+  },
+  {
+    "pageIndex": 41,
+    "title": "【NEW】设置页各模块附帮助文档，直接跟着步骤操作，1分钟完成配置！",
+    "fullText": "功能更新\n【NEW】设置页各模块附帮助文档，直接跟着步骤操作，1分钟完成配置！\n来自极风WMS团队2025-09-07 23:16:03\n\n本周功能更新清单来了！\n\n【设置】\n\n系统设置各模块新增 “帮助文档” 链接，可直接跳转至对应操作说明，跟着步骤操作，省时少出错。\n\n \n\n【出库】\n\n拣货车标签支持生成条形码或二维码，可按需求进行选择。\n\n \n\n【新增物流】\n\nship-cheap\n\nFeiAnpost\n\ndadan.us\n\n41/50\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250908070716/33cef58dfd28052331a205aaede3aded.jpg",
+      "https://download.jfwms.com/prod/static/back_help/img/81/20250908070825/903af3ae315fba923e091c7703e3c0c8.jpg"
+    ]
+  },
+  {
+    "pageIndex": 42,
+    "title": "【重要】通知：TEMU半托管/本本美国站USPS下单需要等待平台面单已缴费后才可以获取面单",
+    "fullText": "功能更新\n【重要】通知：TEMU半托管/本本美国站USPS下单需要等待平台面单已缴费后才可以获取面单\n来自极风WMS团队2025-09-01 16:45:39\n\n通知：TEMU半托管/本本美国站USPS下单需要等待平台面单已缴费后才可以获取面单\n\n受TEMU平台政策影响，2025/9/1日起，使用TEMU平台面单USPS渠道的所有订单，在操作【获取运单号】后，会先留在【获取中】状态，同时，平台会返回一个面单可打印时间，到该时间之后，订单会自动获取到面单并流转到【发货中】状态！\nTMEU平台公告：https://partner-us.temu.com/announcement\n\n42/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 43,
+    "title": "【NEW】商品列表&详情页支持图片放大，找货、核货看清细节，快而不易错！",
+    "fullText": "功能更新\n【NEW】商品列表&详情页支持图片放大，找货、核货看清细节，快而不易错！\n来自极风WMS团队2025-09-01 02:41:47\n\n本周功能更新清单来啦！\n\n【商品】\n\n商品列表&详情页支持图片放大\n\n帮助准确识别目标商品，提升商品管理和筛选的效率\n\n【订单】\n\n代理仓推送使用平台物流的订单到领星时，支持匹配领星的物流渠道，确保货物通过合适的物流渠道及时、准确地发出，提升订单处理效率。\n\n【新增物流】\n\n4px\n\nPYD\n\n360dolphin\n\n西班牙CAINIAO(ES)\n\niShipping NZ\n\n越南极兔\n\ndofafo\n\necono\n\n【平台店铺对接】\n\n沃尔玛\n\nebay\n\n43/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 44,
+    "title": "【新功能】沃尔玛店铺免费授权、商品配对、处理订单流程",
+    "fullText": "功能更新\n【新功能】沃尔玛店铺免费授权、商品配对、处理订单流程\n来自极风WMS团队2025-08-28 18:38:42\n\n沃尔玛店铺免费授权、商品配对、处理订单流程\n\nhttps://help.jfwms.com/zh_CN/doc-article/1005060829-\n\n44/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 45,
+    "title": "【新功能】B2B 增加拣货 /扫码贴标/ 装箱功能！海外仓轻松玩转大货中转",
+    "fullText": "功能更新\n【新功能】B2B 增加拣货 /扫码贴标/ 装箱功能！海外仓轻松玩转大货中转\n来自极风WMS团队2025-08-25 17:10:49\n\n本周功能更新清单来啦！\n\n【B2B】\n新增大货拣货、扫码贴标、装箱等功能，让大货中转流程开展更顺畅。\n【计费】\n1、仓租策略自定义库龄阶梯\n支持自己填阶梯数值，能灵活根据自身需求去定义库龄阶梯。\n2、重新计费增加记录查询\n两个入口可查看：一是刚完成重新计费时的弹窗；二是在 “业务费用” 页面找，方便用户查询，省时还省心。\n3、标准入库单计费策略，如果计费方式是到仓方式，每一级阶梯都支持删除，调整计费规则更灵活便捷。\n【充值】\n审核客户充值金额时可自主填写 “到账金额”，审核更灵活，操作更方便。\n【入库】\n标准入库单导出增加预计到达日期，方便货物到库时对照日期快速找到对应单据，提高入库效率。\n【出库】\n出库单增加门牌号，帮助更顺利获取物流面单，减少发货延误等问题。\n【新增物流】\nJ&T EXPRESS-SG\n蜴国际\n小白\n\n45/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 46,
+    "title": "【新功能】B2B大货中转入库、拣货、扫码换标、装箱出库全流程",
+    "fullText": "功能更新\n【新功能】B2B大货中转入库、拣货、扫码换标、装箱出库全流程\n来自极风WMS团队2025-08-21 03:43:45\n\nB2B大货中转入库、拣货、扫码换标、装箱出库全流程\nhttps://help.jfwms.com/zh_CN/doc-article/1004950821-\n\n46/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 47,
+    "title": "【新功能】对接领星ERP+极风代理仓与主仓实现库存同步",
+    "fullText": "功能更新\n【新功能】对接领星ERP+极风代理仓与主仓实现库存同步\n来自极风WMS团队2025-08-17 21:44:51\n\n本周功能更新清单来啦！\n【出库】\n\nPDA拣货操作跳过\n\n拣货过程中，可根据实际情况暂时跳过当前商品，优先处理其他商品，减少因单个商品问题导致的拣货停滞，推动拣货流程有序推进，提升拣货操作的灵活性与整体效率。\n\n【代理仓】\n\n极风代理仓与主仓实现库存同步，支持自动和手动触发同步，避免因数据差异导致的订单处理错误。\n\n【新增物流】\n\n华美天马\n\n杰尼物流\n\n【新增ERP】\n\n领星ERP\n\n47/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 48,
+    "title": "【新功能】出库包裹增加图片显示，大大提升出库效率和准确率！",
+    "fullText": "功能更新\n【新功能】出库包裹增加图片显示，大大提升出库效率和准确率！\n来自极风WMS团队2025-08-10 21:43:24\n\n本周新功能来啦！\n\n【出库】\n\n出库包裹增加图片显示\n\n在出库包裹列表中包裹信息增加图片显示，可直观核对包裹对应的商品，减少因信息不明确导致的错发、漏发问题，提升出库复核效率与准确性\n\n【新增物流】\n\n成运制单系统物流\n\n意大利邮政\n\nWBMS尾程物流\n\n48/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 49,
+    "title": "【NEW】多个店小秘账号都可直接授权在一个OMS账号上",
+    "fullText": "功能更新\n【NEW】多个店小秘账号都可直接授权在一个OMS账号上\n来自极风WMS团队2025-08-06 21:24:01\n\n【NEW】多个店小秘账号都可直接授权在一个OMS账号上\n\n更省事：可统一管理所有店小秘账号店铺订单、库存、发货，不易出错\n\n更省心：操作方便，多账户数据集中且实时同步，进一步提升效率\n\n更省钱：降低多店铺运营成本\n\n49/50\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 50,
+    "title": "【新功能】入库可分批签收，灵活适配多批到货场景",
+    "fullText": "功能更新\n【新功能】入库可分批签收，灵活适配多批到货场景\n来自极风WMS团队2025-08-04 04:00:24\n\n本周功能清单来啦！\n\n【入库】\n\n1、入库单分批签收\n\n支持分批次签收、收货、上架，无需等待整单到货，灵活适配 “多批到货” 场景，保障流程稳定运行，减少因整单等待导致的入库效率损耗。\n\n2、箱唛模板-装箱信息列宽调整\n\n可根据装箱信息灵活设置列宽，确保箱唛内容清晰完整，适配多样化的打印需求与使用场景。\n\n【平台订单】\n\n平台订单增加已取消列表页\n\n实现取消订单的集中管理、精准追溯与高效操作，解决原流程中取消订单分散、状态不清晰的问题。\n\n50/50\n关闭\n上一条",
+    "images": []
+  },
+  {
+    "pageIndex": 1,
+    "title": "【7月新功能上线】计费更灵活+商品配对更智能+FBA退货更省心",
+    "fullText": "功能更新\n【7月新功能上线】计费更灵活+商品配对更智能+FBA退货更省心\n来自极风WMS团队2025-07-29 01:26:06\n\n极风WMS7月功能更新清单，系统操作更丝滑，且满足更多业务需求！\n\n \n\n【计费】\n\n1.自定义规则计费，规则支持复制\n\n创建多个规则计费时，可一键复制现有模板再进行细节修改，减少重复操作。\n\n2.标准入库单自定义规则计费，计费单位增加“单箱商品数量”\n\n可根据商品装箱数量精准核算入库费用，满足更多的计费需求。\n\n \n\n【平台订单】\n\n1.OMS商品配对优化，支持对已经同步的订单生效\n\n单个创建/导入创建产品映射关系成功后，系统会自动检索未匹配到商品 SKU 的异常订单，并自动完成匹配关系，无需手动操作，处理更高效。\n\n2.平台订单支持线下物流预估邮费&运费试算报错文案展示\n\n便于提前核算成本；同时，运费试算异常时，可帮助快速定位问题，减少因信息不明导致的操作延误。\n\n3.TEMU官方仓Scanform\n\nTEMU合作仓物流可直接获取 scanform ，物流揽收时扫描它即可，无需逐个扫包裹，大幅提升揽收效率。\n\n \n\n【FBA退货】\n\nFBA退货换标重构\n\n可根据卖家处理意见分为上架、换标装箱上架、暂存三种流程，满足不同卖家对FBA退货处理的差异化要求。\n\n \n\n【代理仓】\n\n代理仓推送使用平台物流的订单到易仓时，支持匹配易仓的物流渠道\n\n实现代理仓与易仓间平台物流订单的无缝对接，确保平台物流订单高效流转。\n\n \n\n【物流】\n\n1.新增收取面单取消手续费功能\n\n若面单取消成功，可自动核算并扣除手续费，无需人工手动记录或追讨，提升效率。\n\n2.新增物流\n\nSwiftX、Shipbest、鼎承国际、YWE、8-Miles Express 、铭腾、日本黑猫、CIRRO\n\n1/17\n关闭\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 2,
+    "title": "【New】新功能：卖家在temu后台购买面单同步OMS并推送极风WMS发货",
+    "fullText": "功能更新\n【New】新功能：卖家在temu后台购买面单同步OMS并推送极风WMS发货\n来自极风WMS团队2025-07-02 18:54:44\n\n【New】新功能\n卖家在temu后台购买面单同步OMS并推送极风WMS发货\nhttps://help.jfwms.com/zh_CN/doc-article/1003150703-\n\n2/17\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 3,
+    "title": "【New】新功能 商品序列号管理",
+    "fullText": "功能更新\n【New】新功能 商品序列号管理\n来自极风WMS团队2025-07-02 05:25:21\n\n【New】新功能【商品序列号管理】\n商品序列号管理（商品序列号开启、入库、出库操作）\nhttps://help.jfwms.com/zh_CN/doc-article/1003140702-\n\n \n\n温馨提示：1.商品序列号管理适用于（1）食品、化妆品等有保质期的产品；（2）手机、电脑等高货价值和有保修期的产品\n\n                 2.商品序列号管理非全部海外仓开放，有需要的海外仓一定要先学习帮助文档和教学视频，再在工作日找实施人员开通\n\n3/17\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 4,
+    "title": "【New】新功能-OMS系统支持亚马逊授权与订单处理",
+    "fullText": "功能更新\n【New】新功能-OMS系统支持亚马逊授权与订单处理\n来自极风WMS团队2025-06-26 19:38:26\n\n【New】新功能-OMS系统支持亚马逊授权与订单处理\n\n亚马逊店铺授权OMS处理订单流程\nhttps://help.jfwms.com/zh_CN/doc-article/1003120627-\n\n4/17\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 5,
+    "title": "【新功能】temuY2自定义打印标签+国内收货+海外仓扫码换单！",
+    "fullText": "功能更新\n【新功能】temuY2自定义打印标签+国内收货+海外仓扫码换单！\n来自极风WMS团队2025-06-24 06:18:00\n\n【新功能】temuY2自定义打印标签+国内收货+海外仓扫码换单！\n\n【卖家端（OMS教学）】\n1.TEMU店铺直接授权卖家端（OMS）\nhttps://help.jfwms.com/zh_CN/doc-article/1001351204-\n2.temu仓库配对、物流配对、商品配对（OMS）\nhttps://help.jfwms.com/zh_CN/doc-article/1002690512-\n3.卖家（OMS）temuY2店铺一键创建直邮订单+OMS线上比价+打印自定义直邮标签\nhttps://help.jfwms.com/zh_CN/doc-article/1002700512-\n4.卖家查看与修改temuY2直邮订单产品\nhttps://help.jfwms.com/zh_CN/doc-article/1003090624-\n5.卖家客户根据收件人地址自动分仓发货\nhttps://help.jfwms.com/zh_CN/doc-article/1002670509\n\n【仓库端（WMS）教学】\n1.国内仓库TemuY2直邮订单收货、签收管理\nhttps://help.jfwms.com/zh_CN/doc-article/1003100624-\n2.temuY2直邮订单，海外仓扫码换单\nhttps://help.jfwms.com/zh_CN/doc-article/1002710512-\n3.temuY2直邮订单，仓库如何设置计费\nhttps://help.jfwms.com/zh_CN/doc-article/1002730513-\n\n5/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/74/20250624141524/25e1059bad15de98a0b5588d19c47eb0.jpg"
+    ]
+  },
+  {
+    "pageIndex": 6,
+    "title": "培训通知： 极风OMS打印Y2标签 以及 海外仓WMS扫码换单 新流程培训通知",
+    "fullText": "功能更新\n培训通知： 极风OMS打印Y2标签 以及 海外仓WMS扫码换单 新流程培训通知\n来自极风WMS团队2025-06-22 19:12:22\n\n亲爱的各位海外仓老板和跨境电商卖家好，\n      为了满足各位老板对temuY2订单处理需求，极风WMS海外仓系统特开展“卖家端（OMS）自定义打印temu直邮标签+头程国内收货+海外仓扫码换单专题培训”，请各位老板安排相关同事扫码预约，准时参加培训。\n      培训时间：6月24日下午15:00-16:30\n\n6/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250623031115/8ade89e26d54f4f9eb15d6d20c565bfa.jpg"
+    ]
+  },
+  {
+    "pageIndex": 7,
+    "title": "店小秘推送Temu Y2 订单+ 海外仓扫码换单培训",
+    "fullText": "功能更新\n店小秘推送Temu Y2 订单+ 海外仓扫码换单培训\n来自极风WMS团队2025-06-16 19:12:13\n\n亲爱的海外仓老板和卖家老板您好：\n    店小秘支持推送temuY2订单到极风，为了帮助各位老板熟悉整个流程，快速操作，极风WMS今天下午16:00开展此次实操培训，请老板安排公司人员参加，便于高效运营，爆单无忧。\n    请需要学习的老板扫码预约，培训开始自动提醒，如果有其他朋友需要，也可以转发培训海报。\n\n7/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250617031119/6f8363667d27b9f8b365ecd734e000a2.jpg"
+    ]
+  },
+  {
+    "pageIndex": 8,
+    "title": "【新功能上线啦】",
+    "fullText": "功能更新\n【新功能上线啦】\n来自极风WMS团队2025-06-10 07:39:33\n\n【新功能上线啦】\n本次功能优化需要特殊关注点： \n\n1.简易打单满足大多数海外仓老板拣货打单发货需求\n2.波次拣货发货的扫描分拣改成了二次分拣\n3.全部订单改成了出库包裹\n4.所有的批量打印都只支持浏览器打印\n5.订单处理流程（简易一件代发出库流程）\n\n\n订单处理流程（简易一件代发出库流程）\nhttps://help.jfwms.com/zh_CN/doc-article/1002980610-\n波次发货>波波次业务设置、生成波次\nhttps://help.jfwms.com/zh_CN/doc-article/1003000610-\n\n波次发货>单品单数、单品多数打单发货\nhttps://help.jfwms.com/zh_CN/doc-article/1002130425-\n波次发货>多品混包打印面单（边拣边分）\nhttps://help.jfwms.com/zh_CN/doc-article/1002150427-\n波次发货>多品混包打印面单（先拣后分）\nhttps://help.jfwms.com/zh_CN/doc-article/1002160427-\n仓库发货标记订单发货设置（4种仓库标记发货的方式）\nhttps://help.jfwms.com/zh_CN/doc-article/1002180427-\n \n\n仓库端自定义箱唛\nhttps://help.jfwms.com/zh_CN/doc-article/1002990610-\n\n8/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250610153813/b75f20a514fcd1e059d4ad2f24067a37.jpg"
+    ]
+  },
+  {
+    "pageIndex": 9,
+    "title": "关于开展极风WMS对接temu合作仓流程培训通知",
+    "fullText": "功能更新\n关于开展极风WMS对接temu合作仓流程培训通知\n来自极风WMS团队2025-06-09 22:24:36\n\n亲爱的极风WMS各位老板：\n\n         近期，我们注意到众多海外仓经营者在对接“Temu合作仓”的过程中普遍面临流程不够清晰、对接进度迟缓、资料填报频遇障碍、API集成存在技术难点、以及海外仓管理系统配置复杂等挑战。这些痛点在一定程度上影响了业务拓展的效率。\n         为切实解决上述难题，助力各位海外仓经营者高效、顺畅地完成Temu合作仓对接，极风WMS 联合 Temu官方合作仓商务经理团队，倾力推出 “极风WMS 对接 Temu 合作仓全流程解析与实操培训” 。\n         本次培训将深度剖析Temu合作仓准入与运营的核心流程，快速打通业务链路，抢占 Temu 平台流量红利！\n培训日期：2025年 6月 12 日（周四下午：15:00-17:00）\n报名方式：扫一扫二维码，预约直播（温馨提示： 可以邀请其他海外仓一同参加哦）\n\n9/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250610060911/8c4c9e5927f05dc934a9c6ac47a8c903.jpg"
+    ]
+  },
+  {
+    "pageIndex": 10,
+    "title": "极风 WMS 端午假期值班通知",
+    "fullText": "功能更新\n极风 WMS 端午假期值班通知\n来自极风WMS团队2025-05-30 00:47:52\n\n【极风 WMS 端午假期值班通知】\n粽叶飘香时，服务不打烊～\n✅ 值班时间：5 月 31 日（周六）、6 月 2 日（周一）\n✅ 值班期间：9:00-11:40；13:20-18:00在线解答疑问～\n❌ 休息时间：6 月 1 日（周日）休息一天\n\n祝各位老板端午安康，爆单不停～ 🌿\n\n\n10/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/39/20250530084628/dc847886e395bc8e0408dbef3814fc73.jpg"
+    ]
+  },
+  {
+    "pageIndex": 11,
+    "title": "老板们~ 两大重点功能上新了~请注意查收~",
+    "fullText": "功能更新\n老板们~ 两大重点功能上新了~请注意查收~\n来自极风WMS团队2025-05-26 19:29:22\n\n【极风新功能】\n\n1.打印面单时面单水印超出范围加打配货单（具体操作参考下方的链接）\nhttps://help.jfwms.com/zh_CN/doc-article/1002910526-\n\n2.卖家端（OMS）线下物流渠道自动比价（具体操作参考下方的链接）\nhttps://help.jfwms.com/zh_CN/doc-article/1002920527-\n\n11/17\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 12,
+    "title": "代理海外仓业务培训通知",
+    "fullText": "功能更新\n代理海外仓业务培训通知\n来自极风WMS团队2025-05-20 21:57:13\n\n亲爱的代理海外仓老板：\n\n为帮助代理海外仓老板熟悉海外仓的每个业务场景及流程，掌握代理海外仓操作技能，更好的拓展代理海外仓业务，极风海外仓系统团队将于5月27日下午举办 【代理仓业务实战培训营】，聚焦海外仓全流程操作、系统功能应用及temuY2模式打法，帮助您代理仓业务更简单、更高效、更专业，抢占跨境物流市场先机！\n一、培训时间\n2025 年 5月27日（周 二） 14:30-17:00\n二、培训地点：\n深圳市龙岗区坂田街道天安云谷二期11栋28楼大会议室\n三、核心培训内容\n1.海外仓业务全流程解析\n2.代理仓业务流程流程解析\n3.从0-1搭建代理仓业务体系\n4.temuY2新模式业务玩法\n5.代理仓互动市场拓客与客户运营\n四、报名方式\n扫描下方二维码或者点击报名链接：\n\n\n报名链接：https://www.hudongba.com/dis/5ree6xve78\n极风海外仓系统团队 致力于为代理仓老板提供全链路支持，期待与您共探跨境物流新增长！\n【温馨提示】：本期培训针对代理仓业务场景，其他业务场景培训请您关注通知。\n                      参加此次培训的老板可 提前准备笔记本电脑、极风海外仓系统账号便于现场更好实操\n\n \n\n \n\n \n\n \n\n \n\n \n\n12/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250521055536/c10b38e0690bffe2ea1583f03f4e5bc9.jpg"
+    ]
+  },
+  {
+    "pageIndex": 13,
+    "title": "重磅功能~： TemuY2国内发货+海外仓扫码换单",
+    "fullText": "功能更新\n重磅功能~： TemuY2国内发货+海外仓扫码换单\n来自极风WMS团队2025-05-14 04:40:59\n\n我们极风WMS支持 TemuY2国内发货+海外仓扫码换单啦~请大家参考下面的操作流程\n\n【卖家端（OMS教学）】\n1.TEMU店铺直接授权卖家端（OMS）\nhttps://help.jfwms.com/zh_CN/doc-article/1001351204-\n2.temu仓库配对、物流配对、商品配对（OMS）\nhttps://help.jfwms.com/zh_CN/doc-article/1002690512-\n3.temuY2店铺一键创建直邮订单\nhttps://help.jfwms.com/zh_CN/doc-article/1002700512-\n\n【仓库端（WMS）教学】\ntemu直邮海外仓扫码换单\nhttps://help.jfwms.com/zh_CN/doc-article/1002710512-\ntemuY2直邮订单如何设置计费\nhttps://help.jfwms.com/zh_CN/doc-article/1002730513-\n\n13/17\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 14,
+    "title": "极风WMS 团队五一放假及值班时间安排通知~",
+    "fullText": "功能更新\n极风WMS 团队五一放假及值班时间安排通知~\n来自极风WMS团队2025-04-30 01:02:52\n\n亲爱的老板们，极风WMS 团队五一劳动节放假及值班时间安排如下（北京时间）：\n\n5月1日-5月3日   值班时间：  9:00-11:40;13:20-18:00\n5月4日                   放假（暂无值班安排）\n5月5日                   值班时间： 9:00-11:40:13:20-18:00\n\n14/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250430090147/8819f95898d90110b62b9f7593f00f34.jpg"
+    ]
+  },
+  {
+    "pageIndex": 15,
+    "title": "极风WMS近期功能更新清单，系统操作更丝滑~",
+    "fullText": "功能更新\n极风WMS近期功能更新清单，系统操作更丝滑~\n来自极风WMS团队2025-04-28 22:43:04\n\n【首页】\n①新增首页待办自定义展示\n✅根据需求自定义展示核心业务，让首页更简洁，操作更高效\n\n②在出库订单管理导航栏增设「待移货」独立入口\n✅能迅速处理缺货订单的待移货任务，提升订单处理效率\n\n③增加展示费用、库容数据\n✅便于管理人员监控仓库收入概况、优化库存管理和空间利用\n\n④菜单栏新增展示不同时区时间\n✅方便协调跨时区的订单处理和物流安排，避免因时差导致出库延误\n\n⑤部分模块列表页增加全部仓库选项\n✅在管理多个仓库时，能快速找到指定仓库的数据并处理相关业务\n\n【财务】\n①按单个商品计费增加单票减免费用设置\n✅满足多样计费场景，让客户收费核算更清晰，有效避免亏损或多收等情况\n\n②可查看冻结费用对应的单据\n✅在冻结费用期间，用户可以查询到单据的费用冻结情况，便于核对\n\n③增值费用列表页展示计费单位和单价\n✅方便管理人员快速查看各项费用详情，提升操作效率\n\n【面单水印】\n①面单水印设置增加客户维度\n✅可针对指定客户配置水印模板，精准契合不同客户的个性化需求\n\n②支持平台多选\n✅一次设置即可覆盖多个平台的面单水印，操作高效便捷\n\n③系统信息水印增加客户姓名、客户代码\n✅水印添加客户标识，便于溯源、提效及增强专属感\n\n【物流商】\n✅新增浩洋物流、守正速运、ECC物流、UK WALLTECH\n\n✅新增莘豪国际物流、NDWship\n\n【电商平台】\n✅新增对接TK东南亚本土店铺\n\n【多语言】\n✅新增韩语、俄语版系统\n\n✅sku支持泰文显示\n✅上线日语版\n\n15/17\n关闭\n上一条\n下一条",
+    "images": []
+  },
+  {
+    "pageIndex": 16,
+    "title": "接到Temu通知：【针对美国订单仅可通过平台面单方式使用FedEX和USPS，不支持使用FedEX/USPS线下物流自发货】",
+    "fullText": "功能更新\n接到Temu通知：【针对美国订单仅可通过平台面单方式使用FedEX和USPS，不支持使用FedEX/USPS线下物流自发货】\n来自极风WMS团队2025-04-14 00:00:35\n\n接到Temu通知：【针对美国订单仅可通过平台面单方式使用FedEX和USPS，不支持使用FedEX/USPS线下物流自发货】\n\n具体时间：\n4月15号开始对美国订单使用FedEX自发货进行灰度拦截，预计一周内覆盖全量店铺\n4月18日对美国订单全面限制使用USPS线下物流自发货\n请提示商家不要为temu订单选择由FedEX或USPS履约的线下物流\n\n16/17\n关闭\n上一条\n下一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250414075942/96091424fc31f33e98cc8e7c0c6f7e0b.jpg"
+    ]
+  },
+  {
+    "pageIndex": 17,
+    "title": "Temu 平台 美国站点 店铺里面的订单 仅可通过平台面单方式使用USPS，不支持自主导入运单发货使用USPS",
+    "fullText": "功能更新\nTemu 平台 美国站点 店铺里面的订单 仅可通过平台面单方式使用USPS，不支持自主导入运单发货使用USPS\n来自极风WMS团队2025-03-30 18:57:52\n\n广大用户们~~请注意： \n\nTemu 平台 美国站点 店铺里面的订单 仅可通过平台面单方式使用USPS，不支持自主导入运单发货使用USPS( Temu 美国站点不接受usps的线下物流了)\n\nTemu平台将在3月30号启动灰度,制使用USPS的线下物流回传运单号，请提示商家不要为temu订单选择由usps履约的线下物流\n官方通知链接：https://partner-us.temu.com/announcement?menu_code=b96de0fd436b4678be94c80e8d60db88&sub_menu_code=4ef3d006cee54654a79dee71de54a5f6\n\n17/17\n关闭\n上一条",
+    "images": [
+      "https://download.jfwms.com/prod/static/back_help/img/6/20250331025715/61b40547ef338e56e60f9e318094cb4b.jpg"
+    ]
+  }
+]
