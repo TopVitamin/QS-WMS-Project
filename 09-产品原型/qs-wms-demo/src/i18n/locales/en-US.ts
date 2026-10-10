@@ -66,6 +66,13 @@ const enUS: Messages = {
     notice: 'Notifications',
     logout: 'Sign out',
     profile: 'Profile',
+    searchMenu: 'Search menu, feature or command...',
+    searchPlaceholder: 'Type a command or jump to...',
+    noMatchingMenu: 'No matching menus found',
+    quickActions: 'Quick Actions',
+    navigation: 'Navigation',
+    openNewWindow: 'Open in new window',
+    switchedWarehouse: 'Switched to warehouse: {{name}}',
   },
   settings: {
     language: 'Language',

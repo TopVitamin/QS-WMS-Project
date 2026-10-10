@@ -1,4 +1,4 @@
-import { Bell, Check, ChevronDown, Clock, Globe, PanelLeftClose, PanelLeftOpen, Ruler, Smartphone, Warehouse } from 'lucide-react'
+import { Bell, Check, ChevronDown, Clock, Globe, PanelLeftClose, PanelLeftOpen, Search, Smartphone, Warehouse } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { findMenuGroup, findMenuLeaf } from '@/config/menu'
 import { formatDateTime, formatTzOffset } from '@/lib/format'
 import { useDb } from '@/mock/db'
@@ -36,13 +36,12 @@ import {
   type TimeMode,
   type UnitMode,
 } from '@/stores/settings'
-import type { CurrencyCode } from '@/types/wms'
+import { WmsCommandPalette } from './wms-command-palette'
 
 const languages: { value: Language; label: string }[] = [
   { value: 'zh-CN', label: '简体中文' },
   { value: 'en-US', label: 'English' },
 ]
-const currencies: CurrencyCode[] = ['CNY', 'USD', 'EUR', 'GBP', 'JPY']
 
 function useNow(intervalMs = 30_000) {
   const [now, setNow] = useState(() => new Date())
@@ -62,195 +61,252 @@ export function WmsTopbar() {
   const now = useNow()
   const resetDemo = useDb((s) => s.resetDemo)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [commandOpen, setCommandOpen] = useState(false)
 
   const group = findMenuGroup(location.pathname)
   const leaf = findMenuLeaf(location.pathname)
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-2">
-      <Button variant="ghost" size="icon" onClick={settings.toggleSidebar} aria-label="toggle sidebar">
-        {settings.sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-      </Button>
-      <nav className="flex min-w-0 items-center gap-1.5 text-sm">
-        {group && group.children.length > 1 && (
-          <>
-            <span className="text-muted-foreground">{t(group.titleKey)}</span>
-            <span className="text-muted-foreground/50">/</span>
-          </>
-        )}
-        {leaf && <span className="font-medium whitespace-nowrap">{t(leaf.titleKey)}</span>}
-      </nav>
+    <>
+      <header className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-3">
+        {/* 左侧：侧边栏切换与面包屑 */}
+        <div className="flex min-w-0 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={settings.toggleSidebar}
+            aria-label="toggle sidebar"
+          >
+            {settings.sidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </Button>
+          <nav className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            {group && group.children.length > 1 && (
+              <>
+                <span className="hidden sm:inline">{t(group.titleKey)}</span>
+                <span className="hidden sm:inline opacity-40">/</span>
+              </>
+            )}
+            {leaf && <span className="font-medium text-foreground whitespace-nowrap">{t(leaf.titleKey)}</span>}
+          </nav>
+        </div>
 
-      <div className="ml-auto flex items-center gap-1">
-        {/* 仓库切换 */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Warehouse data-icon="inline-start" className="text-primary" />
-              <span className="font-mono text-xs">{warehouse.code}</span>
-              <span className="hidden whitespace-nowrap text-muted-foreground xl:inline">{t(warehouse.nameKey)}</span>
-              <ChevronDown data-icon="inline-end" className="opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuLabel>{t('settings.switchWarehouse')}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {warehouses.map((w) => (
-              <DropdownMenuItem key={w.code} onSelect={() => settings.setWarehouse(w.code)} className="gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs">{w.code}</span>
-                    <span>{t(w.nameKey)}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {w.timezone} · {formatTzOffset(w.timezone)} · {w.currency}
-                  </div>
+        {/* 右侧：三大归一化实体（业务环境胶囊 + 统一图标工具栏 + 用户中心） */}
+        <div className="ml-auto flex items-center gap-2.5">
+          {/* 实体一：仓库与当地时间业务胶囊 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-2 border-border/80 bg-background px-2.5 text-xs font-normal hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Warehouse data-icon="inline-start" className="size-3.5 text-primary" />
+                  <span className="font-mono font-medium text-foreground">{warehouse.code}</span>
+                  <span className="hidden whitespace-nowrap text-muted-foreground xl:inline">{t(warehouse.nameKey)}</span>
                 </div>
-                {w.code === warehouse.code && <Check className="text-primary" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* 时间与时区 */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-1.5 text-muted-foreground">
-              <Clock data-icon="inline-start" />
-              <span className="tabular-nums">{formatDateTime(now.toISOString(), tz, 'MM-DD HH:mm')}</span>
-              <span className="hidden text-xs 2xl:inline">{formatTzOffset(tz)}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>{t('settings.timezone')}</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={settings.timeMode} onValueChange={(v) => settings.setTimeMode(v as TimeMode)}>
-              <DropdownMenuRadioItem value="warehouse">
-                {t('settings.timeWarehouse')}
-                <span className="ml-auto text-xs text-muted-foreground">{formatTzOffset(warehouse.timezone)}</span>
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="local">
-                {t('settings.timeLocal')}
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {formatTzOffset(Intl.DateTimeFormat().resolvedOptions().timeZone)}
-                </span>
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* 显示币别 */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="text-muted-foreground">
-              <span className="font-mono text-xs">{settings.displayCurrency}</span>
-              <ChevronDown data-icon="inline-end" className="opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuLabel>{t('settings.displayCurrency')}</DropdownMenuLabel>
-            <p className="px-2 pb-1.5 text-xs text-muted-foreground">{t('settings.displayCurrencyHint')}</p>
-            <DropdownMenuRadioGroup
-              value={settings.displayCurrency}
-              onValueChange={(v) => settings.setDisplayCurrency(v as CurrencyCode)}
-            >
-              {currencies.map((c) => (
-                <DropdownMenuRadioItem key={c} value={c}>
-                  <span className="font-mono">{c}</span>
-                </DropdownMenuRadioItem>
+                <div className="h-3 w-px bg-border shrink-0" />
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="size-3" />
+                  <span className="tabular-nums font-mono text-[11px]">{formatDateTime(now.toISOString(), tz, 'HH:mm')}</span>
+                </div>
+                <ChevronDown data-icon="inline-end" className="size-3 opacity-40 ml-0.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuLabel className="text-xs font-semibold text-foreground">
+                {t('common.warehouse')}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {warehouses.map((w) => (
+                <DropdownMenuItem key={w.code} onSelect={() => settings.setWarehouse(w.code)} className="gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-semibold">{w.code}</span>
+                      <span className="text-sm">{t(w.nameKey)}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {w.timezone} · {formatTzOffset(w.timezone)} · {w.currency}
+                    </div>
+                  </div>
+                  {w.code === warehouse.code && <Check className="text-primary size-4" />}
+                </DropdownMenuItem>
               ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
 
-        {/* 单位制 */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={t('settings.unit')}>
-              <Ruler />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{t('settings.unit')}</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={settings.unitMode} onValueChange={(v) => settings.setUnitMode(v as UnitMode)}>
-              <DropdownMenuRadioItem value="auto">{t('settings.unitAuto')}</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="metric">{t('settings.unitMetric')}</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="imperial">{t('settings.unitImperial')}</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuSeparator />
 
-        {/* 语言 */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={t('settings.language')}>
-              <Globe />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuLabel>{t('settings.language')}</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={settings.language} onValueChange={(v) => settings.setLanguage(v as Language)}>
-              {languages.map((l) => (
-                <DropdownMenuRadioItem key={l.value} value={l.value}>
-                  {l.label}
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {t('settings.timezone')}
+              </DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={settings.timeMode} onValueChange={(v) => settings.setTimeMode(v as TimeMode)}>
+                <DropdownMenuRadioItem value="warehouse">
+                  {t('settings.timeWarehouse')}
+                  <span className="ml-auto text-xs text-muted-foreground">{formatTzOffset(warehouse.timezone)}</span>
                 </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <DropdownMenuRadioItem value="local">
+                  {t('settings.timeLocal')}
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {formatTzOffset(Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                  </span>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
 
-        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label={t('common.notice')}>
-          <Bell />
-        </Button>
+              <DropdownMenuSeparator />
 
-        <Button variant="outline" size="icon" className="lg:size-auto lg:px-3" asChild>
-          <a href="#/pda" target="_blank" rel="noreferrer" aria-label={t('common.openPda')}>
-            <Smartphone className="lg:mr-2" />
-            <span className="hidden lg:inline">{t('common.openPda')}</span>
-          </a>
-        </Button>
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                {t('settings.unit')}
+              </DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={settings.unitMode} onValueChange={(v) => settings.setUnitMode(v as UnitMode)}>
+                <DropdownMenuRadioItem value="auto">{t('settings.unitAuto')}</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="metric">{t('settings.unitMetric')}</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="imperial">{t('settings.unitImperial')}</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <Separator orientation="vertical" className="mx-1 h-5!" />
+          {/* 分割线1 */}
+          <div className="h-4 w-px bg-border/80 shrink-0 self-center" />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button type="button" className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted">
-              <Avatar className="size-7">
-                <AvatarFallback className="bg-primary/10 text-xs text-primary">LC</AvatarFallback>
-              </Avatar>
-              <span className="hidden text-sm whitespace-nowrap 2xl:inline">{settings.operator}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem>{t('common.profile')}</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setConfirmReset(true)}>{t('common.resetDemo')}</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>{t('common.logout')}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          {/* 实体二：统一规格的图标工具组（搜索 + PDA + 语言 + 通知） */}
+          <div className="flex items-center gap-1">
+            {/* 全局搜索菜单与功能 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => setCommandOpen(true)}
+                  aria-label={t('common.searchMenu')}
+                >
+                  <Search className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t('common.searchMenu')} (⌘K)
+              </TooltipContent>
+            </Tooltip>
 
-      <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('common.resetDemo')}</DialogTitle>
-            <DialogDescription>{t('common.resetDemoConfirm')}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmReset(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              onClick={() => {
-                resetDemo()
-                setConfirmReset(false)
-                toast.success(t('common.resetDemoDone'))
-              }}
-            >
-              {t('common.confirm')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </header>
+            {/* 打开 PDA 作业端 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  asChild
+                >
+                  <a href="#/pda" target="_blank" rel="noreferrer" aria-label={t('common.openPda')}>
+                    <Smartphone className="size-4" />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t('common.openPda')} ({t('common.openNewWindow')})
+              </TooltipContent>
+            </Tooltip>
+
+            {/* 语言切换 */}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:text-foreground"
+                      aria-label={t('settings.language')}
+                    >
+                      <Globe className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {t('settings.language')} · {settings.language === 'zh-CN' ? '中文' : 'EN'}
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuLabel>{t('settings.language')}</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={settings.language} onValueChange={(v) => settings.setLanguage(v as Language)}>
+                  {languages.map((l) => (
+                    <DropdownMenuRadioItem key={l.value} value={l.value}>
+                      {l.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* 消息通知 */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative size-8 text-muted-foreground hover:text-foreground"
+                  aria-label={t('common.notice')}
+                >
+                  <Bell className="size-4" />
+                  <span className="absolute top-2 right-2 size-1.5 rounded-full bg-primary" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{t('common.notice')}</TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* 分割线2 */}
+          <div className="h-4 w-px bg-border/80 shrink-0 self-center" />
+
+          {/* 实体三：用户身份与设置 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex h-8 items-center gap-2 rounded-lg px-2 hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Avatar className="size-6 text-[11px]">
+                  <AvatarFallback className="bg-primary/10 font-semibold text-primary">LC</AvatarFallback>
+                </Avatar>
+                <span className="hidden text-xs font-medium text-foreground 2xl:inline">{settings.operator}</span>
+                <ChevronDown className="size-3 text-muted-foreground/60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem>{t('common.profile')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setConfirmReset(true)}>{t('common.resetDemo')}</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>{t('common.logout')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('common.resetDemo')}</DialogTitle>
+              <DialogDescription>{t('common.resetDemoConfirm')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmReset(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={() => {
+                  resetDemo()
+                  setConfirmReset(false)
+                  toast.success(t('common.resetDemoDone'))
+                }}
+              >
+                {t('common.confirm')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </header>
+
+      {/* Cmd+K 全局命令面板 */}
+      <WmsCommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+    </>
   )
 }

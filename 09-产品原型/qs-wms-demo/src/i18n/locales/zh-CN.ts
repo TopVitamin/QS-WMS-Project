@@ -64,6 +64,13 @@ const zhCN = {
     notice: '消息',
     logout: '退出登录',
     profile: '个人设置',
+    searchMenu: '搜索菜单、功能或快捷操作...',
+    searchPlaceholder: '输入菜单名称或功能快捷直达...',
+    noMatchingMenu: '未找到匹配的菜单或功能',
+    quickActions: '快捷操作',
+    navigation: '业务功能菜单',
+    openNewWindow: '新窗口打开',
+    switchedWarehouse: '已切换至仓库：{{name}}',
   },
   settings: {
     language: '语言',
