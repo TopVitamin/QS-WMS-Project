@@ -1,4 +1,4 @@
-import type { InboundStatus, PackageStatus, PutawayTaskStatus } from '@/types/wms'
+import type { InboundStatus, PackageStatus, PutawayTaskStatus, UsageStatus } from '@/types/wms'
 
 /**
  * 全站统一的状态色调。新增状态时只能从这里选色调，不要在页面里自定义颜色。
@@ -26,6 +26,11 @@ export const putawayStatusMeta: Record<PutawayTaskStatus, StatusMeta> = {
   PENDING: { tone: 'orange', labelKey: 'status.putaway.PENDING' },
   DOING: { tone: 'blue', labelKey: 'status.putaway.DOING' },
   COMPLETED: { tone: 'green', labelKey: 'status.putaway.COMPLETED' },
+}
+
+export const usageStatusMeta: Record<UsageStatus, StatusMeta> = {
+  ENABLED: { tone: 'green', labelKey: 'status.usage.ENABLED' },
+  DISABLED: { tone: 'gray', labelKey: 'status.usage.DISABLED' },
 }
 
 export const packageStatusMeta: Record<PackageStatus, StatusMeta> = {

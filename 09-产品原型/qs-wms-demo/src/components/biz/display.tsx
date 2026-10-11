@@ -8,6 +8,7 @@ import {
   formatNumber,
   formatWeight,
 } from '@/lib/format'
+import { textCode, textCodeLink } from '@/lib/typography'
 import { cn } from '@/lib/utils'
 import { useDisplayTimezone, useSettings, useUnitSystem } from '@/stores/settings'
 import type { Money as MoneyValue } from '@/types/wms'
@@ -57,12 +58,17 @@ export function Num({ value, className }: { value: number; className?: string })
   return <span className={cn('tabular-nums', className)}>{formatNumber(value, i18n.language)}</span>
 }
 
-/** 单号：等宽字体 + 可点击 */
-export function DocNo({ children, onClick }: { children: string; onClick?: () => void }) {
-  if (!onClick) return <span className="font-mono text-[13px]">{children}</span>
+/** 单号/业务编码：sans + tabular-nums，与列表操作链同字号；可点击进详情 */
+export function DocNo({ children, onClick, className }: { children: string; onClick?: () => void; className?: string }) {
+  if (!onClick) return <span className={cn(textCode, className)}>{children}</span>
   return (
-    <button type="button" onClick={onClick} className="font-mono text-[13px] text-primary hover:underline">
+    <button type="button" onClick={onClick} className={cn(textCodeLink, className)}>
       {children}
     </button>
   )
+}
+
+/** 不可点击的编码展示（与 DocNo 同字形） */
+export function BizCode({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <span className={cn(textCode, className)}>{children}</span>
 }

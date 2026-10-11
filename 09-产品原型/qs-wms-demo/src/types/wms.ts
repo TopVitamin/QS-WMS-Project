@@ -1,4 +1,29 @@
-export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CNY'
+export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CNY' | 'HKD'
+export type UsageStatus = 'ENABLED' | 'DISABLED'
+
+/** 基础资料-仓库（与作业用 Warehouse 并存；一期四仓预置） */
+export interface WarehouseMaster {
+  code: string
+  name: string
+  timezone: string
+  currency: CurrencyCode
+  status: UsageStatus
+  remark?: string
+  countryCode: string
+  state?: string
+  city: string
+  district?: string
+  address1: string
+  address2?: string
+  postalCode?: string
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
+}
 export type UnitSystem = 'metric' | 'imperial'
 export type QualityType = 'GOOD' | 'DEFECTIVE'
 
@@ -20,6 +45,76 @@ export interface Customer {
   id: string
   code: string
   name: string
+}
+
+export type CustomerOwnerType = 'SELF' | 'EXTERNAL'
+
+/** 上架库位推荐时机（货主作业控制） */
+export type PutawayRecommendTiming = 'NONE' | 'AFTER_RECEIVE' | 'AT_PUTAWAY_SCAN'
+
+export interface CustomerMaster {
+  id: string
+  code: string
+  name: string
+  ownerType: CustomerOwnerType
+  status: UsageStatus
+  remark?: string
+  putawayRecommendTiming: PutawayRecommendTiming
+  upstreamOwnerId: string
+  lastSyncAt: string
+  countryCode?: string
+  state?: string
+  city?: string
+  district?: string
+  address1?: string
+  address2?: string
+  postalCode?: string
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
+}
+
+/** 物流渠道类型 */
+export type ChannelType = 'EXPRESS' | 'TRUCK' | 'PICKUP' | 'OTHER'
+
+/** 物流对接方式 */
+export type LogisticsIntegrationMode = 'API_RESERVED' | 'OFFLINE_HANDOVER'
+
+/** 基础资料-物流承运商（全系统共用） */
+export interface CarrierMaster {
+  code: string
+  name: string
+  shortName?: string
+  status: UsageStatus
+  remark?: string
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  externalCarrierCode?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
+}
+
+/** 基础资料-物流渠道 */
+export interface ChannelMaster {
+  carrierCode: string
+  code: string
+  name: string
+  channelType: ChannelType
+  status: UsageStatus
+  remark?: string
+  integrationMode: LogisticsIntegrationMode
+  externalProductCode?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
 }
 
 export interface Sku {
@@ -47,6 +142,97 @@ export interface Location {
   warehouseCode: string
   zone: string
   type: LocationType
+}
+
+/** 库区类型（与库区资料枚举一致；货位只读随库区） */
+export type ZoneType = 'STORAGE' | 'PICK' | 'STAGING' | 'DEFECT_ISOLATION' | 'EXCEPTION'
+
+export interface ZoneMaster {
+  warehouseCode: string
+  code: string
+  name: string
+  zoneType: ZoneType
+  status: UsageStatus
+  remark?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
+}
+
+/** 适配商品形态（与商品资料枚举对齐，Demo 简化三项） */
+export type ProductFormFactor = 'SMALL' | 'LARGE' | 'IRREGULAR'
+
+/** 基础资料-商品 SKU（货主编码 + 商品编码唯一） */
+export interface SkuMaster {
+  ownerCode: string
+  customerId: string
+  code: string
+  name: string
+  nameEn?: string
+  spec?: string
+  unit: string
+  status: UsageStatus
+  remark?: string
+  /** 主条码摘要（来自条码子表） */
+  primaryBarcode?: string
+  upstreamSkuId: string
+  productForm: ProductFormFactor
+  isBattery?: boolean
+  snEnabled: boolean
+  snFormat?: string
+  batchEnabled: boolean
+  expiryEnabled: boolean
+  shelfLifeDays?: number
+  inboundDays?: number
+  nearExpiryDays?: number
+  expiredDays?: number
+  qcRequired: boolean
+  qcFlowType?: string
+  grossWeightKg?: number
+  netWeightKg?: number
+  lengthCm?: number
+  widthCm?: number
+  heightCm?: number
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
+}
+
+export interface SkuBarcode {
+  id: string
+  ownerCode: string
+  skuCode: string
+  barcode: string
+  isPrimary: boolean
+  status: UsageStatus
+  createdAt: string
+  updatedAt: string
+}
+
+/** 基础资料-货位（仓库内编码唯一） */
+export interface LocationMaster {
+  warehouseCode: string
+  zoneCode: string
+  zoneType: ZoneType
+  code: string
+  status: UsageStatus
+  remark?: string
+  allowMixSku: boolean
+  allowMixBatch: boolean
+  putawaySequence?: number
+  pickSequence?: number
+  aisle?: string
+  bay?: string
+  level?: string
+  productForms: ProductFormFactor[]
+  /** Demo：当前货主占用（库存域 Mock）；空表示空闲 */
+  occupyingCustomerId?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
 }
 
 /** 附录B 2.1 入库单状态 */

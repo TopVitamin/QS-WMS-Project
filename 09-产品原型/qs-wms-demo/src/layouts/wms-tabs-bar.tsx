@@ -35,7 +35,7 @@ export function WmsTabsBar() {
               onClick={() => navigate(tab.path)}
             >
               {isHome && <House className="size-3.5" />}
-              {t(tab.titleKey)}
+              {t(tab.titleKey, tab.titleParams)}
               {!isHome && (
                 <button
                   type="button"

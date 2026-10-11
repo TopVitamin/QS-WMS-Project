@@ -70,6 +70,8 @@ interface DataTableProps<TData extends RowData> {
   toolbar?: React.ReactNode
   pageSize?: number
   className?: string
+  /** 列 id → false 表示默认隐藏（列设置仍可打开） */
+  initialColumnVisibility?: Record<string, boolean>
 }
 
 export function DataTable<TData extends RowData>({
@@ -81,6 +83,7 @@ export function DataTable<TData extends RowData>({
   toolbar,
   pageSize = 20,
   className,
+  initialColumnVisibility,
 }: DataTableProps<TData>) {
   const { t } = useTranslation()
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -111,9 +114,13 @@ export function DataTable<TData extends RowData>({
     columns: allColumns,
     data,
     getRowId,
+    defaultColumn: { enableSorting: false },
     state: { rowSelection },
     onRowSelectionChange: setRowSelection,
-    initialState: { pagination: { pageIndex: 0, pageSize } },
+    initialState: {
+      pagination: { pageIndex: 0, pageSize },
+      columnVisibility: initialColumnVisibility ?? {},
+    },
     autoResetPageIndex: true,
   })
 
@@ -142,9 +149,9 @@ export function DataTable<TData extends RowData>({
 
   const pinClass = (meta: DataColumnMeta | undefined, isHeader: boolean) => {
     if (meta?.pin === 'right')
-      return cn('sticky right-0 z-[1] shadow-[-6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader ? 'z-20 bg-muted' : 'bg-card group-hover:bg-muted')
+      return cn('sticky right-0 z-[1] shadow-[-6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader && 'z-20 bg-muted')
     if (meta?.pin === 'left')
-      return cn('sticky z-[1] shadow-[6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader ? 'z-20 bg-muted' : 'bg-card group-hover:bg-muted')
+      return cn('sticky z-[1] shadow-[6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader && 'z-20 bg-muted')
     return ''
   }
   const pinStyle = (meta: DataColumnMeta | undefined) =>
@@ -237,7 +244,16 @@ export function DataTable<TData extends RowData>({
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined} className="group">
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() ? 'selected' : undefined}
+                className={cn(
+                  'group',
+                  // 底色统一由 tr 下发到每个 td，避免 tr:hover 与固定列 td 各涂一层半透明叠色
+                  'hover:bg-transparent hover:[&>td]:bg-muted/50',
+                  'data-[state=selected]:bg-transparent data-[state=selected]:[&>td]:bg-muted',
+                )}
+              >
                 {row.getVisibleCells().map((cell) => {
                   const meta = cell.column.columnDef.meta
                   return (
@@ -245,7 +261,8 @@ export function DataTable<TData extends RowData>({
                       key={cell.id}
                       style={pinStyle(meta)}
                       className={cn(
-                        cell.column.id === '__select' && 'sticky left-0 z-[1] bg-card group-hover:bg-muted',
+                        'bg-card',
+                        cell.column.id === '__select' && 'sticky left-0 z-[1]',
                         meta?.align === 'right' && 'text-right',
                         meta?.align === 'center' && 'text-center',
                         pinClass(meta, false),

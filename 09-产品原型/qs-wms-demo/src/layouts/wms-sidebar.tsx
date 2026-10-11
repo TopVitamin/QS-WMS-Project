@@ -117,9 +117,6 @@ export function WmsSidebar() {
                 )}
               >
                 <span className="flex-1 truncate">{t(leaf.titleKey)}</span>
-                {leaf.milestone !== 'M0' && (
-                  <span className="text-[10px] text-muted-foreground/70">{leaf.milestone}</span>
-                )}
               </NavLink>
             ))}
           </div>

@@ -1,6 +1,12 @@
+import { createCarrierMasters } from './carrier-masters'
+import { createChannelMasters } from './channel-masters'
+import { createCustomerMasters, customerMastersToLegacy } from './customer-masters'
 import type {
   AuditLog,
+  CarrierMaster,
+  ChannelMaster,
   Customer,
+  CustomerMaster,
   CurrencyCode,
   InboundBizType,
   InboundOrder,
@@ -9,12 +15,21 @@ import type {
   InventoryRecord,
   LoadType,
   Location,
+  LocationMaster,
   OutboundPackage,
+  ZoneMaster,
   PackageStatus,
   PutawayTask,
   Sku,
+  SkuBarcode,
+  SkuMaster,
   Warehouse,
+  WarehouseMaster,
 } from '@/types/wms'
+import { createLocationMasters } from './location-masters'
+import { createSkuMasters } from './sku-masters'
+import { createWarehouseMasters } from './warehouse-masters'
+import { createZoneMasters } from './zone-masters'
 
 /** 固定种子的伪随机数，保证每次重置后演示数据一致 */
 function createRandom(seed: number) {
@@ -42,18 +57,13 @@ export const warehouses: Warehouse[] = [
   { code: 'JP-TYO-01', nameKey: 'warehouse.JP-TYO-01', countryCode: 'JP', timezone: 'Asia/Tokyo', currency: 'JPY', unitSystem: 'metric' },
 ]
 
-export const customers: Customer[] = [
-  { id: 'C10028', code: 'ANKR', name: 'Shenzhen Anker Trading' },
-  { id: 'C10031', code: 'HOMY', name: 'Homy Living Co., Ltd.' },
-  { id: 'C10045', code: 'PETX', name: 'PetX Supplies' },
-  { id: 'C10052', code: 'GLOW', name: 'Glow Beauty Tech' },
-  { id: 'C10067', code: 'TRAK', name: 'TrailPeak Outdoor' },
-  { id: 'C10073', code: 'KIDO', name: 'Kido Toys Intl.' },
-]
+export const customerMasters = createCustomerMasters()
+export const customers: Customer[] = customerMastersToLegacy(customerMasters)
 
 /** 汇率：1 单位外币 = x CNY（演示用固定汇率） */
 export const exchangeRatesToCny: Record<CurrencyCode, number> = {
   CNY: 1,
+  HKD: 0.91,
   USD: 7.12,
   EUR: 7.78,
   GBP: 9.05,
@@ -73,7 +83,9 @@ function buildSkus(): Sku[] {
   const r = createRandom(7)
   const list: Sku[] = []
   customers.forEach((c) => {
-    productNames[c.id].forEach((name, i) => {
+    const names = productNames[c.id]
+    if (!names?.length) return
+    names.forEach((name, i) => {
       const sku: Sku = {
         code: `${c.code}-${pad(i + 1, 3)}`,
         customerId: c.id,
@@ -119,8 +131,16 @@ function buildLocations(): Location[] {
 
 export interface SeedData {
   warehouses: Warehouse[]
+  warehouseMasters: WarehouseMaster[]
+  zoneMasters: ZoneMaster[]
+  locationMasters: LocationMaster[]
+  carrierMasters: CarrierMaster[]
+  channelMasters: ChannelMaster[]
+  customerMasters: CustomerMaster[]
   customers: Customer[]
   skus: Sku[]
+  skuMasters: SkuMaster[]
+  skuBarcodes: SkuBarcode[]
   locations: Location[]
   inbounds: InboundOrder[]
   putawayTasks: PutawayTask[]
@@ -132,7 +152,10 @@ export interface SeedData {
 
 export function createSeedData(now = Date.now()): SeedData {
   const r = createRandom(20260924)
+  const customerMasters = createCustomerMasters()
+  const customersList = customerMastersToLegacy(customerMasters)
   const skus = buildSkus()
+  const { skuMasters, skuBarcodes } = createSkuMasters(customers, skus)
   const locations = buildLocations()
   const inbounds: InboundOrder[] = []
   const inventory: InventoryRecord[] = []
@@ -305,5 +328,24 @@ export function createSeedData(now = Date.now()): SeedData {
       )
     })
 
-  return { warehouses, customers, skus, locations, inbounds, putawayTasks, inventory, inventoryLogs, packages, auditLogs }
+  return {
+    warehouses,
+    warehouseMasters: createWarehouseMasters(),
+    zoneMasters: createZoneMasters(),
+    locationMasters: createLocationMasters(),
+    carrierMasters: createCarrierMasters(),
+    channelMasters: createChannelMasters(),
+    customerMasters,
+    customers: customersList,
+    skus,
+    skuMasters,
+    skuBarcodes,
+    locations,
+    inbounds,
+    putawayTasks,
+    inventory,
+    inventoryLogs,
+    packages,
+    auditLogs,
+  }
 }

@@ -27,14 +27,16 @@ interface DescriptionItemProps {
   label: string
   children: React.ReactNode
   className?: string
+  /** 长文本、自定义展示块时不截断 */
+  multiline?: boolean
 }
 
 /** 详情字段：标签 + 值 */
-export function DescriptionItem({ label, children, className }: DescriptionItemProps) {
+export function DescriptionItem({ label, children, className, multiline }: DescriptionItemProps) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-0.5', className)}>
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="truncate text-sm">{children}</span>
+      <div className={cn('text-sm', !multiline && 'truncate')}>{children}</div>
     </div>
   )
 }

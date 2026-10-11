@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
-import { findMenuLeaf } from '@/config/menu'
+import { resolvePageTab } from '@/config/page-tabs'
 import { useTabs } from '@/stores/tabs'
 import { WmsSidebar } from './wms-sidebar'
 import { WmsTabsBar } from './wms-tabs-bar'
@@ -11,8 +11,8 @@ export function WmsLayout() {
   const openTab = useTabs((s) => s.open)
 
   useEffect(() => {
-    const leaf = findMenuLeaf(location.pathname)
-    if (leaf) openTab({ path: leaf.path, titleKey: leaf.titleKey })
+    const tab = resolvePageTab(location.pathname)
+    if (tab) openTab(tab)
   }, [location.pathname, openTab])
 
   return (

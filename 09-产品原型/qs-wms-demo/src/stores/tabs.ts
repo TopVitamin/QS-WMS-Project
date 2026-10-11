@@ -5,6 +5,7 @@ export interface PageTab {
   path: string
   /** i18n key */
   titleKey: string
+  titleParams?: Record<string, string>
 }
 
 export const HOME_TAB: PageTab = { path: '/wms/dashboard', titleKey: 'menu.dashboard' }
