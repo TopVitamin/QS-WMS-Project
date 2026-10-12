@@ -58,12 +58,49 @@ export function Num({ value, className }: { value: number; className?: string })
   return <span className={cn('tabular-nums', className)}>{formatNumber(value, i18n.language)}</span>
 }
 
+/** 单号末尾若干位加粗，便于作业页快速辨认（默认末 3 位） */
+export function DocNoTail({
+  value,
+  tail = 3,
+  className,
+}: {
+  value: string
+  tail?: number
+  className?: string
+}) {
+  const text = value.trim()
+  if (!text) return <span className="text-muted-foreground">—</span>
+  if (text.length <= tail) {
+    return <span className={cn(textCode, 'font-semibold', className)}>{text}</span>
+  }
+  return (
+    <span className={cn(textCode, className)}>
+      {text.slice(0, -tail)}
+      <span className="font-semibold text-foreground">{text.slice(-tail)}</span>
+    </span>
+  )
+}
+
 /** 单号/业务编码：sans + tabular-nums，与列表操作链同字号；可点击进详情 */
-export function DocNo({ children, onClick, className }: { children: string; onClick?: () => void; className?: string }) {
-  if (!onClick) return <span className={cn(textCode, className)}>{children}</span>
+export function DocNo({
+  children,
+  onClick,
+  className,
+  emphasizeTail = false,
+  tailLength = 3,
+}: {
+  children: string
+  onClick?: () => void
+  className?: string
+  /** 作业类页面可开启，末位数字加粗 */
+  emphasizeTail?: boolean
+  tailLength?: number
+}) {
+  const body = emphasizeTail ? <DocNoTail value={children} tail={tailLength} /> : children
+  if (!onClick) return <span className={cn(!emphasizeTail && textCode, className)}>{body}</span>
   return (
     <button type="button" onClick={onClick} className={cn(textCodeLink, className)}>
-      {children}
+      {body}
     </button>
   )
 }

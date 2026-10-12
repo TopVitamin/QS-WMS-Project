@@ -8,28 +8,26 @@ import type {
   Customer,
   CustomerMaster,
   CurrencyCode,
-  InboundBizType,
   InboundOrder,
-  InboundStatus,
   InventoryLog,
   InventoryRecord,
-  LoadType,
   Location,
   LocationMaster,
   OutboundPackage,
   ZoneMaster,
   PackageStatus,
-  PutawayTask,
   Sku,
   SkuBarcode,
   SkuMaster,
   Warehouse,
   WarehouseMaster,
 } from '@/types/wms'
+import { createInboundDemoBundle } from './inbound-seed'
 import { createLocationMasters } from './location-masters'
 import { createSkuMasters } from './sku-masters'
 import { createWarehouseMasters } from './warehouse-masters'
 import { createZoneMasters } from './zone-masters'
+import { stagingLocationCode } from '@/lib/inbound-derive'
 
 /** 固定种子的伪随机数，保证每次重置后演示数据一致 */
 function createRandom(seed: number) {
@@ -143,7 +141,9 @@ export interface SeedData {
   skuBarcodes: SkuBarcode[]
   locations: Location[]
   inbounds: InboundOrder[]
-  putawayTasks: PutawayTask[]
+  receiptRecords: import('@/types/inbound').ReceiptRecord[]
+  putawayOrders: import('@/types/inbound').PutawayOrder[]
+  inboundExceptions: import('@/types/inbound').InboundException[]
   inventory: InventoryRecord[]
   inventoryLogs: InventoryLog[]
   packages: OutboundPackage[]
@@ -157,128 +157,116 @@ export function createSeedData(now = Date.now()): SeedData {
   const skus = buildSkus()
   const { skuMasters, skuBarcodes } = createSkuMasters(customers, skus)
   const locations = buildLocations()
-  const inbounds: InboundOrder[] = []
   const inventory: InventoryRecord[] = []
   const inventoryLogs: InventoryLog[] = []
-  const putawayTasks: PutawayTask[] = []
+  const inboundBundle = createInboundDemoBundle()
+  const inbounds: InboundOrder[] = [...inboundBundle.inbounds]
+  const receiptRecords = [...inboundBundle.receiptRecords]
+  const putawayOrders = [...inboundBundle.putawayOrders]
+  const inboundExceptions = [...inboundBundle.inboundExceptions]
   const packages: OutboundPackage[] = []
   const auditLogs: AuditLog[] = []
 
-  const statusPool: InboundStatus[] = [
-    'PENDING', 'PENDING', 'PENDING', 'ARRIVED', 'RECEIVING', 'PARTIAL_PUT',
-    'COMPLETED', 'COMPLETED', 'COMPLETED', 'COMPLETED', 'ABNORMAL', 'CANCELLED',
-  ]
-  const bizTypes: InboundBizType[] = ['STANDARD', 'STANDARD', 'STANDARD', 'FBA_RETURN', 'TRANSFER']
-  const loadTypes: LoadType[] = ['CONTAINER', 'PALLET', 'BOX']
-  const serialByDay: Record<string, number> = {}
+  // 库存按子记录推导：已提交上架单 → 目标库位；已收未上架余量 → 收货暂存库位（不良品品质锁定）
+  const inventoryIndex = new Map<string, number>()
+  const addInventory = (row: {
+    warehouseCode: string
+    locationCode: string
+    customerId: string
+    skuCode: string
+    qualityType: InventoryRecord['qualityType']
+    qty: number
+    lockedQty: number
+    at: string
+  }) => {
+    if (row.qty <= 0) return
+    const key = `${row.warehouseCode}::${row.locationCode}::${row.customerId}::${row.skuCode}::${row.qualityType}`
+    const idx = inventoryIndex.get(key)
+    if (idx !== undefined) {
+      const prev = inventory[idx]
+      inventory[idx] = {
+        ...prev,
+        onHandQty: prev.onHandQty + row.qty,
+        lockedQty: prev.lockedQty + row.lockedQty,
+      }
+      return
+    }
+    inventoryIndex.set(key, inventory.length)
+    inventory.push({
+      id: `INV-SEED-${inventory.length + 1}`,
+      warehouseCode: row.warehouseCode,
+      locationCode: row.locationCode,
+      customerId: row.customerId,
+      skuCode: row.skuCode,
+      qualityType: row.qualityType,
+      onHandQty: row.qty,
+      lockedQty: row.lockedQty,
+      firstInboundAt: row.at,
+    })
+  }
+
+  putawayOrders
+    .filter((p) => p.status === 'COMPLETED')
+    .forEach((p) => {
+      p.actualLines
+        .filter((a) => a.submitted)
+        .forEach((a) => {
+          addInventory({
+            warehouseCode: p.warehouseCode,
+            locationCode: a.locationCode,
+            customerId: p.customerId,
+            skuCode: a.skuCode,
+            qualityType: p.qualityType,
+            qty: a.qty,
+            lockedQty: p.qualityType === 'DEFECTIVE' ? a.qty : 0,
+            at: p.submittedAt ?? p.createdAt,
+          })
+        })
+    })
+
+  inbounds
+    .filter((o) => o.status !== 'CANCELLED')
+    .forEach((o) => {
+      const submittedByQuality = new Map<string, number>()
+      putawayOrders
+        .filter((p) => p.inboundNo === o.inboundNo && p.status === 'COMPLETED')
+        .forEach((p) => {
+          p.actualLines
+            .filter((a) => a.submitted)
+            .forEach((a) => {
+              const key = `${a.skuCode}::${p.qualityType}`
+              submittedByQuality.set(key, (submittedByQuality.get(key) ?? 0) + a.qty)
+            })
+        })
+      const stagingCode = stagingLocationCode(locations, o.warehouseCode)
+      const at = o.firstArrivalAt ?? o.updatedAt
+      o.items.forEach((item) => {
+        const goodLeft = item.goodQty - (submittedByQuality.get(`${item.skuCode}::GOOD`) ?? 0)
+        const defectLeft = item.defectQty - (submittedByQuality.get(`${item.skuCode}::DEFECTIVE`) ?? 0)
+        addInventory({
+          warehouseCode: o.warehouseCode,
+          locationCode: stagingCode,
+          customerId: o.customerId,
+          skuCode: item.skuCode,
+          qualityType: 'GOOD',
+          qty: goodLeft,
+          lockedQty: 0,
+          at,
+        })
+        addInventory({
+          warehouseCode: o.warehouseCode,
+          locationCode: stagingCode,
+          customerId: o.customerId,
+          skuCode: item.skuCode,
+          qualityType: 'DEFECTIVE',
+          qty: defectLeft,
+          lockedQty: defectLeft,
+          at,
+        })
+      })
+    })
 
   warehouses.forEach((w, wi) => {
-    const storageLocs = locations.filter((l) => l.warehouseCode === w.code && (l.type === 'PICK' || l.type === 'STORAGE'))
-    const count = wi === 0 ? 90 : 30
-
-    for (let i = 0; i < count; i++) {
-      const customer = r.pick(customers)
-      const customerSkus = skus.filter((s) => s.customerId === customer.id)
-      const createdAt = new Date(now - r.int(0, 20) * DAY - r.int(0, 86_000) * 1000)
-      const day = ymd(createdAt)
-      serialByDay[day] = (serialByDay[day] ?? 0) + 1
-      const inboundNo = `IN${day}${pad(serialByDay[day])}`
-      // 最近 2 天创建的单据不会已经完成
-      const status: InboundStatus =
-        i < 4 && wi === 0 ? 'PENDING' : now - createdAt.getTime() < 2 * DAY ? r.pick(['PENDING', 'ARRIVED'] as const) : r.pick(statusPool)
-      const loadType = r.pick(loadTypes)
-      const itemCount = r.int(1, Math.min(4, customerSkus.length))
-      const chosen = [...customerSkus].sort(() => r.next() - 0.5).slice(0, itemCount)
-
-      const items = chosen.map((sku) => {
-        const plannedQty = r.int(2, 40) * 10
-        let receivedGoodQty = 0
-        let receivedDefectQty = 0
-        let putawayQty = 0
-        if (status === 'RECEIVING') {
-          receivedGoodQty = Math.floor(plannedQty * r.next() * 0.6)
-        } else if (status === 'PARTIAL_PUT') {
-          receivedGoodQty = plannedQty
-          putawayQty = Math.floor(plannedQty * 0.5)
-        } else if (status === 'COMPLETED') {
-          receivedDefectQty = r.next() < 0.2 ? r.int(1, 3) : 0
-          receivedGoodQty = plannedQty - receivedDefectQty
-          putawayQty = receivedGoodQty
-        } else if (status === 'ABNORMAL') {
-          receivedGoodQty = plannedQty - r.int(5, 20)
-          receivedDefectQty = r.int(1, 6)
-        }
-        return { skuCode: sku.code, plannedQty, receivedGoodQty, receivedDefectQty, putawayQty }
-      })
-
-      const order: InboundOrder = {
-        inboundNo,
-        customerId: customer.id,
-        warehouseCode: w.code,
-        bizType: r.pick(bizTypes),
-        loadType,
-        containerNo:
-          loadType === 'CONTAINER'
-            ? `${r.pick(['MSCU', 'CMAU', 'OOLU', 'TGHU'])}${r.int(1000000, 9999999)}`
-            : `1Z${r.int(100000, 999999)}${r.int(10000000, 99999999)}`,
-        plannedCartonQty: Math.max(1, Math.round(items.reduce((s, it) => s + it.plannedQty, 0) / 20)),
-        etaAt: new Date(createdAt.getTime() + r.int(3, 25) * DAY).toISOString(),
-        status,
-        items,
-        remark: r.next() < 0.2 ? 'Q4 peak season stock' : undefined,
-        createdAt: createdAt.toISOString(),
-        updatedAt: new Date(Math.min(now, createdAt.getTime() + r.int(1, 72) * 3600_000)).toISOString(),
-      }
-      inbounds.push(order)
-
-      items.forEach((it, idx) => {
-        const suggested = storageLocs[(i * 3 + idx) % storageLocs.length].code
-        if (it.putawayQty > 0) {
-          inventory.push({
-            id: `INV-${w.code}-${inboundNo}-${idx}`,
-            warehouseCode: w.code,
-            locationCode: suggested,
-            customerId: customer.id,
-            skuCode: it.skuCode,
-            qualityType: 'GOOD',
-            onHandQty: it.putawayQty,
-            lockedQty: r.next() < 0.3 ? r.int(1, Math.max(1, Math.floor(it.putawayQty / 5))) : 0,
-            firstInboundAt: order.updatedAt,
-          })
-          inventoryLogs.push({
-            id: `LOG-${inboundNo}-${idx}`,
-            warehouseCode: w.code,
-            type: 'PUTAWAY',
-            refNo: inboundNo,
-            skuCode: it.skuCode,
-            customerId: customer.id,
-            locationCode: suggested,
-            qtyChange: it.putawayQty,
-            operator: 'system',
-            createdAt: order.updatedAt,
-          })
-        }
-        // 异常单等待货主确认，不生成上架任务
-        const pending = it.receivedGoodQty - it.putawayQty
-        if (pending > 0 && status !== 'ABNORMAL') {
-          putawayTasks.push({
-            putawayNo: `PUT${inboundNo.slice(2)}${idx}`,
-            inboundNo,
-            warehouseCode: w.code,
-            customerId: customer.id,
-            skuCode: it.skuCode,
-            qualityType: 'GOOD',
-            planQty: pending,
-            actualQty: 0,
-            sourceLocationCode: 'STAGE-IN-01',
-            suggestedLocationCode: suggested,
-            status: 'PENDING',
-            createdAt: order.updatedAt,
-          })
-        }
-      })
-    }
-
     const pkgStatus: PackageStatus[] = ['READY_PRINT', 'READY_PRINT', 'PICKING', 'PICKED', 'PACKING', 'SHIPPED', 'SHIPPED', 'SHIPPED', 'HOLD']
     const channels = w.countryCode === 'US' ? ['USPS-GA', 'UPS-GROUND', 'FEDEX-HD'] : w.countryCode === 'JP' ? ['SAGAWA', 'YAMATO'] : ['DHL-PAKET', 'DPD-CLASSIC', 'ROYALMAIL-48']
     const pkgCount = wi === 0 ? 160 : 60
@@ -309,14 +297,6 @@ export function createSeedData(now = Date.now()): SeedData {
     .forEach((o) => {
       auditLogs.push(
         {
-          id: `AUD-SEED-${o.inboundNo}-SIGN`,
-          refType: 'INBOUND',
-          refNo: o.inboundNo,
-          action: 'INBOUND_SIGN',
-          operator: 'system',
-          createdAt: o.createdAt,
-        },
-        {
           id: `AUD-SEED-${o.inboundNo}-PUT`,
           refType: 'INBOUND',
           refNo: o.inboundNo,
@@ -342,7 +322,9 @@ export function createSeedData(now = Date.now()): SeedData {
     skuBarcodes,
     locations,
     inbounds,
-    putawayTasks,
+    receiptRecords,
+    putawayOrders,
+    inboundExceptions,
     inventory,
     inventoryLogs,
     packages,

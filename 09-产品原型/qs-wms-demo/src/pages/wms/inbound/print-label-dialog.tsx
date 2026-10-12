@@ -2,7 +2,7 @@ import JsBarcode from 'jsbarcode'
 import { Printer } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DateTime, Num } from '@/components/biz/display'
+import { DateTime } from '@/components/biz/display'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -70,15 +70,9 @@ export function PrintLabelDialog({
                 <div className="mt-0.5 font-mono">{order.containerNo}</div>
               </div>
               <div>
-                <span className="text-neutral-500">{t('inbound.cartons')}</span>
-                <div className="mt-0.5">
-                  <Num value={order.plannedCartonQty} />
-                </div>
-              </div>
-              <div>
                 <span className="text-neutral-500">{t('inbound.eta')}</span>
                 <div className="mt-0.5">
-                  <DateTime value={order.etaAt} pattern="YYYY-MM-DD" />
+                  {order.etaAt ? <DateTime value={order.etaAt} pattern="YYYY-MM-DD" /> : '—'}
                 </div>
               </div>
             </div>

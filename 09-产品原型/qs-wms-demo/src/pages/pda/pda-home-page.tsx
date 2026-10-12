@@ -17,6 +17,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { listOpenPutawayOrders } from '@/lib/putaway'
 import { cn } from '@/lib/utils'
 import { useDb } from '@/mock/db'
 import { warehouses } from '@/mock/seed'
@@ -62,18 +63,18 @@ export function PdaHomePage() {
   const { t } = useTranslation()
   const warehouse = useCurrentWarehouse()
   const { operator, setWarehouse, language, setLanguage } = useSettings()
-  const tasks = useDb((s) => s.putawayTasks)
+  const putawayOrders = useDb((s) => s.putawayOrders)
   const logs = useDb((s) => s.inventoryLogs)
 
   const stats = useMemo(() => {
     const dayStart = dayjs().tz(warehouse.timezone).startOf('day')
     return {
-      pendingTasks: tasks.filter((x) => x.warehouseCode === warehouse.code && x.status !== 'COMPLETED').length,
+      pendingTasks: listOpenPutawayOrders(putawayOrders, warehouse.code).length,
       doneToday: logs.filter(
         (l) => l.warehouseCode === warehouse.code && l.operator === operator && dayjs(l.createdAt).isAfter(dayStart),
       ).length,
     }
-  }, [tasks, logs, warehouse, operator])
+  }, [putawayOrders, logs, warehouse, operator])
 
   return (
     <>

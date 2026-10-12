@@ -23,10 +23,10 @@ alwaysApply: false
 
 | 要做的 | 样板 |
 |---|---|
-| 列表页 | `pages/wms/inbound/inbound-list-page.tsx` |
-| 详情抽屉 | `pages/wms/inbound/inbound-detail-sheet.tsx` |
+| 列表页 | `pages/wms/inbound/inbound-order-list-page.tsx` |
+| 详情页 | `pages/wms/inbound/inbound-order-detail-page.tsx` |
 | 统计卡片 + 表格 | `pages/wms/inventory/stock-page.tsx` |
-| PDA 扫码流程 | `pages/pda/receive-page.tsx` |
+| PDA 作业流程 | `pages/pda/receive-page.tsx` + `pages/pda/receive/*`（先读 `05-应用设计方案/.../7-PDA作业端/PDA作业端设计规范.md`，实现约定见设计规范 §7） |
 
 新页面要在 `config/menu.ts` 有菜单项，并在 `app/router.tsx` 的 `wmsPages` 注册。
 

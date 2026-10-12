@@ -6,6 +6,8 @@ export interface ConfirmOptions {
   confirmText?: string
   cancelText?: string
   variant?: 'default' | 'destructive'
+  /** 只保留确认按钮，用作业务阻断提示（PDA 规范 §5） */
+  hideCancel?: boolean
 }
 
 export type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>

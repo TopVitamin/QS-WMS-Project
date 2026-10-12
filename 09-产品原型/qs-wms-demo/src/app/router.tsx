@@ -27,6 +27,8 @@ import { CustomerListPage } from '@/pages/wms/master/customer-list-page'
 import { SkuDetailPage } from '@/pages/wms/master/sku-detail-page'
 import { SkuEditPage } from '@/pages/wms/master/sku-edit-page'
 import { SkuListPage } from '@/pages/wms/master/sku-list-page'
+import { InboundOrderDetailPage } from '@/pages/wms/inbound/inbound-order-detail-page'
+import { InboundOrderReceivePage } from '@/pages/wms/inbound/inbound-order-receive-page'
 import { wmsPageRegistry } from '@/pages/wms/registry'
 
 export const router = createHashRouter([
@@ -55,6 +57,8 @@ export const router = createHashRouter([
       { path: 'master/skus', element: <SkuListPage /> },
       { path: 'master/skus/:ownerCode/:skuCode/edit', element: <SkuEditPage /> },
       { path: 'master/skus/:ownerCode/:skuCode', element: <SkuDetailPage /> },
+      { path: 'inbound/orders/:inboundNo/receive', element: <InboundOrderReceivePage /> },
+      { path: 'inbound/orders/:inboundNo', element: <InboundOrderDetailPage /> },
       ...allMenuLeaves.map((leaf) => {
         const Page = wmsPageRegistry[leaf.path]
         return {

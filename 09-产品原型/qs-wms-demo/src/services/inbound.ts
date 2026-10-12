@@ -1,56 +1,71 @@
+import { lineUnreceivedQty, recomputeInboundOrder, syncInboundPutawayFromOrders } from '@/lib/inbound-derive'
 import { useDb, type DbState } from '@/mock/db'
-import type { Customer, InboundOrder, InboundStatus } from '@/types/wms'
-import type { ActionResult } from './types'
+import type { Customer, InboundOrder, InboundOrderStatus } from '@/types/wms'
 
-const RECEIVABLE_STATUSES: InboundStatus[] = ['PENDING', 'ARRIVED', 'RECEIVING', 'PARTIAL_PUT']
+const RECEIVABLE_STATUSES: InboundOrderStatus[] = ['PENDING_RECEIVE', 'RECEIVING', 'PUTAWAYING']
 
-export const remainInboundItemQty = (item: InboundOrder['items'][number]) =>
-  Math.max(0, item.plannedQty - item.receivedGoodQty - item.receivedDefectQty)
+export const remainInboundItemQty = (item: InboundOrder['items'][number]) => lineUnreceivedQty(item)
 
-export function listInbounds(db: Pick<DbState, 'inbounds'> = useDb.getState()): InboundOrder[] {
-  return db.inbounds
+export function hydrateInbound(order: InboundOrder, db: Pick<DbState, 'putawayOrders'>): InboundOrder {
+  return syncInboundPutawayFromOrders(recomputeInboundOrder(order), db.putawayOrders)
 }
 
-export function listInboundsByWarehouse(warehouseCode: string, db: Pick<DbState, 'inbounds'> = useDb.getState()): InboundOrder[] {
-  return db.inbounds.filter((o) => o.warehouseCode === warehouseCode)
+export function listInbounds(db: Pick<DbState, 'inbounds' | 'putawayOrders'> = useDb.getState()): InboundOrder[] {
+  const putawayOrders = db.putawayOrders ?? []
+  return (db.inbounds ?? []).map((o) => hydrateInbound(o, { putawayOrders }))
 }
 
-export function getInbound(inboundNo: string, db: Pick<DbState, 'inbounds'> = useDb.getState()): InboundOrder | undefined {
-  return db.inbounds.find((o) => o.inboundNo === inboundNo)
+export function listInboundsByWarehouse(warehouseCode: string, db: Pick<DbState, 'inbounds' | 'putawayOrders'> = useDb.getState()): InboundOrder[] {
+  return listInbounds(db).filter((o) => o.warehouseCode === warehouseCode)
 }
 
-export function listCustomers(db: Pick<DbState, 'customers'> = useDb.getState()): Customer[] {
-  return db.customers
+export function getInbound(inboundNo: string, db: Pick<DbState, 'inbounds' | 'putawayOrders'> = useDb.getState()): InboundOrder | undefined {
+  const raw = db.inbounds.find((o) => o.inboundNo === inboundNo)
+  return raw ? hydrateInbound(raw, db) : undefined
 }
 
-export function listReceivableInbounds(warehouseCode: string, db: Pick<DbState, 'inbounds'> = useDb.getState()): InboundOrder[] {
-  return db.inbounds.filter(
+export function listReceivableInbounds(warehouseCode: string, db: Pick<DbState, 'inbounds' | 'putawayOrders'> = useDb.getState()): InboundOrder[] {
+  return listInboundsByWarehouse(warehouseCode, db).filter(
     (o) =>
-      o.warehouseCode === warehouseCode &&
+      o.receiptCloseFlag !== 'CONFIRMED' &&
       RECEIVABLE_STATUSES.includes(o.status) &&
       o.items.some((i) => remainInboundItemQty(i) > 0),
   )
 }
 
-export function signInbound(inboundNo: string): ActionResult {
-  return useDb.getState().signInbound(inboundNo)
+type ActionResult = { ok: true } | { ok: false; errorKey: string }
+
+export function confirmReceiptClose(inboundNo: string, operator = 'admin'): ActionResult {
+  return useDb.getState().confirmReceiptClose(inboundNo, operator)
 }
 
-export function cancelInbound(inboundNo: string): ActionResult {
-  return useDb.getState().cancelInbound(inboundNo)
+export function mockPushInboundInstruction(input: Parameters<DbState['mockPushInboundInstruction']>[0]) {
+  return useDb.getState().mockPushInboundInstruction(input)
 }
 
-export function receiveInboundItem(input: {
+/** 收货提交（两端共用）：一次提交含 1～N 个容器，生成一条收货记录 */
+export function submitReceipt(input: Parameters<DbState['submitReceipt']>[0]): ActionResult {
+  return useDb.getState().submitReceipt(input)
+}
+
+export function submitContainerReceipt(input: {
   inboundNo: string
-  skuCode: string
-  goodQty: number
-  defectQty: number
+  containerNo?: string
+  bulkPiece?: boolean
+  lines: import('@/types/inbound').ContainerReceiptLineInput[]
   operator: string
 }): ActionResult {
-  return useDb.getState().receiveInboundItem(input)
+  return useDb.getState().submitContainerReceipt(input)
 }
 
 export function getInboundActions() {
-  const { signInbound: sign, cancelInbound: cancel, receiveInboundItem: receive } = useDb.getState()
-  return { signInbound: sign, cancelInbound: cancel, receiveInboundItem: receive }
+  const state = useDb.getState()
+  return {
+    confirmReceiptClose: state.confirmReceiptClose,
+    mockPushInboundInstruction: state.mockPushInboundInstruction,
+    submitReceipt: state.submitReceipt,
+    submitContainerReceipt: state.submitContainerReceipt,
+  }
 }
+
+export type { Customer }

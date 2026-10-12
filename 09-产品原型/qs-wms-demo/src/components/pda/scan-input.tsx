@@ -1,6 +1,7 @@
 import { ScanLine } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import { cn } from '@/lib/utils'
 
 let audioCtx: AudioContext | undefined
@@ -59,6 +60,9 @@ export function ScanInput({ label, onScan, candidates }: ScanInputProps) {
     setValue('')
     inputRef.current?.focus()
   }
+
+  // 焦点不在扫码框时（如关闭弹窗后），扫到的码也按本步处理，不丢（规范 §4.2）
+  usePdaScanListener(submit)
 
   return (
     <div className="flex flex-col gap-2">

@@ -1,4 +1,4 @@
-import type { InboundOrder, InventoryRecord, PutawayTask, SkuMaster } from '@/types/wms'
+import type { InboundOrder, InventoryRecord, PutawayOrder, SkuMaster } from '@/types/wms'
 import { PRODUCT_FORM_I18N, PRODUCT_FORM_OPTIONS } from '@/lib/location-master'
 
 export { PRODUCT_FORM_I18N, PRODUCT_FORM_OPTIONS }
@@ -88,7 +88,7 @@ export function hasSkuStock(inventory: InventoryRecord[], customerId: string, sk
 
 export function hasOpenSkuWork(
   inbounds: InboundOrder[],
-  putawayTasks: PutawayTask[],
+  putawayOrders: PutawayOrder[],
   customerId: string,
   skuCode: string,
 ): boolean {
@@ -96,12 +96,11 @@ export function hasOpenSkuWork(
     (o) =>
       o.customerId === customerId &&
       o.status !== 'COMPLETED' &&
-      o.status !== 'CANCELLED' &&
       o.items.some((i) => i.skuCode === skuCode),
   )
   if (openInbound) return true
-  return putawayTasks.some(
-    (t) => t.customerId === customerId && t.skuCode === skuCode && t.status !== 'COMPLETED',
+  return putawayOrders.some(
+    (p) => p.customerId === customerId && p.status !== 'COMPLETED' && p.planLines.some((l) => l.skuCode === skuCode),
   )
 }
 

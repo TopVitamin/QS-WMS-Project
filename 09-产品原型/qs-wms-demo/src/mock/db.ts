@@ -12,36 +12,72 @@ import {
 } from '@/lib/sku-master'
 import { blockingLocationCodes } from '@/lib/zone-master'
 import { customerHasInventory } from '@/lib/customer-master'
+import {
+  canConfirmReceiptClose,
+  recomputeInboundOrder,
+  syncInboundPutawayFromOrders,
+} from '@/lib/inbound-derive'
 import type {
   AuditLog,
   CarrierMaster,
   ChannelMaster,
   CustomerMaster,
   InboundOrder,
-  InventoryLogType,
   LocationMaster,
-  PutawayTask,
+  Sku,
   SkuMaster,
   UsageStatus,
   WarehouseMaster,
   ZoneMaster,
 } from '@/types/wms'
+import type { ContainerReceiptLineInput, ReceiptContainerInput } from '@/types/inbound'
+import { applyContainerReceipt, applyReceipt } from './inbound-receive-actions'
+import { applyRemovePutawayLine, applySavePutawayLine, applySubmitPutawayOrder } from './putaway-actions'
 import { createSeedData, type SeedData } from './seed'
+import { nextDocNo } from '@/lib/doc-no'
+
+// SeedData includes receiptRecords / putawayOrders / inboundExceptions
 
 type ActionResult = { ok: true } | { ok: false; errorKey: string }
 
+export interface MockPushInboundInput {
+  customerId: string
+  warehouseCode: string
+  bizType: InboundOrder['bizType']
+  upstreamNo: string
+  skuCode: string
+  plannedQty: number
+  arrivalMethod?: InboundOrder['arrivalMethod']
+  containerNo?: string
+  trackingNos?: string
+  etaAt?: string
+}
+
 interface DbActions {
   resetDemo: () => void
-  signInbound: (inboundNo: string) => ActionResult
-  cancelInbound: (inboundNo: string) => ActionResult
-  receiveInboundItem: (input: {
+  confirmReceiptClose: (inboundNo: string, operator: string) => ActionResult
+  mockPushInboundInstruction: (input: MockPushInboundInput) => ActionResult & { inboundNo?: string }
+  /** 收货提交（两端共用）：一次提交含 1～N 个容器，生成一条收货记录（主 PRD R16） */
+  submitReceipt: (input: { inboundNo: string; containers: ReceiptContainerInput[]; operator: string }) => ActionResult
+  /** 管理端收货作业台：单容器封装 */
+  submitContainerReceipt: (input: {
     inboundNo: string
-    skuCode: string
-    goodQty: number
-    defectQty: number
+    containerNo?: string
+    bulkPiece?: boolean
+    lines: ContainerReceiptLineInput[]
     operator: string
   }) => ActionResult
-  putaway: (input: { putawayNo: string; locationCode: string; qty: number; operator: string }) => ActionResult
+  /** PDA 上架：保存落位，只记进度不动库存（主 PRD R10） */
+  savePutawayLine: (input: {
+    putawayNo: string
+    locationCode: string
+    skuCode: string
+    qty: number
+    operator: string
+  }) => ActionResult
+  removePutawayLine: (input: { putawayNo: string; locationCode: string; skuCode: string; operator: string }) => ActionResult
+  /** PDA 上架：提交上架单，暂存库位库存移到目标货位 */
+  submitPutawayOrder: (input: { putawayNo: string; operator: string }) => ActionResult
   updateWarehouseMaster: (
     code: string,
     patch: Omit<WarehouseMaster, 'code' | 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy'>,
@@ -120,30 +156,13 @@ export type DbState = SeedData & DbActions
 const nowIso = () => new Date().toISOString()
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 
-function resolveInboundStatus(order: InboundOrder): InboundOrder['status'] {
-  const planned = order.items.reduce((s, i) => s + i.plannedQty, 0)
-  const received = order.items.reduce((s, i) => s + i.receivedGoodQty + i.receivedDefectQty, 0)
-  const good = order.items.reduce((s, i) => s + i.receivedGoodQty, 0)
-  const putaway = order.items.reduce((s, i) => s + i.putawayQty, 0)
-  if (received >= planned && putaway >= good) return 'COMPLETED'
-  if (putaway > 0) return 'PARTIAL_PUT'
-  return 'RECEIVING'
+function nextInboundNo(inbounds: InboundOrder[]): string {
+  return nextDocNo('RK', inbounds.map((o) => o.inboundNo))
 }
 
 export const useDb = create<DbState>()(
   persist(
     (set, get) => {
-      const log = (entry: {
-        warehouseCode: string
-        type: InventoryLogType
-        refNo: string
-        skuCode: string
-        customerId: string
-        locationCode: string
-        qtyChange: number
-        operator: string
-      }) => ({ id: uid('LOG'), createdAt: nowIso(), ...entry })
-
       const auditLog = (entry: Omit<AuditLog, 'id' | 'createdAt'>) => ({
         id: uid('AUD'),
         createdAt: nowIso(),
@@ -171,222 +190,166 @@ export const useDb = create<DbState>()(
           })
         },
 
-        signInbound: (inboundNo) => {
-          const order = get().inbounds.find((o) => o.inboundNo === inboundNo)
-          if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
-          if (order.status !== 'PENDING') return { ok: false, errorKey: 'error.statusNotAllowed' }
-          set({
-            inbounds: get().inbounds.map((o) =>
-              o.inboundNo === inboundNo ? { ...o, status: 'ARRIVED', updatedAt: nowIso() } : o,
-            ),
-            auditLogs: appendAudit({
-              refType: 'INBOUND',
-              refNo: inboundNo,
-              action: 'INBOUND_SIGN',
-              operator: 'admin',
-            }),
-          })
-          return { ok: true }
-        },
-
-        cancelInbound: (inboundNo) => {
-          const order = get().inbounds.find((o) => o.inboundNo === inboundNo)
-          if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
-          if (order.status !== 'PENDING') return { ok: false, errorKey: 'error.statusNotAllowed' }
-          set({
-            inbounds: get().inbounds.map((o) =>
-              o.inboundNo === inboundNo ? { ...o, status: 'CANCELLED', updatedAt: nowIso() } : o,
-            ),
-            auditLogs: appendAudit({
-              refType: 'INBOUND',
-              refNo: inboundNo,
-              action: 'INBOUND_CANCEL',
-              operator: 'admin',
-            }),
-          })
-          return { ok: true }
-        },
-
-        receiveInboundItem: ({ inboundNo, skuCode, goodQty, defectQty, operator }) => {
+        confirmReceiptClose: (inboundNo, operator) => {
           const state = get()
           const order = state.inbounds.find((o) => o.inboundNo === inboundNo)
           if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
-          if (!['PENDING', 'ARRIVED', 'RECEIVING', 'PARTIAL_PUT'].includes(order.status))
-            return { ok: false, errorKey: 'error.statusNotAllowed' }
-          const item = order.items.find((i) => i.skuCode === skuCode)
-          if (!item) return { ok: false, errorKey: 'error.skuNotInOrder' }
-          if (goodQty + defectQty <= 0) return { ok: false, errorKey: 'error.qtyInvalid' }
-
-          const updatedOrder: InboundOrder = {
-            ...order,
-            updatedAt: nowIso(),
-            items: order.items.map((i) =>
-              i.skuCode === skuCode
-                ? {
-                    ...i,
-                    receivedGoodQty: i.receivedGoodQty + goodQty,
-                    receivedDefectQty: i.receivedDefectQty + defectQty,
-                  }
-                : i,
-            ),
-          }
-          updatedOrder.status = resolveInboundStatus(updatedOrder)
-
-          // 推荐货位：优先同 SKU 已有库存的货位，其次同仓第一个空货位
-          const existing = state.inventory.find(
-            (r) => r.warehouseCode === order.warehouseCode && r.skuCode === skuCode && r.qualityType === 'GOOD',
-          )
-          const occupied = new Set(state.inventory.filter((r) => r.warehouseCode === order.warehouseCode).map((r) => r.locationCode))
-          const empty = state.locations.find(
-            (l) => l.warehouseCode === order.warehouseCode && l.type !== 'STAGING' && l.type !== 'DEFECT' && !occupied.has(l.code),
-          )
-          const suggested = existing?.locationCode ?? empty?.code ?? 'B-01-01'
-
-          let tasks: PutawayTask[] = state.putawayTasks
-          if (goodQty > 0) {
-            const open = tasks.find(
-              (t) => t.inboundNo === inboundNo && t.skuCode === skuCode && t.status !== 'COMPLETED',
-            )
-            if (open) {
-              tasks = tasks.map((t) => (t === open ? { ...t, planQty: t.planQty + goodQty } : t))
-            } else {
-              tasks = [...tasks]
-              tasks.unshift({
-                putawayNo: `PUT${Date.now().toString().slice(-10)}`,
-                inboundNo,
-                warehouseCode: order.warehouseCode,
-                customerId: order.customerId,
-                skuCode,
-                qualityType: 'GOOD',
-                planQty: goodQty,
-                actualQty: 0,
-                sourceLocationCode: 'STAGE-IN-01',
-                suggestedLocationCode: suggested,
-                status: 'PENDING',
-                createdAt: nowIso(),
-              })
-            }
-          }
-
-          const inventory = [...state.inventory]
-          if (defectQty > 0) {
-            inventory.push({
-              id: uid('INV'),
-              warehouseCode: order.warehouseCode,
-              locationCode: 'DEFECT-01',
-              customerId: order.customerId,
-              skuCode,
-              qualityType: 'DEFECTIVE',
-              onHandQty: defectQty,
-              lockedQty: 0,
-              firstInboundAt: nowIso(),
-            })
-          }
-
+          const synced = syncInboundPutawayFromOrders(order, state.putawayOrders)
+          if (!canConfirmReceiptClose(synced)) return { ok: false, errorKey: 'inbound.receiptCloseStale' }
+          if (synced.receiptCloseFlag === 'CONFIRMED') return { ok: true }
+          const ts = nowIso()
+          const next = recomputeInboundOrder({
+            ...synced,
+            receiptCloseFlag: 'CONFIRMED',
+            receiptClosedBy: operator,
+            receiptClosedAt: ts,
+            updatedAt: ts,
+          })
           set({
-            inbounds: state.inbounds.map((o) => (o.inboundNo === inboundNo ? updatedOrder : o)),
-            putawayTasks: tasks,
-            inventory,
-            inventoryLogs: [
-              log({
-                warehouseCode: order.warehouseCode,
-                type: 'RECEIVE',
-                refNo: inboundNo,
-                skuCode,
-                customerId: order.customerId,
-                locationCode: 'STAGE-IN-01',
-                qtyChange: goodQty + defectQty,
-                operator,
-              }),
-              ...state.inventoryLogs,
+            inbounds: state.inbounds.map((o) => (o.inboundNo === inboundNo ? next : o)),
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: inboundNo,
+              action: 'INBOUND_RECEIPT_CLOSE',
+              operator,
+            }),
+          })
+          return { ok: true }
+        },
+
+        mockPushInboundInstruction: (input) => {
+          const state = get()
+          if (!input.customerId) return { ok: false, errorKey: 'inbound.mock.ownerRequired' }
+          if (!input.upstreamNo.trim()) return { ok: false, errorKey: 'inbound.mock.upstreamRequired' }
+          if (input.plannedQty <= 0) return { ok: false, errorKey: 'inbound.mock.qtyInvalid' }
+          const owner = state.customerMasters.find((c) => c.id === input.customerId)
+          const sku = owner ? findSkuMaster(state.skuMasters, owner.code, input.skuCode) : undefined
+          if (!sku || sku.status !== 'ENABLED') return { ok: false, errorKey: 'inbound.mock.skuInvalid' }
+          const dup = state.inbounds.some(
+            (o) => o.customerId === input.customerId && o.upstreamNo === input.upstreamNo.trim(),
+          )
+          if (dup) return { ok: false, errorKey: 'inbound.mockDuplicateUpstream' }
+
+          const inboundNo = nextInboundNo(state.inbounds)
+          const ts = nowIso()
+          const order = recomputeInboundOrder({
+            inboundNo,
+            customerId: input.customerId,
+            warehouseCode: input.warehouseCode,
+            bizType: input.bizType,
+            upstreamNo: input.upstreamNo.trim(),
+            arrivalMethod: input.arrivalMethod,
+            containerNo: input.containerNo,
+            trackingNos: input.trackingNos,
+            etaAt: input.etaAt,
+            receiptCloseFlag: 'NOT_CONFIRMED',
+            status: 'PENDING_RECEIVE',
+            items: [
+              {
+                lineNo: 1,
+                skuCode: input.skuCode,
+                plannedQty: input.plannedQty,
+                receivedQty: 0,
+                rejectedQty: 0,
+                goodQty: 0,
+                defectQty: 0,
+                putawayQty: 0,
+                status: 'PENDING_RECEIVE',
+              },
             ],
+            createdAt: ts,
+            updatedAt: ts,
+          })
+          set({
+            inbounds: [order, ...state.inbounds],
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: inboundNo,
+              action: 'INBOUND_MOCK_PUSH',
+              operator: 'admin',
+              detail: input.upstreamNo,
+            }),
+          })
+          return { ok: true, inboundNo }
+        },
+
+        submitReceipt: ({ inboundNo, containers, operator }) => {
+          const result = applyReceipt(get(), { inboundNo, containers, operator })
+          if (!result.ok) return result
+          const boxes = containers.filter((c) => c.lines.length > 0)
+          set({
+            ...result.patch,
             auditLogs: appendAudit({
               refType: 'INBOUND',
               refNo: inboundNo,
               action: 'INBOUND_RECEIVE',
               operator,
-              detail: `${skuCode} +${goodQty}${defectQty > 0 ? ` / defect +${defectQty}` : ''}`,
+              detail: `${boxes.map((c) => (c.bulkPiece ? 'bulk' : c.containerNo)).join(', ')} · ${boxes.reduce((s, c) => s + c.lines.length, 0)} lines`,
             }),
           })
           return { ok: true }
         },
 
-        putaway: ({ putawayNo, locationCode, qty, operator }) => {
+        submitContainerReceipt: ({ inboundNo, containerNo, bulkPiece, lines, operator }) => {
           const state = get()
-          const task = state.putawayTasks.find((t) => t.putawayNo === putawayNo)
-          if (!task) return { ok: false, errorKey: 'error.taskNotFound' }
-          const location = state.locations.find((l) => l.warehouseCode === task.warehouseCode && l.code === locationCode)
-          if (!location) return { ok: false, errorKey: 'error.locationNotFound' }
-          const remain = task.planQty - task.actualQty
-          if (qty <= 0 || qty > remain) return { ok: false, errorKey: 'error.qtyInvalid' }
-
-          const actualQty = task.actualQty + qty
-          const updatedTask: PutawayTask = {
-            ...task,
-            actualQty,
-            actualLocationCode: locationCode,
-            status: actualQty >= task.planQty ? 'COMPLETED' : 'DOING',
-            completedAt: actualQty >= task.planQty ? nowIso() : undefined,
-          }
-
-          const inventory = [...state.inventory]
-          const idx = inventory.findIndex(
-            (r) =>
-              r.warehouseCode === task.warehouseCode &&
-              r.locationCode === locationCode &&
-              r.skuCode === task.skuCode &&
-              r.qualityType === task.qualityType,
-          )
-          if (idx >= 0) {
-            inventory[idx] = { ...inventory[idx], onHandQty: inventory[idx].onHandQty + qty }
-          } else {
-            inventory.unshift({
-              id: uid('INV'),
-              warehouseCode: task.warehouseCode,
-              locationCode,
-              customerId: task.customerId,
-              skuCode: task.skuCode,
-              qualityType: task.qualityType,
-              onHandQty: qty,
-              lockedQty: 0,
-              firstInboundAt: nowIso(),
-            })
-          }
-
-          const inbounds = state.inbounds.map((o) => {
-            if (o.inboundNo !== task.inboundNo) return o
-            const next: InboundOrder = {
-              ...o,
-              updatedAt: nowIso(),
-              items: o.items.map((i) => (i.skuCode === task.skuCode ? { ...i, putawayQty: i.putawayQty + qty } : i)),
-            }
-            next.status = resolveInboundStatus(next)
-            return next
-          })
-
+          const result = applyContainerReceipt(state, { inboundNo, containerNo, bulkPiece, lines, operator })
+          if (!result.ok) return result
           set({
-            putawayTasks: state.putawayTasks.map((t) => (t.putawayNo === putawayNo ? updatedTask : t)),
-            inventory,
-            inbounds,
-            inventoryLogs: [
-              log({
-                warehouseCode: task.warehouseCode,
-                type: 'PUTAWAY',
-                refNo: task.inboundNo,
-                skuCode: task.skuCode,
-                customerId: task.customerId,
-                locationCode,
-                qtyChange: qty,
-                operator,
-              }),
-              ...state.inventoryLogs,
-            ],
+            ...result.patch,
             auditLogs: appendAudit({
               refType: 'INBOUND',
-              refNo: task.inboundNo,
+              refNo: inboundNo,
+              action: 'INBOUND_RECEIVE',
+              operator,
+              detail: `container ${containerNo ?? 'bulk'} · ${lines.length} lines`,
+            }),
+          })
+          return { ok: true }
+        },
+
+        savePutawayLine: ({ putawayNo, locationCode, skuCode, qty, operator }) => {
+          const result = applySavePutawayLine(get(), { putawayNo, locationCode, skuCode, qty })
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: result.order!.inboundNo,
+              action: 'PUTAWAY_SAVE',
+              operator,
+              detail: `${putawayNo} · ${skuCode} ×${qty} → ${locationCode.toUpperCase()}`,
+            }),
+          })
+          return { ok: true }
+        },
+
+        removePutawayLine: ({ putawayNo, locationCode, skuCode, operator }) => {
+          const result = applyRemovePutawayLine(get(), { putawayNo, locationCode, skuCode })
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: result.order!.inboundNo,
+              action: 'PUTAWAY_SAVE',
+              operator,
+              detail: `${putawayNo} · ${skuCode} @ ${locationCode} removed`,
+            }),
+          })
+          return { ok: true }
+        },
+
+        submitPutawayOrder: ({ putawayNo, operator }) => {
+          const result = applySubmitPutawayOrder(get(), { putawayNo, operator })
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: result.order!.inboundNo,
               action: 'PUTAWAY',
               operator,
-              detail: `${task.skuCode} ×${qty} → ${locationCode}`,
+              detail: `${putawayNo} · ${result.order!.actualLines.length} lines`,
             }),
           })
           return { ok: true }
@@ -728,10 +691,10 @@ export const useDb = create<DbState>()(
           if (status === 'DISABLED') {
             const inv = get().inventory
             const inbounds = get().inbounds
-            const tasks = get().putawayTasks
+            const putawayOrders = get().putawayOrders
             if (
               hasSkuStock(inv, prev.customerId, prev.code) ||
-              hasOpenSkuWork(inbounds, tasks, prev.customerId, prev.code)
+              hasOpenSkuWork(inbounds, putawayOrders, prev.customerId, prev.code)
             ) {
               return { ok: false, errorKey: 'masterSku.error.disableBlocked' }
             }
@@ -978,8 +941,28 @@ export const useDb = create<DbState>()(
     {
       name: 'qs-wms-demo-db',
       // 修改 seed.ts 或数据结构后把版本号 +1，浏览器里的旧演示数据会被替换为新种子
-      version: 10,
-      migrate: () => createSeedData(),
+      version: 17,
+      migrate: (_persisted: unknown, fromVersion: number) => {
+        if (fromVersion < 17) return createSeedData() as unknown as typeof _persisted
+        return _persisted
+      },
+      merge: (persisted, current) => {
+        const next = { ...current, ...(persisted as object) } as typeof current
+        const seed = createSeedData()
+        const inbounds = next.inbounds ?? []
+        const legacy = inbounds.length > 0 && !inbounds.some((o) => o.inboundNo.startsWith('RK-'))
+        if (inbounds.length === 0 || legacy) {
+          next.inbounds = seed.inbounds
+          next.receiptRecords = seed.receiptRecords
+          next.putawayOrders = seed.putawayOrders
+          next.inboundExceptions = seed.inboundExceptions
+        } else {
+          next.receiptRecords = next.receiptRecords ?? seed.receiptRecords
+          next.putawayOrders = next.putawayOrders ?? seed.putawayOrders
+          next.inboundExceptions = next.inboundExceptions ?? seed.inboundExceptions
+        }
+        return next
+      },
       partialize: (s) => ({
         warehouses: s.warehouses,
         warehouseMasters: s.warehouseMasters,
@@ -994,7 +977,9 @@ export const useDb = create<DbState>()(
         skuBarcodes: s.skuBarcodes,
         locations: s.locations,
         inbounds: s.inbounds,
-        putawayTasks: s.putawayTasks,
+        receiptRecords: s.receiptRecords,
+        putawayOrders: s.putawayOrders,
+        inboundExceptions: s.inboundExceptions,
         inventory: s.inventory,
         inventoryLogs: s.inventoryLogs,
         packages: s.packages,
@@ -1005,16 +990,41 @@ export const useDb = create<DbState>()(
 )
 
 /** 常用查找：用于表格渲染时把 ID 转成名称 */
+/** 商品主数据（含基础资料新模型）转成展示用 Sku；仓内规格字段缺失时按 0 兜底 */
+function skuFromMaster(m: SkuMaster): Sku {
+  return {
+    code: m.code,
+    customerId: m.customerId,
+    name: m.name,
+    barcode: m.primaryBarcode ?? '',
+    weightG: Math.round((m.grossWeightKg ?? 0) * 1000),
+    lengthCm: m.lengthCm ?? 0,
+    widthCm: m.widthCm ?? 0,
+    heightCm: m.heightCm ?? 0,
+    declaredValue: { amount: 0, currency: 'USD' },
+  }
+}
+
 export const useLookups = () => {
   const customers = useDb((s) => s.customers)
   const skus = useDb((s) => s.skus)
+  const skuMasters = useDb((s) => s.skuMasters)
   return useMemo(() => {
     const customerMap = new Map(customers.map((c) => [c.id, c]))
     const skuMap = new Map(skus.map((s) => [s.code, s]))
+    // 演示商品（如 CABLE-01）只存在于商品资料 skuMasters，展示时兜底其中文名与主条码
+    skuMasters.forEach((m) => {
+      const existing = skuMap.get(m.code)
+      if (!existing) {
+        skuMap.set(m.code, skuFromMaster(m))
+      } else if (!existing.barcode && m.primaryBarcode) {
+        skuMap.set(m.code, { ...existing, barcode: m.primaryBarcode })
+      }
+    })
     return {
       customerName: (id: string) => customerMap.get(id)?.name ?? id,
       customerCode: (id: string) => customerMap.get(id)?.code ?? id,
       sku: (code: string) => skuMap.get(code),
     }
-  }, [customers, skus])
+  }, [customers, skus, skuMasters])
 }

@@ -1,28 +1,32 @@
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useDb } from '@/mock/db'
 import {
   listLocationsByWarehouse,
-  listPendingPutawayTasks,
-  listPutawayTasks,
-  putaway as putawayAction,
+  listPendingPutawayOrders,
+  removePutawayLine,
+  savePutawayLine,
+  submitPutawayOrder,
 } from '@/services/putaway'
 
 export function usePutaway(warehouseCode: string) {
-  const tasks = useDb((s) => s.putawayTasks)
+  const putawayOrders = useDb((s) => s.putawayOrders)
   const locations = useDb((s) => s.locations)
+  const inventory = useDb((s) => s.inventory)
 
-  const pendingTasks = useMemo(() => listPendingPutawayTasks(warehouseCode, { putawayTasks: tasks }), [tasks, warehouseCode])
+  const pendingOrders = useMemo(
+    () => listPendingPutawayOrders(warehouseCode, { putawayOrders }),
+    [putawayOrders, warehouseCode],
+  )
   const warehouseLocations = useMemo(() => listLocationsByWarehouse(warehouseCode, { locations }), [locations, warehouseCode])
 
-  const putaway = useCallback(
-    (input: { putawayNo: string; locationCode: string; qty: number; operator: string }) => putawayAction(input),
-    [],
-  )
-
   return {
-    tasks: listPutawayTasks({ putawayTasks: tasks }),
-    pendingTasks,
+    putawayOrders,
+    pendingOrders,
     locations: warehouseLocations,
-    putaway,
+    /** 货位校验与推荐所需的全量上下文 */
+    locationContext: { locations, inventory, putawayOrders },
+    savePutawayLine,
+    removePutawayLine,
+    submitPutawayOrder,
   }
 }

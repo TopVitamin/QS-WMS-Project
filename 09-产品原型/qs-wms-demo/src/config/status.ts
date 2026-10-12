@@ -1,4 +1,5 @@
-import type { InboundStatus, PackageStatus, PutawayTaskStatus, UsageStatus } from '@/types/wms'
+import type { InboundOrderStatus, PackageStatus, UsageStatus } from '@/types/wms'
+import type { PutawayOrderStatus } from '@/types/inbound'
 
 /**
  * 全站统一的状态色调。新增状态时只能从这里选色调，不要在页面里自定义颜色。
@@ -12,20 +13,18 @@ export interface StatusMeta {
   labelKey: string
 }
 
-export const inboundStatusMeta: Record<InboundStatus, StatusMeta> = {
-  PENDING: { tone: 'orange', labelKey: 'status.inbound.PENDING' },
-  ARRIVED: { tone: 'cyan', labelKey: 'status.inbound.ARRIVED' },
-  RECEIVING: { tone: 'blue', labelKey: 'status.inbound.RECEIVING' },
-  PARTIAL_PUT: { tone: 'purple', labelKey: 'status.inbound.PARTIAL_PUT' },
-  COMPLETED: { tone: 'green', labelKey: 'status.inbound.COMPLETED' },
-  ABNORMAL: { tone: 'red', labelKey: 'status.inbound.ABNORMAL' },
-  CANCELLED: { tone: 'gray', labelKey: 'status.inbound.CANCELLED' },
+export const inboundOrderStatusMeta: Record<InboundOrderStatus, StatusMeta> = {
+  PENDING_RECEIVE: { tone: 'gray', labelKey: 'status.inboundOrder.PENDING_RECEIVE' },
+  RECEIVING: { tone: 'blue', labelKey: 'status.inboundOrder.RECEIVING' },
+  PUTAWAYING: { tone: 'orange', labelKey: 'status.inboundOrder.PUTAWAYING' },
+  COMPLETED: { tone: 'green', labelKey: 'status.inboundOrder.COMPLETED' },
+  CANCELLED: { tone: 'gray', labelKey: 'status.inboundOrder.CANCELLED' },
 }
 
-export const putawayStatusMeta: Record<PutawayTaskStatus, StatusMeta> = {
-  PENDING: { tone: 'orange', labelKey: 'status.putaway.PENDING' },
-  DOING: { tone: 'blue', labelKey: 'status.putaway.DOING' },
-  COMPLETED: { tone: 'green', labelKey: 'status.putaway.COMPLETED' },
+export const putawayOrderStatusMeta: Record<PutawayOrderStatus, StatusMeta> = {
+  PENDING: { tone: 'orange', labelKey: 'status.putawayOrder.PENDING' },
+  PUTAWAYING: { tone: 'blue', labelKey: 'status.putawayOrder.PUTAWAYING' },
+  COMPLETED: { tone: 'green', labelKey: 'status.putawayOrder.COMPLETED' },
 }
 
 export const usageStatusMeta: Record<UsageStatus, StatusMeta> = {

@@ -8,8 +8,9 @@ import { Panel } from '@/components/biz/page-container'
 import { StatCard, type StatCardTone } from '@/components/biz/stat-card'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
-import { inboundStatusMeta, packageStatusMeta } from '@/config/status'
+import { inboundOrderStatusMeta, packageStatusMeta } from '@/config/status'
 import { formatDateTime } from '@/lib/format'
+import { listOpenPutawayOrders, pendingPutawayQty } from '@/lib/putaway'
 import { toneDotClass } from '@/lib/tone-styles'
 import { cn } from '@/lib/utils'
 import { useDb, useLookups } from '@/mock/db'
@@ -23,13 +24,13 @@ export function DashboardPage() {
   const operator = useSettings((s) => s.operator)
   const allInbounds = useDb((s) => s.inbounds)
   const allPackages = useDb((s) => s.packages)
-  const allTasks = useDb((s) => s.putawayTasks)
+  const allPutawayOrders = useDb((s) => s.putawayOrders)
   const { customerName } = useLookups()
 
   const data = useMemo(() => {
     const inbounds = allInbounds.filter((o) => o.warehouseCode === warehouse.code)
     const packages = allPackages.filter((p) => p.warehouseCode === warehouse.code)
-    const tasks = allTasks.filter((p) => p.warehouseCode === warehouse.code && p.status !== 'COMPLETED')
+    const openPutaways = listOpenPutawayOrders(allPutawayOrders, warehouse.code)
     const dayStart = dayjs().tz(warehouse.timezone).startOf('day')
     const trend = Array.from({ length: 7 }, (_, i) => {
       const d = dayStart.subtract(6 - i, 'day')
@@ -45,10 +46,10 @@ export function DashboardPage() {
       .filter((p) => p.status === 'SHIPPED')
       .reduce((a, p) => a + p.shippingFee.amount, 0)
     return {
-      pendingInbound: inbounds.filter((o) => o.status === 'PENDING' || o.status === 'ARRIVED').length,
-      pendingPutaway: tasks.reduce((a, t) => a + t.planQty - t.actualQty, 0),
+      pendingInbound: inbounds.filter((o) => o.status === 'PENDING_RECEIVE').length,
+      pendingPutaway: openPutaways.reduce((a, p) => a + pendingPutawayQty(p), 0),
       readyPrint: packages.filter((p) => p.status === 'READY_PRINT').length,
-      abnormal: inbounds.filter((o) => o.status === 'ABNORMAL').length + packages.filter((p) => p.status === 'HOLD').length,
+      abnormal: packages.filter((p) => p.status === 'HOLD').length,
       shipped: packages.filter((p) => p.status === 'SHIPPED' && dayjs(p.createdAt).isAfter(dayStart.subtract(1, 'day'))).length,
       trend,
       pkgDist,
@@ -56,7 +57,7 @@ export function DashboardPage() {
       fee: { amount: fee, currency: warehouse.currency },
       recent: inbounds.slice(0, 6),
     }
-  }, [allInbounds, allPackages, allTasks, warehouse])
+  }, [allInbounds, allPackages, allPutawayOrders, warehouse])
 
   const kpis: { label: string; value: number; icon: typeof PackageOpen; tone: StatCardTone; to: string }[] = [
     { label: t('dashboard.pendingInbound'), value: data.pendingInbound, icon: PackageOpen, tone: 'warning', to: '/wms/inbound/orders' },
@@ -154,7 +155,7 @@ export function DashboardPage() {
                 <span className="text-xs text-muted-foreground">
                   {o.items.length} SKU · <Num value={o.items.reduce((a, i) => a + i.plannedQty, 0)} />
                 </span>
-                <StatusBadge meta={inboundStatusMeta[o.status]} />
+                <StatusBadge meta={inboundOrderStatusMeta[o.status]} />
                 <DateTime value={o.createdAt} className="w-32 text-right text-xs text-muted-foreground" />
               </div>
             ))}

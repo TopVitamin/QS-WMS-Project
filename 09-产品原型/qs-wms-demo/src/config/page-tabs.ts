@@ -68,6 +68,16 @@ export function resolvePageTab(pathname: string): PageTab | undefined {
     return { path: pathname, titleKey: 'masterSku.tabDetail' }
   }
 
+  const inboundReceive = pathname.match(/^\/wms\/inbound\/orders\/([^/]+)\/receive$/)
+  if (inboundReceive) {
+    return { path: pathname, titleKey: 'inbound.tabReceive' }
+  }
+
+  const inboundDetail = pathname.match(/^\/wms\/inbound\/orders\/([^/]+)$/)
+  if (inboundDetail) {
+    return { path: pathname, titleKey: 'inbound.tabDetail' }
+  }
+
   const leaf = allMenuLeaves.find((m) => pathname === m.path)
   return leaf ? { path: leaf.path, titleKey: leaf.titleKey } : undefined
 }

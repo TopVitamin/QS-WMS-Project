@@ -37,15 +37,22 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     <ConfirmContext.Provider value={confirm}>
       {children}
       <Dialog open={state.open} onOpenChange={(open) => !open && close(false)}>
-        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogContent
+          className="sm:max-w-md"
+          showCloseButton={false}
+          // 阻断提示多由扫码触发：不自动聚焦按钮，避免扫描头紧跟的回车把弹窗直接关掉（PDA 规范 §5）
+          onOpenAutoFocus={state.hideCancel ? (e) => e.preventDefault() : undefined}
+        >
           <DialogHeader>
             <DialogTitle>{state.title}</DialogTitle>
             {state.description && <DialogDescription>{state.description}</DialogDescription>}
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => close(false)}>
-              {state.cancelText ?? t('common.cancel')}
-            </Button>
+            {!state.hideCancel && (
+              <Button variant="outline" onClick={() => close(false)}>
+                {state.cancelText ?? t('common.cancel')}
+              </Button>
+            )}
             <Button
               variant={state.variant === 'destructive' ? 'destructive' : 'default'}
               onClick={() => close(true)}

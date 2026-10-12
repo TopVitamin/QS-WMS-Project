@@ -72,6 +72,12 @@ interface DataTableProps<TData extends RowData> {
   className?: string
   /** 列 id → false 表示默认隐藏（列设置仍可打开） */
   initialColumnVisibility?: Record<string, boolean>
+  /** 隐藏右上角列设置（收货作业台等固定列场景） */
+  showColumnSettings?: boolean
+  /** 关闭分页，一次展示全部行 */
+  paginate?: boolean
+  onRowClick?: (row: TData) => void
+  getRowClassName?: (row: TData) => string | undefined
 }
 
 export function DataTable<TData extends RowData>({
@@ -84,6 +90,10 @@ export function DataTable<TData extends RowData>({
   pageSize = 20,
   className,
   initialColumnVisibility,
+  showColumnSettings = true,
+  paginate = true,
+  onRowClick,
+  getRowClassName,
 }: DataTableProps<TData>) {
   const { t } = useTranslation()
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -118,7 +128,7 @@ export function DataTable<TData extends RowData>({
     state: { rowSelection },
     onRowSelectionChange: setRowSelection,
     initialState: {
-      pagination: { pageIndex: 0, pageSize },
+      pagination: { pageIndex: 0, pageSize: paginate ? pageSize : Math.max(data.length, 1) },
       columnVisibility: initialColumnVisibility ?? {},
     },
     autoResetPageIndex: true,
@@ -147,6 +157,13 @@ export function DataTable<TData extends RowData>({
   const selectedCount = Object.values(rowSelection).filter(Boolean).length
   const rows = table.getRowModel().rows
 
+  useEffect(() => {
+    if (paginate) return
+    table.setPageSize(Math.max(data.length, 1))
+  }, [paginate, data.length, table])
+
+  const showTableToolbar = Boolean(toolbar) || showColumnSettings
+
   const pinClass = (meta: DataColumnMeta | undefined, isHeader: boolean) => {
     if (meta?.pin === 'right')
       return cn('sticky right-0 z-[1] shadow-[-6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader && 'z-20 bg-muted')
@@ -159,43 +176,47 @@ export function DataTable<TData extends RowData>({
 
   return (
     <div className={cn('flex min-h-0 flex-col', className)}>
-      <div className="flex h-12 shrink-0 items-center justify-between gap-2 px-4">
-        <div className="flex items-center gap-2">
-          {toolbar}
-          {selectable && selectedCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {t('common.selected', { count: selectedCount })}
-              <button type="button" className="ml-2 text-primary hover:underline" onClick={() => setRowSelection({})}>
-                {t('common.clearSelection')}
-              </button>
-            </span>
+      {showTableToolbar && (
+        <div className="flex h-12 shrink-0 items-center justify-between gap-2 px-4">
+          <div className="flex items-center gap-2">
+            {toolbar}
+            {selectable && selectedCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {t('common.selected', { count: selectedCount })}
+                <button type="button" className="ml-2 text-primary hover:underline" onClick={() => setRowSelection({})}>
+                  {t('common.clearSelection')}
+                </button>
+              </span>
+            )}
+          </div>
+          {showColumnSettings && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={t('common.columns')}>
+                  <Settings2 />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>{t('common.columns')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {table
+                  .getAllLeafColumns()
+                  .filter((c) => c.getCanHide())
+                  .map((c) => (
+                    <DropdownMenuCheckboxItem
+                      key={c.id}
+                      checked={c.getIsVisible()}
+                      onCheckedChange={(v) => c.toggleVisibility(!!v)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {c.columnDef.meta?.label ?? (typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id)}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label={t('common.columns')}>
-              <Settings2 />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{t('common.columns')}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {table
-              .getAllLeafColumns()
-              .filter((c) => c.getCanHide())
-              .map((c) => (
-                <DropdownMenuCheckboxItem
-                  key={c.id}
-                  checked={c.getIsVisible()}
-                  onCheckedChange={(v) => c.toggleVisibility(!!v)}
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  {c.columnDef.meta?.label ?? (typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id)}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-auto border-y">
         <table className="w-full caption-bottom text-sm">
@@ -209,6 +230,8 @@ export function DataTable<TData extends RowData>({
                   return (
                     <TableHead
                       key={header.id}
+                      colSpan={header.colSpan}
+                      rowSpan={header.rowSpan}
                       style={{ width: header.column.id === '__select' ? SELECT_WIDTH : undefined, ...pinStyle(meta) }}
                       className={cn(
                         'sticky top-0 z-10',
@@ -249,10 +272,13 @@ export function DataTable<TData extends RowData>({
                 data-state={row.getIsSelected() ? 'selected' : undefined}
                 className={cn(
                   'group',
+                  onRowClick && 'cursor-pointer',
                   // 底色统一由 tr 下发到每个 td，避免 tr:hover 与固定列 td 各涂一层半透明叠色
                   'hover:bg-transparent hover:[&>td]:bg-muted/50',
                   'data-[state=selected]:bg-transparent data-[state=selected]:[&>td]:bg-muted',
+                  getRowClassName?.(row.original),
                 )}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
               >
                 {row.getVisibleCells().map((cell) => {
                   const meta = cell.column.columnDef.meta
@@ -284,42 +310,44 @@ export function DataTable<TData extends RowData>({
         )}
       </div>
 
-      <div className="flex h-12 shrink-0 items-center justify-end gap-3 px-4 text-xs text-muted-foreground">
-        <span>{t('common.total', { count: data.length })}</span>
-        <Select value={String(currentSize)} onValueChange={(v) => table.setPageSize(Number(v))}>
-          <SelectTrigger size="sm" className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[10, 20, 50, 100].map((s) => (
-              <SelectItem key={s} value={String(s)}>
-                {t('common.pageSize', { size: s })}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="tabular-nums">{t('common.pageOf', { page: pageIndex + 1, total: pageCount })}</span>
-        <div className="flex gap-1">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={t('common.prevPage')}
-            disabled={!table.getCanPreviousPage()}
-            onClick={() => table.previousPage()}
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={t('common.nextPage')}
-            disabled={!table.getCanNextPage()}
-            onClick={() => table.nextPage()}
-          >
-            <ChevronRight />
-          </Button>
+      {paginate && (
+        <div className="flex h-12 shrink-0 items-center justify-end gap-3 px-4 text-xs text-muted-foreground">
+          <span>{t('common.total', { count: data.length })}</span>
+          <Select value={String(currentSize)} onValueChange={(v) => table.setPageSize(Number(v))}>
+            <SelectTrigger size="sm" className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50, 100].map((s) => (
+                <SelectItem key={s} value={String(s)}>
+                  {t('common.pageSize', { size: s })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="tabular-nums">{t('common.pageOf', { page: pageIndex + 1, total: pageCount })}</span>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label={t('common.prevPage')}
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+            >
+              <ChevronLeft />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label={t('common.nextPage')}
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

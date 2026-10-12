@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { DashboardPage } from './dashboard/dashboard-page'
-import { InboundListPage } from './inbound/inbound-list-page'
+import { InboundOrderListPage } from './inbound/inbound-order-list-page'
 import { StockPage } from './inventory/stock-page'
 import { ChannelListPage } from './master/channel-list-page'
 import { CustomerListPage } from './master/customer-list-page'
@@ -12,7 +12,7 @@ import { ZoneListPage } from './master/zone-list-page'
 /** 已实现的后台页面；菜单里其他页面自动落到"建设中" */
 export const wmsPageRegistry: Record<string, ComponentType> = {
   '/wms/dashboard': DashboardPage,
-  '/wms/inbound/orders': InboundListPage,
+  '/wms/inbound/orders': InboundOrderListPage,
   '/wms/inventory/stock': StockPage,
   '/wms/master/warehouses': WarehouseListPage,
   '/wms/master/zones': ZoneListPage,

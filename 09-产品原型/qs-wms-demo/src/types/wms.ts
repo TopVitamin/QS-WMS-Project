@@ -235,61 +235,25 @@ export interface LocationMaster {
   updatedBy: string
 }
 
-/** 附录B 2.1 入库单状态 */
-export type InboundStatus =
-  | 'PENDING'
-  | 'ARRIVED'
-  | 'RECEIVING'
-  | 'PARTIAL_PUT'
-  | 'COMPLETED'
-  | 'ABNORMAL'
-  | 'CANCELLED'
-
-export type InboundBizType = 'STANDARD' | 'FBA_RETURN' | 'TRANSFER'
 export type LoadType = 'CONTAINER' | 'PALLET' | 'BOX'
 
-export interface InboundItem {
-  skuCode: string
-  plannedQty: number
-  receivedGoodQty: number
-  receivedDefectQty: number
-  putawayQty: number
-}
-
-export interface InboundOrder {
-  inboundNo: string
-  customerId: string
-  warehouseCode: string
-  bizType: InboundBizType
-  loadType: LoadType
-  containerNo: string
-  plannedCartonQty: number
-  etaAt: string
-  status: InboundStatus
-  items: InboundItem[]
-  remark?: string
-  createdAt: string
-  updatedAt: string
-}
-
-export type PutawayTaskStatus = 'PENDING' | 'DOING' | 'COMPLETED'
-
-export interface PutawayTask {
-  putawayNo: string
-  inboundNo: string
-  warehouseCode: string
-  customerId: string
-  skuCode: string
-  qualityType: QualityType
-  planQty: number
-  actualQty: number
-  sourceLocationCode: string
-  suggestedLocationCode: string
-  actualLocationCode?: string
-  status: PutawayTaskStatus
-  createdAt: string
-  completedAt?: string
-}
+export type {
+  InboundArrivalMethod,
+  InboundBizType,
+  InboundException,
+  InboundExceptionType,
+  InboundLineStatus,
+  InboundOrder,
+  InboundOrderLine,
+  InboundOrderStatus,
+  PutawayActualLine,
+  PutawayOrder,
+  PutawayOrderStatus,
+  PutawayPlanLine,
+  ReceiptCloseFlag,
+  ReceiptRecord,
+  ReceiptRecordLine,
+} from './inbound'
 
 export interface InventoryRecord {
   id: string
@@ -380,9 +344,10 @@ export interface PickTask {
 export type AuditRefType = 'INBOUND' | 'SYSTEM'
 
 export type AuditAction =
-  | 'INBOUND_SIGN'
-  | 'INBOUND_CANCEL'
+  | 'INBOUND_RECEIPT_CLOSE'
+  | 'INBOUND_MOCK_PUSH'
   | 'INBOUND_RECEIVE'
+  | 'PUTAWAY_SAVE'
   | 'PUTAWAY'
   | 'DEMO_RESET'
 

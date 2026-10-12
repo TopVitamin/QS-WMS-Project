@@ -1,38 +1,50 @@
 import { useCallback } from 'react'
 import { useDb } from '@/mock/db'
 import {
-  cancelInbound as cancelInboundAction,
-  listCustomers,
+  confirmReceiptClose as confirmReceiptCloseAction,
+  getInbound,
   listInbounds,
   listReceivableInbounds,
-  receiveInboundItem as receiveInboundItemAction,
-  signInbound as signInboundAction,
+  mockPushInboundInstruction as mockPushAction,
+  submitContainerReceipt as submitContainerReceiptAction,
+  submitReceipt as submitReceiptAction,
 } from '@/services/inbound'
 
 export function useInbound() {
   const inbounds = useDb((s) => s.inbounds)
+  const putawayOrders = useDb((s) => s.putawayOrders ?? [])
   const customers = useDb((s) => s.customers)
 
-  const signInbound = useCallback((inboundNo: string) => signInboundAction(inboundNo), [])
-  const cancelInbound = useCallback((inboundNo: string) => cancelInboundAction(inboundNo), [])
-  const receiveInboundItem = useCallback(
-    (input: { inboundNo: string; skuCode: string; goodQty: number; defectQty: number; operator: string }) =>
-      receiveInboundItemAction(input),
+  const confirmReceiptClose = useCallback((inboundNo: string, operator = 'admin') => confirmReceiptCloseAction(inboundNo, operator), [])
+  const mockPushInboundInstruction = useCallback(
+    (input: Parameters<typeof mockPushAction>[0]) => mockPushAction(input),
+    [],
+  )
+  const submitReceipt = useCallback(
+    (input: Parameters<typeof submitReceiptAction>[0]) => submitReceiptAction(input),
+    [],
+  )
+  const submitContainerReceipt = useCallback(
+    (input: Parameters<typeof submitContainerReceiptAction>[0]) => submitContainerReceiptAction(input),
     [],
   )
 
+  const dbSlice = { inbounds, putawayOrders }
+
   return {
-    inbounds,
+    inbounds: listInbounds(dbSlice),
     customers,
-    listInbounds: () => listInbounds({ inbounds }),
-    listCustomers: () => listCustomers({ customers }),
-    signInbound,
-    cancelInbound,
-    receiveInboundItem,
+    getOrder: (no: string) => getInbound(no, dbSlice),
+    listInbounds: () => listInbounds(dbSlice),
+    confirmReceiptClose,
+    mockPushInboundInstruction,
+    submitReceipt,
+    submitContainerReceipt,
   }
 }
 
 export function useReceivableInbounds(warehouseCode: string) {
   const inbounds = useDb((s) => s.inbounds)
-  return listReceivableInbounds(warehouseCode, { inbounds })
+  const putawayOrders = useDb((s) => s.putawayOrders ?? [])
+  return listReceivableInbounds(warehouseCode, { inbounds, putawayOrders })
 }

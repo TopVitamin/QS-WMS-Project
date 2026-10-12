@@ -28,7 +28,12 @@ export function PdaHeader({ title, onBack, right }: PdaHeaderProps) {
   )
 }
 
-/** 底部固定操作区：主按钮高 48px，方便戴手套点击 */
-export function PdaFooter({ children }: { children: React.ReactNode }) {
-  return <footer className="flex shrink-0 gap-2 border-t bg-background p-3">{children}</footer>
+/** 底部固定操作区：主按钮高 48px，方便戴手套点击；`hint` 写主按钮不可用的原因（PDA 规范 §3） */
+export function PdaFooter({ children, hint }: { children: React.ReactNode; hint?: React.ReactNode }) {
+  return (
+    <footer className="shrink-0 border-t bg-background p-3">
+      {hint && <p className="mb-2 text-sm text-muted-foreground">{hint}</p>}
+      <div className="flex gap-2">{children}</div>
+    </footer>
+  )
 }
