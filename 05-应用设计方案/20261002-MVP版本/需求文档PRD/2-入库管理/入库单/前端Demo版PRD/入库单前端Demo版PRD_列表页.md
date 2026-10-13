@@ -100,7 +100,7 @@ URL 可选：`?status=RECEIVING` 与筛选参数并存；切换页签不重置 F
 | PDA 收货 | 同上 | `textLink`；`navigate('/pda/receive', { state: { inboundNo } })` |
 | 确认收货完结 | 主 PRD §6.4：**推导单据状态=收货中**，且同时满足 R07 | `textLink`；见 [弹窗 PRD §3](入库单前端Demo版PRD_弹窗与Mock.md) |
 
-操作列纵向排列；无任何可操作项时单元格留空（含已取消单）。i18n：`inbound.receive.action`、`inbound.openPdaReceive`。
+操作列用 `RowActions` 横排，顺序为 Web 端收货、确认收货完结、PDA 收货，最多露出 2 个，第 3 个收进「更多」（保持 40px 行高，见《02-设计规范》§5.1）；无任何可操作项时单元格留空（含已取消单）。i18n：`inbound.receive.action`、`inbound.openPdaReceive`。
 
 ---
 

@@ -35,7 +35,10 @@ import { cn } from '@/lib/utils'
 
 export interface DataColumnMeta {
   align?: 'left' | 'right' | 'center'
-  /** 固定列：left 只支持第一个数据列；right 一般用于操作列 */
+  /**
+   * 固定列：left 给单据号/编码列（只固定一列；它前面可以有所属仓库、货主等上下文列，
+   * 横向滚动时前面的列先滚出视口，编码列再吸附在左侧，不会遮挡）；right 给操作列
+   */
   pin?: 'left' | 'right'
   /** 列设置里显示的名称；header 是函数时必须提供 */
   label?: string
@@ -78,6 +81,8 @@ interface DataTableProps<TData extends RowData> {
   paginate?: boolean
   onRowClick?: (row: TData) => void
   getRowClassName?: (row: TData) => string | undefined
+  /** 无数据时的提示，默认「暂无数据」 */
+  emptyText?: string
 }
 
 export function DataTable<TData extends RowData>({
@@ -94,6 +99,7 @@ export function DataTable<TData extends RowData>({
   paginate = true,
   onRowClick,
   getRowClassName,
+  emptyText,
 }: DataTableProps<TData>) {
   const { t } = useTranslation()
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -107,17 +113,17 @@ export function DataTable<TData extends RowData>({
       enableSorting: false,
       header: ({ table }) => (
         <Checkbox
-          aria-label="select all"
+          aria-label={t('common.selectAll')}
           checked={table.getIsAllPageRowsSelected() ? true : table.getIsSomePageRowsSelected() ? 'indeterminate' : false}
           onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
         />
       ),
       cell: ({ row }) => (
-        <Checkbox aria-label="select row" checked={row.getIsSelected()} onCheckedChange={(v) => row.toggleSelected(!!v)} />
+        <Checkbox aria-label={t('common.selectRow')} checked={row.getIsSelected()} onCheckedChange={(v) => row.toggleSelected(!!v)} />
       ),
     })
     return [selectColumn, ...columns]
-  }, [columns, selectable])
+  }, [columns, selectable, t])
 
   const table = useTable({
     features: dataTableFeatures,
@@ -273,8 +279,8 @@ export function DataTable<TData extends RowData>({
                 className={cn(
                   'group',
                   onRowClick && 'cursor-pointer',
-                  // 底色统一由 tr 下发到每个 td，避免 tr:hover 与固定列 td 各涂一层半透明叠色
-                  'hover:bg-transparent hover:[&>td]:bg-muted/50',
+                  // 底色统一由 tr 下发到每个 td，且必须不透明：固定列 td 是 sticky，半透明会透出横向滚动到下面的内容
+                  'hover:bg-transparent hover:[&>td]:bg-row-hover',
                   'data-[state=selected]:bg-transparent data-[state=selected]:[&>td]:bg-muted',
                   getRowClassName?.(row.original),
                 )}
@@ -305,7 +311,7 @@ export function DataTable<TData extends RowData>({
         {rows.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
             <Inbox className="size-8 opacity-40" />
-            {t('common.noData')}
+            {emptyText ?? t('common.noData')}
           </div>
         )}
       </div>

@@ -1,22 +1,33 @@
 import type { WarehouseMaster } from '@/types/wms'
 
-const COUNTRY_LABEL: Record<string, string> = {
-  HK: '中国香港',
-  US: '美国',
-  DE: '德国',
+/** 仓库、货主等对象共用的地址片段 */
+export interface AddressParts {
+  countryCode?: string
+  state?: string
+  city?: string
+  district?: string
+  address1?: string
+  address2?: string
+  postalCode?: string
 }
 
-export function formatWarehouseFullAddress(w: Pick<WarehouseMaster, 'countryCode' | 'state' | 'city' | 'district' | 'address1' | 'address2' | 'postalCode'>): string {
-  const parts = [
-    COUNTRY_LABEL[w.countryCode] ?? w.countryCode,
-    w.state,
-    w.city,
-    w.district,
-    w.address1,
-    w.address2,
-    w.postalCode,
-  ].filter((p) => p && String(p).trim())
-  return parts.join(' · ') || '-'
+/** 国家/地区的 i18n key；不在选项里的归为「其他」 */
+export function countryLabelKey(countryCode?: string): string {
+  return WAREHOUSE_COUNTRY_OPTIONS.find((c) => c.value === countryCode)?.labelKey ?? 'masterWarehouse.country.OTHER'
+}
+
+/**
+ * 完整地址：国家/地区 · 州省 · 城市 · 区县 · 地址1 · 地址2 · 邮编。
+ * 国家名由调用方用 t(countryLabelKey(code)) 翻译后传入；全部为空时返回空串，由调用方显示占位符。
+ */
+export function formatFullAddress(a: AddressParts, countryLabel?: string): string {
+  return [countryLabel ?? a.countryCode, a.state, a.city, a.district, a.address1, a.address2, a.postalCode]
+    .filter((p) => p && String(p).trim())
+    .join(' · ')
+}
+
+export function formatWarehouseFullAddress(w: AddressParts, countryLabel?: string): string {
+  return formatFullAddress(w, countryLabel)
 }
 
 export interface WarehouseMasterFormErrors {
@@ -67,3 +78,21 @@ export const WAREHOUSE_COUNTRY_OPTIONS = [
   { value: 'US', labelKey: 'masterWarehouse.country.US' },
   { value: 'DE', labelKey: 'masterWarehouse.country.DE' },
 ] as const
+
+/** 新增仓库表单的初始值（新建默认启用，状态不在表单里维护） */
+export function createEmptyWarehouseForm(): WarehouseMaster {
+  return {
+    code: '',
+    name: '',
+    timezone: WAREHOUSE_TIMEZONE_OPTIONS[0],
+    currency: 'USD',
+    status: 'ENABLED',
+    countryCode: 'HK',
+    city: '',
+    address1: '',
+    createdAt: '',
+    createdBy: '',
+    updatedAt: '',
+    updatedBy: '',
+  }
+}

@@ -1,3 +1,4 @@
+import { FILTER_ALL } from '@/lib/master-data'
 import { useDb, type DbState } from '@/mock/db'
 import { convertMoney } from '@/lib/format'
 import type { CurrencyCode, Customer, InventoryRecord, Location, Money, Sku } from '@/types/wms'
@@ -36,8 +37,8 @@ export function listInventoryByWarehouse(
   const keyword = filters.keyword.trim().toUpperCase()
   return db.inventory.filter((r) => {
     if (r.warehouseCode !== warehouseCode || r.onHandQty <= 0) return false
-    if (filters.customerId !== '__all' && r.customerId !== filters.customerId) return false
-    if (filters.quality !== '__all' && r.qualityType !== filters.quality) return false
+    if (filters.customerId !== FILTER_ALL && r.customerId !== filters.customerId) return false
+    if (filters.quality !== FILTER_ALL && r.qualityType !== filters.quality) return false
     if (!keyword) return true
     const s = skuLookup(r.skuCode)
     return r.skuCode.includes(keyword) || r.locationCode.includes(keyword) || !!s?.barcode.includes(keyword)

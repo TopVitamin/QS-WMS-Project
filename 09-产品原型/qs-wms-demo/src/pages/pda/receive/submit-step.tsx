@@ -2,10 +2,10 @@ import { Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { DocNoTail } from '@/components/biz/display'
+import { PdaButton, PdaCard, PdaListItem } from '@/components/pda/pda-card'
 import { PdaContextBar } from '@/components/pda/pda-context-bar'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { beep } from '@/components/pda/scan-input'
-import { Button } from '@/components/ui/button'
 import { canReceiveInbound } from '@/lib/inbound-derive'
 import { cn } from '@/lib/utils'
 import { getInbound } from '@/services/inbound'
@@ -89,49 +89,48 @@ export function ReceiveSubmitStep({ flow }: { flow: ReceiveFlow }) {
         {boxes.map((b) => {
           const on = selected.includes(b.key)
           return (
-            <button
+            <PdaListItem
               key={b.key}
-              type="button"
               role="checkbox"
-              aria-checked={on}
+              selectable
+              selected={on}
               onClick={() => toggle(b.key)}
-              className={cn(
-                'flex min-h-14 items-center gap-3 rounded-xl border bg-background p-3 text-left active:bg-accent',
-                on ? 'border-primary' : 'border-transparent opacity-70',
-              )}
+              className={on ? undefined : 'opacity-70'}
             >
-              <span
-                className={cn(
-                  'flex size-6 shrink-0 items-center justify-center rounded-md border-2',
-                  on ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40',
-                )}
-              >
-                {on && <Check className="size-4" />}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className={cn('text-base font-semibold', !b.bulkPiece && 'font-mono')}>{flow.boxLabel(b)}</span>
-                  <span className="text-sm text-muted-foreground">{t('pdaReceive.lineCount', { count: b.lines.length })}</span>
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'flex size-6 shrink-0 items-center justify-center rounded-md border-2',
+                    on ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40',
+                  )}
+                >
+                  {on && <Check className="size-4" />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn('text-base font-semibold', !b.bulkPiece && 'font-mono')}>{flow.boxLabel(b)}</span>
+                    <span className="text-sm text-muted-foreground">{t('pdaReceive.lineCount', { count: b.lines.length })}</span>
+                  </div>
+                  <QtyTriple lines={b.lines} />
                 </div>
-                <QtyTriple lines={b.lines} />
               </div>
-            </button>
+            </PdaListItem>
           )
         })}
-        <div className="mt-2 rounded-xl bg-background p-3 text-sm shadow-xs">
+        <PdaCard className="mt-2 text-sm">
           <div className="text-base font-medium tabular-nums">
             {t('pdaReceive.selectedSummary', { boxes: chosen.length, received, rejected: totals.rejected })}
           </div>
           <div className="mt-1 text-muted-foreground">{t('pdaReceive.submitHint')}</div>
-        </div>
+        </PdaCard>
       </div>
       <PdaFooter hint={chosen.length === 0 ? t('pdaReceive.nothingSelected') : undefined}>
-        <Button variant="outline" className="h-12 w-24 text-base" onClick={() => nav.back({ step: 'container' })}>
+        <PdaButton variant="outline" className="w-24" onClick={() => nav.back({ step: 'container' })}>
           {t('common.back')}
-        </Button>
-        <Button className="h-12 flex-1 text-base" disabled={chosen.length === 0} onClick={submit}>
+        </PdaButton>
+        <PdaButton className="flex-1" disabled={chosen.length === 0} onClick={submit}>
           {t('pdaReceive.confirmSubmit', { count: chosen.length })}
-        </Button>
+        </PdaButton>
       </PdaFooter>
     </>
   )

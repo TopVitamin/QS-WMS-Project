@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { EMPTY_TEXT } from '@/lib/typography'
 import { useLookups } from '@/mock/db'
 import type { InboundOrder } from '@/types/wms'
 
@@ -52,9 +53,10 @@ export function PrintLabelDialog({
           <DialogDescription>{t('inbound.printHint')}</DialogDescription>
         </DialogHeader>
 
+        {/* 打印区域固定黑白、编码用等宽字（规范允许的例外：标签打印），不跟随界面主题 */}
         {order && (
           <div id="inbound-label-print" className="rounded-lg border bg-white p-4 text-black print:border-0 print:p-0">
-            <div className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-neutral-500">
+            <div className="mb-3 text-center text-xs font-medium uppercase tracking-wide text-black/60">
               {t('inbound.cartonLabel')}
             </div>
             <div className="mb-1 text-center font-mono text-lg font-semibold">{order.warehouseCode}</div>
@@ -62,17 +64,17 @@ export function PrintLabelDialog({
             <LabelBarcode value={order.inboundNo} />
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-neutral-500">{t('inbound.inboundNo')}</span>
-                <span className="mt-0.5 block font-mono text-[13px]">{order.inboundNo}</span>
+                <span className="text-black/60">{t('inbound.inboundNo')}</span>
+                <span className="mt-0.5 block font-mono text-sm">{order.inboundNo}</span>
               </div>
               <div>
-                <span className="text-neutral-500">{t('inbound.containerNo')}</span>
+                <span className="text-black/60">{t('inbound.containerNo')}</span>
                 <div className="mt-0.5 font-mono">{order.containerNo}</div>
               </div>
               <div>
-                <span className="text-neutral-500">{t('inbound.eta')}</span>
+                <span className="text-black/60">{t('inbound.eta')}</span>
                 <div className="mt-0.5">
-                  {order.etaAt ? <DateTime value={order.etaAt} pattern="YYYY-MM-DD" /> : '—'}
+                  {order.etaAt ? <DateTime value={order.etaAt} pattern="YYYY-MM-DD" /> : EMPTY_TEXT}
                 </div>
               </div>
             </div>

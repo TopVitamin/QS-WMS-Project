@@ -4,25 +4,25 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { DateTime, DocNo } from '@/components/biz/display'
+import { CodeName, DateTime, DocNo, Empty } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect, UsageStatusFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { useZoneMasterStatusToggle } from '@/hooks/use-zone-master-status'
 import { FILTER_ALL, masterCompositeRowId, sortByUpdatedAtDesc } from '@/lib/master-data'
+import { codeNameText } from '@/lib/typography'
 import {
   hasEnabledWarehouse,
   zoneDetailPath,
   zoneEditPath,
   ZONE_TYPE_I18N,
 } from '@/lib/zone-master'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
 import { useDb } from '@/mock/db'
 import type { UsageStatus, ZoneMaster, ZoneType } from '@/types/wms'
 
@@ -55,7 +55,7 @@ export function ZoneListPage() {
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const toggleStatus = useZoneMasterStatusToggle()
 
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const canCreate = hasEnabledWarehouse(warehouseMasters)
 
@@ -63,19 +63,15 @@ export function ZoneListPage() {
     return sortByUpdatedAtDesc(zoneMasters.filter((z) => matchZone(z, filters)))
   }, [zoneMasters, filters])
 
-  const warehouseLabel = (code: string) => {
-    const w = warehouseMasters.find((x) => x.code === code)
-    return w ? `${w.code} · ${w.name}` : code
-  }
-
   const columns = useMemo(() => {
+    const warehouseName = (code: string) => warehouseMasters.find((x) => x.code === code)?.name
     const col = createDataColumns<ZoneMaster>()
     return col.columns([
       col.accessor('warehouseCode', {
         header: t('masterZone.warehouseCode'),
         enableSorting: false,
         meta: { label: t('masterZone.warehouseCode') },
-        cell: ({ getValue }) => warehouseLabel(getValue()),
+        cell: ({ getValue }) => <CodeName code={getValue()} name={warehouseName(getValue())} />,
       }),
       col.accessor('code', {
         header: t('masterZone.code'),
@@ -123,7 +119,7 @@ export function ZoneListPage() {
         meta: { label: t('masterZone.remark') },
         cell: ({ getValue }) => {
           const v = getValue() as string | undefined
-          return v ? <span className="max-w-[160px] truncate" title={v}>{v}</span> : <span className="text-muted-foreground">-</span>
+          return v ? <span className="block max-w-40 truncate" title={v}>{v}</span> : <Empty />
         },
       }),
       col.display({
@@ -136,22 +132,21 @@ export function ZoneListPage() {
           const zone = row.original
           const enabled = zone.status === 'ENABLED'
           return (
-            <span className="inline-flex items-center gap-2">
-              <button
-                type="button"
-                className={textLink}
-                onClick={() => navigate(zoneEditPath(zone.warehouseCode, zone.code))}
-              >
-                {t('masterZone.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, enabled ? 'text-destructive' : undefined)}
-                onClick={() => toggleStatus(zone, enabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(enabled ? 'masterZone.disableAction' : 'masterZone.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                {
+                  key: 'edit',
+                  label: t('masterZone.edit'),
+                  onClick: () => navigate(zoneEditPath(zone.warehouseCode, zone.code)),
+                },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterZone.disableAction' : 'masterZone.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(zone, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -185,25 +180,14 @@ export function ZoneListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
-          columns={6}
-          onSearch={applySearch}
-          onReset={reset}
-        >
+        <FilterBar onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterZone.warehouseCode')}>
-            <Select value={draft.warehouseCode} onValueChange={(v) => setDraft({ ...draft, warehouseCode: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {warehouseMasters.map((w) => (
-                  <SelectItem key={w.code} value={w.code}>
-                    {w.code} · {w.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.warehouseCode}
+              onValueChange={(v) => setDraft({ ...draft, warehouseCode: v })}
+              options={warehouseMasters.map((w) => ({ value: w.code, label: codeNameText(w.code, w.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('masterZone.code')}>
             <Input
@@ -220,16 +204,7 @@ export function ZoneListPage() {
             />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
         </FilterBar>
       </Panel>

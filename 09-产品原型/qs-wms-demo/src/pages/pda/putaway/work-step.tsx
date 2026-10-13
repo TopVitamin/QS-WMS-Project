@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
+import { PdaButton, PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { beep, ScanInput } from '@/components/pda/scan-input'
-import { Button } from '@/components/ui/button'
 import {
   findLocation,
   isFullyRecorded,
@@ -100,65 +100,56 @@ export function PutawayWorkStep({ flow }: { flow: PutawayFlow }) {
           ]}
         />
         {remaining > 0 && (
-          <div className="flex items-baseline gap-2 rounded-xl bg-background px-3 py-2 shadow-xs">
+          <PdaCard className="flex items-baseline gap-2 py-2">
             <span className="text-sm text-muted-foreground">{t('pdaPutaway.suggested')}</span>
             {suggested ? (
               <span className="font-mono text-2xl font-bold text-primary">{suggested}</span>
             ) : (
               <span className="text-sm">{t('pdaPutaway.noSuggestion')}</span>
             )}
-          </div>
+          </PdaCard>
         )}
 
-        <div>
-          <div className="mb-2 text-sm font-medium">{t('pdaPutaway.planTitle')}</div>
-          <div className="flex flex-col gap-2">
-            {order.planLines.map((l) => {
-              const done = recordedQty(order, l.skuCode) === l.planQty
-              return (
-                <div key={l.skuCode} className="flex items-center gap-3 rounded-xl bg-background p-3 shadow-xs">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-base font-semibold">{l.skuCode}</div>
-                    <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
-                  </div>
-                  <div className={cn('shrink-0 text-base font-semibold tabular-nums', done ? 'text-success' : 'text-primary')}>
-                    {t('pdaPutaway.recorded', { recorded: recordedQty(order, l.skuCode), plan: l.planQty })}
-                  </div>
+        <PdaSection title={t('pdaPutaway.planTitle')}>
+          {order.planLines.map((l) => {
+            const done = recordedQty(order, l.skuCode) === l.planQty
+            return (
+              <PdaCard key={l.skuCode} className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-base font-semibold">{l.skuCode}</div>
+                  <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
                 </div>
-              )
-            })}
-          </div>
-        </div>
+                <div className={cn('shrink-0 text-base font-semibold tabular-nums', done ? 'text-success-text' : 'text-primary')}>
+                  {t('pdaPutaway.recorded', { recorded: recordedQty(order, l.skuCode), plan: l.planQty })}
+                </div>
+              </PdaCard>
+            )
+          })}
+        </PdaSection>
 
         {pendingLines.length > 0 && (
-          <div>
-            <div className="mb-2 text-sm font-medium">{t('pdaPutaway.actualTitle')}</div>
-            <div className="flex flex-col gap-2">
-              {pendingLines.map((a) => (
-                <div
-                  key={`${a.locationCode}|${a.skuCode}`}
-                  className="flex min-h-12 items-center gap-3 rounded-xl bg-background px-3 py-2 shadow-xs"
+          <PdaSection title={t('pdaPutaway.actualTitle')}>
+            {pendingLines.map((a) => (
+              <PdaCard key={`${a.locationCode}|${a.skuCode}`} className="flex min-h-12 items-center gap-3 py-2">
+                <span className="font-mono text-base font-bold">{a.locationCode}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-sm text-muted-foreground">{a.skuCode}</span>
+                <span className="text-base font-semibold tabular-nums">{a.qty}</span>
+                <button
+                  type="button"
+                  className="min-h-8 px-1 text-sm text-destructive"
+                  onClick={() => undo(a.locationCode, a.skuCode, a.qty)}
                 >
-                  <span className="font-mono text-base font-bold">{a.locationCode}</span>
-                  <span className="min-w-0 flex-1 truncate font-mono text-sm text-muted-foreground">{a.skuCode}</span>
-                  <span className="text-base font-semibold tabular-nums">{a.qty}</span>
-                  <button
-                    type="button"
-                    className="min-h-8 px-1 text-sm text-destructive"
-                    onClick={() => undo(a.locationCode, a.skuCode, a.qty)}
-                  >
-                    {t('pdaPutaway.undo')}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+                  {t('pdaPutaway.undo')}
+                </button>
+              </PdaCard>
+            ))}
+          </PdaSection>
         )}
       </div>
       <PdaFooter hint={remaining > 0 ? t('pdaPutaway.remainToPlace', { count: remaining }) : undefined}>
-        <Button className="h-12 flex-1 text-base" disabled={!isFullyRecorded(order)} onClick={submit}>
+        <PdaButton className="flex-1" disabled={!isFullyRecorded(order)} onClick={submit}>
           {t('pdaPutaway.submit')}
-        </Button>
+        </PdaButton>
       </PdaFooter>
     </>
   )

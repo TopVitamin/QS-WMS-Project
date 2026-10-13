@@ -103,7 +103,7 @@ Demo 的货位取运营数据 `locations`（编码如 `A-01-01`，A 区为拣货
 | --- | --- | --- |
 | `savePutawayLine` | `putawayNo`、`locationCode`、`skuCode`、`qty`、`operator` | 追加或累加一条未提交的实际上架明细；上架单状态上架中；不动库存 |
 | `removePutawayLine` | `putawayNo`、`locationCode`、`skuCode` | 删除一条未提交明细；无明细时回到待上架 |
-| `submitPutawayOrder` | `putawayNo`、`operator` | 校验后逐条把暂存库位库存移到目标货位（不良品同时移动品质锁定量）；写库存流水；上架单已完成并记提交人、提交时间；入库单各行已上架＝已提交上架单合计，重算状态 |
+| `submitPutawayOrder` | `putawayNo`、`operator` | 校验后逐条把暂存库位库存移到目标货位（不良品一并移动）；写库存流水；上架单已完成并记提交人、提交时间；入库单各行已上架＝已提交上架单合计，重算状态 |
 
 重复提交同一张上架单返回「上架单已提交」，不重复移库存。
 

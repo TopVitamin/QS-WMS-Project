@@ -1,11 +1,11 @@
-import { Box, ScanLine } from 'lucide-react'
+import { Box } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { BizCode, DocNoTail, Num } from '@/components/biz/display'
-import { PageContainer, Panel } from '@/components/biz/page-container'
-import { StatusBadge } from '@/components/biz/status-badge'
+import { BizCode, DocNoTail, Empty, Num } from '@/components/biz/display'
+import { DetailTitle, PageContainer, Panel } from '@/components/biz/page-container'
+import { ScanField } from '@/components/biz/scan-field'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -247,12 +247,11 @@ export function InboundOrderReceivePage() {
     <PageContainer
       fill
       title={
-        <span className="flex flex-wrap items-center gap-2 text-base font-medium">
-          <span>{t('inbound.receive.workbenchHeading')}</span>
-          <span className="text-muted-foreground">·</span>
-          <DocNoTail value={order.inboundNo} className="text-base" />
-          <StatusBadge meta={inboundOrderStatusMeta[order.status]} />
-        </span>
+        <DetailTitle
+          title={t('inbound.receive.workbenchHeading')}
+          code={<DocNoTail value={order.inboundNo} className="text-base" />}
+          status={inboundOrderStatusMeta[order.status]}
+        />
       }
       actions={
         <>
@@ -272,7 +271,7 @@ export function InboundOrderReceivePage() {
             {t('inbound.receive.bindContainer')}
           </Label>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <WorkbenchScanInput
+            <ScanField
               className="min-w-0 flex-1 lg:max-w-2xl"
               disabled={bulkPiece || Boolean(boundContainer)}
               placeholder={t('inbound.receive.containerPlaceholder')}
@@ -333,7 +332,7 @@ export function InboundOrderReceivePage() {
             </p>
           )}
           {!containerReady && (
-            <p className="mt-2 text-sm text-warning">{t('inbound.receive.bindFirst')}</p>
+            <p className="mt-2 text-sm text-warning-text">{t('inbound.receive.bindFirst')}</p>
           )}
         </div>
 
@@ -358,7 +357,7 @@ export function InboundOrderReceivePage() {
                   order.containerNo?.trim() ? (
                     <DocNoTail value={order.containerNo.trim()} className="text-sm" />
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <Empty />
                   )
                 }
               />
@@ -376,7 +375,7 @@ export function InboundOrderReceivePage() {
 
       <Panel className="flex min-h-0 flex-1 flex-col p-4">
         <Label className="mb-2 text-sm font-medium">{t('inbound.receive.scanSku')}</Label>
-        <WorkbenchScanInput
+        <ScanField
           className="mb-2"
           disabled={!containerReady}
           placeholder={t('inbound.receive.scanSku')}
@@ -434,7 +433,7 @@ function TrackingSummaryValue({ raw }: { raw?: string }) {
     .split(/\n/)
     .map((s) => s.trim())
     .filter(Boolean)
-  if (!lines.length) return <span className="text-muted-foreground">—</span>
+  if (!lines.length) return <Empty />
   return (
     <div className="flex flex-col gap-0.5">
       {lines.map((line) => (
@@ -468,54 +467,11 @@ function SummaryCell({
       <div
         className={cn(
           'mt-1 text-foreground',
-          numeric && 'text-lg font-semibold tabular-nums',
+          numeric && 'text-xl font-semibold tabular-nums',
         )}
       >
         {numeric ? <Num value={value} /> : value}
       </div>
-    </div>
-  )
-}
-
-function WorkbenchScanInput({
-  value,
-  onChange,
-  onEnter,
-  disabled,
-  placeholder,
-  className,
-}: {
-  value: string
-  onChange: (v: string) => void
-  onEnter: () => void
-  disabled?: boolean
-  placeholder: string
-  className?: string
-}) {
-  return (
-    <div
-      className={cn(
-        'flex h-14 items-center gap-3 rounded-lg border-2 border-primary/35 bg-background px-4 focus-within:border-primary',
-        disabled && 'opacity-55',
-        className,
-      )}
-    >
-      <ScanLine className="size-6 shrink-0 text-primary" />
-      <input
-        disabled={disabled}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            onEnter()
-          }
-        }}
-        placeholder={placeholder}
-        className="h-full min-w-0 flex-1 bg-transparent text-lg outline-none placeholder:text-base placeholder:text-muted-foreground"
-        autoComplete="off"
-        autoCapitalize="characters"
-      />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { Construction } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
 import { PdaHeader } from '@/components/pda/pda-header'
+import { EMPTY_TEXT } from '@/lib/typography'
 
 const milestoneOf: Record<string, string> = {
   sign: 'M1',
@@ -22,7 +23,7 @@ export function PdaComingSoonPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <Construction className="size-12 text-muted-foreground" />
         <div className="text-base font-medium">{t('common.comingSoon')}</div>
-        <p className="text-sm text-muted-foreground">{t('common.comingSoonDesc', { milestone: milestoneOf[fn] ?? '-' })}</p>
+        <p className="text-sm text-muted-foreground">{t('common.comingSoonDesc', { milestone: milestoneOf[fn] ?? EMPTY_TEXT })}</p>
       </div>
     </>
   )

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "lint": "oxlint && node scripts/lint-design.mjs",
+    "lint:design": "node scripts/lint-design.mjs",
     "preview": "vite preview",
     "test": "vitest run"
   },

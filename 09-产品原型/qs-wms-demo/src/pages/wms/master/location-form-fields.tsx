@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { FormFieldLabel } from '@/components/biz/form-field-label'
-import { Panel } from '@/components/biz/page-container'
+import { FormField, FormGrid } from '@/components/biz/form-field'
+import { OptionSelect, YesNoSelect } from '@/components/biz/option-select'
+import { Section } from '@/components/biz/page-container'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
   enabledZonesForWarehouse,
@@ -14,26 +14,9 @@ import {
   ZONE_TYPE_I18N,
   type LocationMasterFormErrors,
 } from '@/lib/location-master'
+import { codeNameText, EMPTY_TEXT } from '@/lib/typography'
 import { useDb } from '@/mock/db'
-import type { LocationMaster, ProductFormFactor, UsageStatus } from '@/types/wms'
-
-export function createEmptyLocationForm(warehouseCode = '', zoneCode = ''): LocationMaster {
-  const now = ''
-  return {
-    warehouseCode,
-    zoneCode,
-    zoneType: 'PICK',
-    code: '',
-    status: 'ENABLED',
-    allowMixSku: true,
-    allowMixBatch: false,
-    productForms: [],
-    createdAt: now,
-    createdBy: '',
-    updatedAt: now,
-    updatedBy: '',
-  }
-}
+import type { LocationMaster, ProductFormFactor } from '@/types/wms'
 
 interface LocationFormFieldsProps {
   mode: 'create' | 'edit'
@@ -44,6 +27,7 @@ interface LocationFormFieldsProps {
   zoneReadOnly?: boolean
 }
 
+/** 货位新增/编辑字段。使用状态不在表单里维护：新建默认启用，启停走列表操作列与详情页头 */
 export function LocationFormFields({
   mode,
   form,
@@ -54,7 +38,6 @@ export function LocationFormFields({
 }: LocationFormFieldsProps) {
   const { t } = useTranslation()
   const ph = t('common.inputPlaceholder')
-  const sp = t('common.selectPlaceholder')
   const zoneMasters = useDb((s) => s.zoneMasters)
   const warehouseMasters = useDb((s) => s.warehouseMasters)
 
@@ -81,44 +64,39 @@ export function LocationFormFields({
     setForm({ ...form, productForms: [...set] })
   }
 
-  const warehouseName =
-    warehouseMasters.find((w) => w.code === form.warehouseCode)?.name ?? form.warehouseCode
+  const warehouseName = warehouseMasters.find((w) => w.code === form.warehouseCode)?.name
+
+  const sequenceInput = (key: 'putawaySequence' | 'pickSequence') => (
+    <Input
+      type="number"
+      min={0}
+      value={form[key] ?? ''}
+      placeholder={ph}
+      onChange={(e) => setForm({ ...form, [key]: e.target.value === '' ? undefined : Number(e.target.value) })}
+      aria-invalid={!!errors[key]}
+    />
+  )
 
   return (
     <>
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionBasic')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterLocation.zoneCode')}</FormFieldLabel>
-            <Select
-              value={form.zoneCode || undefined}
+      <Section title={t('masterLocation.sectionBasic')}>
+        <FormGrid>
+          <FormField label={t('masterLocation.zoneCode')} required error={fieldError('zoneCode')}>
+            <OptionSelect
+              value={form.zoneCode}
               onValueChange={onZoneChange}
               disabled={zoneReadOnly}
-            >
-              <SelectTrigger className="w-full" aria-invalid={!!errors.zoneCode}>
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {zoneOptions.map((z) => (
-                  <SelectItem key={z.code} value={z.code}>
-                    {z.code} · {z.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldError('zoneCode')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.warehouseCode')}</FormFieldLabel>
-            <Input readOnly value={form.warehouseCode ? `${form.warehouseCode} · ${warehouseName}` : '-'} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.zoneType')}</FormFieldLabel>
-            <Input readOnly value={form.zoneType ? t(ZONE_TYPE_I18N[form.zoneType]) : '-'} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterLocation.code')}</FormFieldLabel>
+              invalid={!!errors.zoneCode}
+              options={zoneOptions.map((z) => ({ value: z.code, label: codeNameText(z.code, z.name) }))}
+            />
+          </FormField>
+          <FormField label={t('masterLocation.warehouseCode')}>
+            <Input readOnly value={form.warehouseCode ? codeNameText(form.warehouseCode, warehouseName) : EMPTY_TEXT} />
+          </FormField>
+          <FormField label={t('masterLocation.zoneType')}>
+            <Input readOnly value={form.zoneType ? t(ZONE_TYPE_I18N[form.zoneType]) : EMPTY_TEXT} />
+          </FormField>
+          <FormField label={t('masterLocation.code')} required error={fieldError('code')}>
             <Input
               value={form.code}
               readOnly={mode === 'edit'}
@@ -127,131 +105,55 @@ export function LocationFormFields({
               onChange={(e) => setForm({ ...form, code: e.target.value })}
               aria-invalid={!!errors.code}
             />
-            {fieldError('code')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('common.status')}</FormFieldLabel>
-            <Select
-              value={form.status}
-              onValueChange={(v) => setForm({ ...form, status: v as UsageStatus })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={sp} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="col-span-full flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.remark')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterLocation.remark')} span="full">
             <Textarea
               value={form.remark ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, remark: e.target.value })}
               rows={2}
             />
-          </div>
-        </div>
-      </Panel>
+          </FormField>
+        </FormGrid>
+      </Section>
 
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionMix')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterLocation.allowMixSku')}</FormFieldLabel>
-            <Select
-              value={form.allowMixSku ? 'yes' : 'no'}
-              onValueChange={(v) => setForm({ ...form, allowMixSku: v === 'yes' })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={sp} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">{t('common.yes')}</SelectItem>
-                <SelectItem value="no">{t('common.no')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterLocation.allowMixBatch')}</FormFieldLabel>
-            <Select
-              value={form.allowMixBatch ? 'yes' : 'no'}
-              onValueChange={(v) => setForm({ ...form, allowMixBatch: v === 'yes' })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={sp} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">{t('common.yes')}</SelectItem>
-                <SelectItem value="no">{t('common.no')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Panel>
+      <Section title={t('masterLocation.sectionMix')}>
+        <FormGrid>
+          <FormField label={t('masterLocation.allowMixSku')} required>
+            <YesNoSelect value={form.allowMixSku} onChange={(v) => setForm({ ...form, allowMixSku: v })} />
+          </FormField>
+          <FormField label={t('masterLocation.allowMixBatch')} required>
+            <YesNoSelect value={form.allowMixBatch} onChange={(v) => setForm({ ...form, allowMixBatch: v })} />
+          </FormField>
+        </FormGrid>
+      </Section>
 
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionOps')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.putawaySequence')}</FormFieldLabel>
-            <Input
-              type="number"
-              min={0}
-              value={form.putawaySequence ?? ''}
-              placeholder={ph}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  putawaySequence: e.target.value === '' ? undefined : Number(e.target.value),
-                })
-              }
-              aria-invalid={!!errors.putawaySequence}
-            />
-            {fieldError('putawaySequence')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.pickSequence')}</FormFieldLabel>
-            <Input
-              type="number"
-              min={0}
-              value={form.pickSequence ?? ''}
-              placeholder={ph}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  pickSequence: e.target.value === '' ? undefined : Number(e.target.value),
-                })
-              }
-              aria-invalid={!!errors.pickSequence}
-            />
-            {fieldError('pickSequence')}
-          </div>
-        </div>
-      </Panel>
+      <Section title={t('masterLocation.sectionOps')}>
+        <FormGrid>
+          <FormField label={t('masterLocation.putawaySequence')} error={fieldError('putawaySequence')}>
+            {sequenceInput('putawaySequence')}
+          </FormField>
+          <FormField label={t('masterLocation.pickSequence')} error={fieldError('pickSequence')}>
+            {sequenceInput('pickSequence')}
+          </FormField>
+        </FormGrid>
+      </Section>
 
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionStructure')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.aisle')}</FormFieldLabel>
+      <Section title={t('masterLocation.sectionStructure')}>
+        <FormGrid>
+          <FormField label={t('masterLocation.aisle')}>
             <Input value={form.aisle ?? ''} placeholder={ph} onChange={(e) => setForm({ ...form, aisle: e.target.value })} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.bay')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterLocation.bay')}>
             <Input value={form.bay ?? ''} placeholder={ph} onChange={(e) => setForm({ ...form, bay: e.target.value })} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterLocation.level')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterLocation.level')}>
             <Input value={form.level ?? ''} placeholder={ph} onChange={(e) => setForm({ ...form, level: e.target.value })} />
-          </div>
-        </div>
-      </Panel>
+          </FormField>
+        </FormGrid>
+      </Section>
 
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionAdapt')}</h2>
+      <Section title={t('masterLocation.sectionAdapt')}>
         <div className="flex flex-wrap gap-4">
           {PRODUCT_FORM_OPTIONS.map((factor) => (
             <div key={factor} className="flex items-center gap-2">
@@ -265,7 +167,7 @@ export function LocationFormFields({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">{t('masterLocation.productFormHint')}</p>
-      </Panel>
+      </Section>
     </>
   )
 }

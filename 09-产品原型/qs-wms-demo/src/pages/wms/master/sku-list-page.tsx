@@ -5,25 +5,26 @@ import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateRangePickerField } from '@/components/biz/date-range-picker-field'
-import { BizCode, DateTime, DocNo } from '@/components/biz/display'
+import { BizCode, CodeName, DateTime, DocNo, Empty } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect, UsageStatusFilter, YesNoFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { useSkuMasterStatusToggle } from '@/hooks/use-sku-master-status'
-import { FILTER_ALL, skuMasterRowId, sortByUpdatedAtDesc } from '@/lib/master-data'
+import { FILTER_ALL, matchYesNo, skuMasterRowId, sortByUpdatedAtDesc } from '@/lib/master-data'
 import {
   matchUpdatedRange,
   PRODUCT_FORM_I18N,
+  PRODUCT_FORM_OPTIONS,
   skuDetailPath,
   skuEditPath,
 } from '@/lib/sku-master'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
+import { codeNameText } from '@/lib/typography'
 import { useDb } from '@/mock/db'
 import type { SkuMaster, UsageStatus } from '@/types/wms'
 
@@ -59,12 +60,6 @@ const emptyFilters: Filters = {
   updatedTo: '',
 }
 
-function matchBoolFilter(value: boolean, filter: string): boolean {
-  if (filter === FILTER_ALL) return true
-  if (filter === 'yes') return value
-  return !value
-}
-
 function matchSku(row: SkuMaster, filters: Filters): boolean {
   if (filters.ownerCode !== FILTER_ALL && row.ownerCode !== filters.ownerCode) return false
   if (filters.code && !row.code.toLowerCase().includes(filters.code.trim().toLowerCase())) return false
@@ -77,10 +72,10 @@ function matchSku(row: SkuMaster, filters: Filters): boolean {
     return false
   }
   if (filters.productForm !== FILTER_ALL && row.productForm !== filters.productForm) return false
-  if (!matchBoolFilter(row.snEnabled, filters.snEnabled)) return false
-  if (!matchBoolFilter(row.batchEnabled, filters.batchEnabled)) return false
-  if (!matchBoolFilter(row.expiryEnabled, filters.expiryEnabled)) return false
-  if (!matchBoolFilter(row.qcRequired, filters.qcRequired)) return false
+  if (!matchYesNo(row.snEnabled, filters.snEnabled)) return false
+  if (!matchYesNo(row.batchEnabled, filters.batchEnabled)) return false
+  if (!matchYesNo(row.expiryEnabled, filters.expiryEnabled)) return false
+  if (!matchYesNo(row.qcRequired, filters.qcRequired)) return false
   if (
     filters.upstreamSkuId &&
     !row.upstreamSkuId.toLowerCase().includes(filters.upstreamSkuId.trim().toLowerCase())
@@ -97,52 +92,29 @@ export function SkuListPage() {
   const skuMasters = useDb((s) => s.skuMasters)
   const customers = useDb((s) => s.customers)
   const toggleStatus = useSkuMasterStatusToggle()
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
-
-  const customerName = (ownerCode: string) => customers.find((c) => c.code === ownerCode)?.name ?? ownerCode
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const rows = useMemo(
     () => sortByUpdatedAtDesc(skuMasters.filter((m) => matchSku(m, filters))),
     [skuMasters, filters],
   )
 
-  const boolFilterSelect = (value: string, onChange: (v: string) => void) => (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={t('common.selectPlaceholder')} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-        <SelectItem value="yes">{t('common.yes')}</SelectItem>
-        <SelectItem value="no">{t('common.no')}</SelectItem>
-      </SelectContent>
-    </Select>
-  )
-
   const columns = useMemo(() => {
+    const customerName = (ownerCode: string) => customers.find((c) => c.code === ownerCode)?.name
+    const yesNo = (v: boolean) => (v ? t('common.yes') : t('common.no'))
     const col = createDataColumns<SkuMaster>()
     return col.columns([
       col.accessor('ownerCode', {
         header: t('masterSku.ownerCode'),
-        enableSorting: false,
         meta: { label: t('masterSku.ownerCode') },
-        cell: ({ row }) => (
-          <div>
-            <div className="font-medium">{row.original.ownerCode}</div>
-            <div className="text-xs text-muted-foreground">{customerName(row.original.ownerCode)}</div>
-          </div>
-        ),
+        cell: ({ getValue }) => <CodeName code={getValue()} name={customerName(getValue())} />,
       }),
       col.accessor('code', {
         header: t('masterSku.code'),
-        enableSorting: false,
         enableHiding: false,
         meta: { pin: 'left', label: t('masterSku.code') },
         cell: ({ row }) => (
-          <DocNo
-            onClick={() => navigate(skuDetailPath(row.original.ownerCode, row.original.code))}
-            className={cn(textLink)}
-          >
+          <DocNo onClick={() => navigate(skuDetailPath(row.original.ownerCode, row.original.code))}>
             {row.original.code}
           </DocNo>
         ),
@@ -156,7 +128,7 @@ export function SkuListPage() {
         meta: { label: t('masterSku.primaryBarcode') },
         cell: ({ getValue }) => {
           const v = getValue()
-          return v ? <BizCode className="font-mono text-xs">{v}</BizCode> : <span className="text-muted-foreground">—</span>
+          return v ? <BizCode>{v}</BizCode> : <Empty />
         },
       }),
       col.accessor('unit', {
@@ -175,6 +147,8 @@ export function SkuListPage() {
       }),
       col.accessor('updatedAt', {
         header: t('masterSku.updatedAt'),
+        enableSorting: true,
+        sortFn: 'datetime',
         meta: { label: t('masterSku.updatedAt') },
         cell: ({ getValue }) => <DateTime value={getValue()} />,
       }),
@@ -185,27 +159,27 @@ export function SkuListPage() {
       col.accessor('snEnabled', {
         header: t('masterSku.snEnabled'),
         meta: { label: t('masterSku.snEnabled') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
+        cell: ({ getValue }) => yesNo(getValue()),
       }),
       col.accessor('batchEnabled', {
         header: t('masterSku.batchEnabled'),
         meta: { label: t('masterSku.batchEnabled') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
+        cell: ({ getValue }) => yesNo(getValue()),
       }),
       col.accessor('expiryEnabled', {
         header: t('masterSku.expiryEnabled'),
         meta: { label: t('masterSku.expiryEnabled') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
+        cell: ({ getValue }) => yesNo(getValue()),
       }),
       col.accessor('qcRequired', {
         header: t('masterSku.qcRequired'),
         meta: { label: t('masterSku.qcRequired') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
+        cell: ({ getValue }) => yesNo(getValue()),
       }),
       col.accessor('isBattery', {
         header: t('masterSku.isBattery'),
         meta: { label: t('masterSku.isBattery') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
+        cell: ({ getValue }) => yesNo(Boolean(getValue())),
       }),
       col.accessor('spec', {
         header: t('masterSku.spec'),
@@ -214,28 +188,28 @@ export function SkuListPage() {
       col.accessor('upstreamSkuId', {
         header: t('masterSku.upstreamSkuId'),
         meta: { label: t('masterSku.upstreamSkuId') },
-        cell: ({ getValue }) => <span className="font-mono text-xs">{getValue()}</span>,
+        cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
       }),
       col.display({
         id: 'actions',
         header: t('common.actions'),
+        enableHiding: false,
         meta: { pin: 'right', label: t('common.actions') },
         cell: ({ row }) => {
           const { ownerCode, code, status } = row.original
           const enabled = status === 'ENABLED'
           return (
-            <div className="flex gap-2">
-              <Button variant="link" className="h-auto p-0" onClick={() => navigate(skuEditPath(ownerCode, code))}>
-                {t('masterSku.edit')}
-              </Button>
-              <Button
-                variant="link"
-                className={cn('h-auto p-0', enabled ? 'text-destructive' : '')}
-                onClick={() => toggleStatus(ownerCode, code, enabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(enabled ? 'masterSku.disableAction' : 'masterSku.enableAction')}
-              </Button>
-            </div>
+            <RowActions
+              actions={[
+                { key: 'edit', label: t('masterSku.edit'), onClick: () => navigate(skuEditPath(ownerCode, code)) },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterSku.disableAction' : 'masterSku.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(ownerCode, code, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -255,35 +229,32 @@ export function SkuListPage() {
     >
       <Panel className="p-4">
         <FilterBar
-          columns={6}
           onSearch={applySearch}
           onReset={reset}
           advanced={
             <>
               <FilterItem label={t('masterSku.productForm')}>
-                <Select value={draft.productForm} onValueChange={(v) => setDraft({ ...draft, productForm: v })}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t('common.selectPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                    <SelectItem value="SMALL">{t('masterLocation.productForm.SMALL')}</SelectItem>
-                    <SelectItem value="LARGE">{t('masterLocation.productForm.LARGE')}</SelectItem>
-                    <SelectItem value="IRREGULAR">{t('masterLocation.productForm.IRREGULAR')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <OptionSelect
+                  allOption
+                  value={draft.productForm}
+                  onValueChange={(v) => setDraft({ ...draft, productForm: v })}
+                  options={PRODUCT_FORM_OPTIONS.map((pf) => ({ value: pf, label: t(PRODUCT_FORM_I18N[pf]) }))}
+                />
               </FilterItem>
               <FilterItem label={t('masterSku.snEnabled')}>
-                {boolFilterSelect(draft.snEnabled, (v) => setDraft({ ...draft, snEnabled: v }))}
+                <YesNoFilter value={draft.snEnabled} onValueChange={(v) => setDraft({ ...draft, snEnabled: v })} />
               </FilterItem>
               <FilterItem label={t('masterSku.batchEnabled')}>
-                {boolFilterSelect(draft.batchEnabled, (v) => setDraft({ ...draft, batchEnabled: v }))}
+                <YesNoFilter value={draft.batchEnabled} onValueChange={(v) => setDraft({ ...draft, batchEnabled: v })} />
               </FilterItem>
               <FilterItem label={t('masterSku.expiryEnabled')}>
-                {boolFilterSelect(draft.expiryEnabled, (v) => setDraft({ ...draft, expiryEnabled: v }))}
+                <YesNoFilter
+                  value={draft.expiryEnabled}
+                  onValueChange={(v) => setDraft({ ...draft, expiryEnabled: v })}
+                />
               </FilterItem>
               <FilterItem label={t('masterSku.qcRequired')}>
-                {boolFilterSelect(draft.qcRequired, (v) => setDraft({ ...draft, qcRequired: v }))}
+                <YesNoFilter value={draft.qcRequired} onValueChange={(v) => setDraft({ ...draft, qcRequired: v })} />
               </FilterItem>
               <FilterItem label={t('masterSku.upstreamSkuId')}>
                 <Input
@@ -302,19 +273,12 @@ export function SkuListPage() {
           }
         >
           <FilterItem label={t('masterSku.ownerCode')}>
-            <Select value={draft.ownerCode} onValueChange={(v) => setDraft({ ...draft, ownerCode: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {customers.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.code} · {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.ownerCode}
+              onValueChange={(v) => setDraft({ ...draft, ownerCode: v })}
+              options={customers.map((c) => ({ value: c.code, label: codeNameText(c.code, c.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('masterSku.code')}>
             <Input
@@ -331,16 +295,7 @@ export function SkuListPage() {
             />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
           <FilterItem label={t('masterSku.primaryBarcode')}>
             <Input

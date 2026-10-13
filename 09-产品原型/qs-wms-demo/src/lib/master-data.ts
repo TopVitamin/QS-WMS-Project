@@ -1,5 +1,15 @@
-/** 主数据列表筛选项「全部」占位值（Select） */
+/** 列表筛选项「全部」占位值（Select） */
 export const FILTER_ALL = '__all'
+
+/** 是/否筛选与表单下拉的取值 */
+export const FILTER_YES = 'yes'
+export const FILTER_NO = 'no'
+
+/** 布尔字段按「全部 / 是 / 否」筛选 */
+export function matchYesNo(value: boolean, filter: string): boolean {
+  if (filter === FILTER_ALL) return true
+  return filter === FILTER_YES ? value : !value
+}
 
 /** 仓库 + 业务编码类主数据（货位、库区）在 URL 上区分仓 */
 export function parseWarehouseScopeQuery(search: string): string | undefined {

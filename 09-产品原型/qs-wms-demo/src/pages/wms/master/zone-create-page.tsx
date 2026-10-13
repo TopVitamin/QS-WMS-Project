@@ -6,10 +6,15 @@ import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
 import { useMasterDiscardNavigate } from '@/hooks/use-master-discard-navigate'
 import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
-import { zoneDetailPath, validateZoneMasterForm, type ZoneMasterFormErrors } from '@/lib/zone-master'
+import {
+  createEmptyZoneForm,
+  validateZoneMasterForm,
+  zoneDetailPath,
+  type ZoneMasterFormErrors,
+} from '@/lib/zone-master'
 import { useDb } from '@/mock/db'
 import type { ZoneMaster } from '@/types/wms'
-import { createEmptyZoneForm, ZoneFormFields } from './zone-form-fields'
+import { ZoneFormFields } from './zone-form-fields'
 
 type CreatePreset = { warehouseCode?: string }
 
@@ -46,7 +51,7 @@ export function ZoneCreatePage() {
       code,
       name: form.name.trim(),
       zoneType: form.zoneType,
-      status: form.status,
+      status: 'ENABLED',
       remark: form.remark?.trim() || undefined,
     })
     if (!res.ok) {

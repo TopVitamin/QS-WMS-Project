@@ -6,51 +6,41 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
 interface FilterBarProps {
-  /** 栅格列数：业务列表默认 4；基础资料等紧凑筛选可用 6 */
-  columns?: 4 | 6
+  /**
+   * 栅格固定 6 列，可省略；保留参数是为了与 PRD 的 `FilterBar columns={6}` 写法一致。
+   * 只接受 6：写成 4 会类型报错（PRD 禁止列表用 4 列）。
+   */
+  columns?: 6
+  /** 常显筛选项，最多 5 个 */
   children: React.ReactNode
-  /** 展开后才显示的筛选项（4 列、6 列均可用） */
+  /** 第 6 个及以后的筛选项，点「展开」才显示 */
   advanced?: React.ReactNode
   onSearch: () => void
   onReset: () => void
 }
 
-const gridClass: Record<4 | 6, string> = {
-  4: 'md:grid-cols-2 xl:grid-cols-4',
-  6: 'md:grid-cols-3 xl:grid-cols-6',
-}
-
-/** 6 列模式：常显最多 5 个筛选项，第 6 列放操作；不足 5 个时操作列紧跟最后一项 */
-const actionColStart6: Record<number, string> = {
+/** 常显不足 5 项时，查询/重置列紧跟最后一项，不空列 */
+const actionColStart: Record<number, string> = {
   1: 'xl:col-start-2',
   2: 'xl:col-start-3',
   3: 'xl:col-start-4',
   4: 'xl:col-start-5',
   5: 'xl:col-start-6',
-  6: 'xl:col-start-6',
 }
 
-const actionColStart4: Record<number, string> = {
-  1: 'xl:col-start-2',
-  2: 'xl:col-start-3',
-  3: 'xl:col-start-4',
-  4: 'xl:col-start-4',
-}
-
-/** 列表页筛选区：4 列或 6 列栅格；6 列时为 5 个筛选项 + 第 6 列底对齐放查询/重置 */
-export function FilterBar({ columns = 4, children, advanced, onSearch, onReset }: FilterBarProps) {
+/**
+ * 列表筛选区：所有管理端列表统一 6 列栅格（xl），常显最多 5 个筛选项，
+ * 第 6 列底对齐放查询 / 重置（有 advanced 时再加展开 / 收起）。
+ */
+export function FilterBar({ children, advanced, onSearch, onReset }: FilterBarProps) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const primaryCount = Children.count(children)
-  const advancedCount = advanced ? Children.count(advanced) : 0
-  const showExpand = advancedCount > 0
-  const actionCol =
-    columns === 6
-      ? actionColStart6[Math.min(Math.max(primaryCount, 1), 6)]
-      : actionColStart4[Math.min(Math.max(primaryCount, 1), 4)]
+  const showExpand = advanced ? Children.count(advanced) > 0 : false
+  const actionCol = actionColStart[Math.min(Math.max(primaryCount, 1), 5)]
   return (
     <form
-      className={cn('grid grid-cols-1 gap-x-4 gap-y-3', gridClass[columns])}
+      className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3 xl:grid-cols-6"
       onSubmit={(e) => {
         e.preventDefault()
         onSearch()

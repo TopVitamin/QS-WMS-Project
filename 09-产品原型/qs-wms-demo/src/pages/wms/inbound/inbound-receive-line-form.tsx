@@ -1,7 +1,8 @@
 import { createContext, useContext, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { BizCode, Num } from '@/components/biz/display'
+import { BizCode, Empty, Num } from '@/components/biz/display'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { emptyReceiveDraft, receiveDraftActivity, REJECT_REASONS, type InboundReceiveDraft } from '@/lib/inbound-receive'
@@ -158,12 +159,12 @@ export function InboundReceiveLineForm({
                   </TableCell>
                   <TableCell className={td}>
                     <div className="flex h-12 w-full items-center justify-start text-base tabular-nums text-foreground">
-                      <span className="truncate text-base tabular-nums">{skuBarcode(line.skuCode) ?? '—'}</span>
+                      <span className="truncate text-base tabular-nums">{skuBarcode(line.skuCode) ?? <Empty />}</span>
                     </div>
                   </TableCell>
                   <TableCell className={cn(td, 'whitespace-normal')}>
                     <div className="flex h-12 w-full items-center justify-start whitespace-normal text-base tabular-nums text-foreground">
-                      <span className="line-clamp-2">{skuName(line.skuCode) ?? '—'}</span>
+                      <span className="line-clamp-2">{skuName(line.skuCode) ?? <Empty />}</span>
                     </div>
                   </TableCell>
                   <TableCell className={td}>
@@ -342,13 +343,19 @@ function TableQtyInput({
   onActivate?: () => void
   onChange: (v: number) => void
 }) {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState<string | null>(null)
   const display = draft ?? (value === 0 && !showZero ? '' : String(value))
 
+  /** 超过本行可收数量：拒绝并提示，保留原值（与 PDA 数量框一致，不静默截断） */
   const commit = (raw: string) => {
-    const n = Math.min(max, Math.max(0, Number(raw) || 0))
-    onChange(n)
+    const n = Math.max(0, Number(raw) || 0)
     setDraft(null)
+    if (n > max) {
+      toast.error(t('inbound.receive.overRemain'))
+      return
+    }
+    onChange(n)
   }
 
   return (

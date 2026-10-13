@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { DocNoTail } from '@/components/biz/display'
 import { StatusBadge } from '@/components/biz/status-badge'
+import { PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaHeader } from '@/components/pda/pda-header'
 import { ScanInput } from '@/components/pda/scan-input'
 import { putawayOrderStatusMeta } from '@/config/status'
@@ -50,45 +51,39 @@ export function PutawayListStep({ flow }: { flow: PutawayFlow }) {
       <PdaHeader title={t('pda.putaway')} onBack={() => nav.back('home')} />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
         <ScanInput label={t('pdaPutaway.promptOrder')} onScan={onScan} candidates={candidates} />
-        <div>
-          <div className="mb-2 flex items-center justify-between text-sm font-medium">
-            <span>{t('pdaPutaway.pendingList', { count: shown.length })}</span>
-            {matched && (
+        <PdaSection
+          title={t('pdaPutaway.pendingList', { count: shown.length })}
+          extra={
+            matched && (
               <button type="button" className="min-h-8 px-1 text-primary" onClick={() => setMatched(undefined)}>
                 {t('pdaPutaway.showAll')}
               </button>
-            )}
-          </div>
+            )
+          }
+        >
           {shown.length === 0 && (
             <div className="py-8 text-center text-sm text-muted-foreground">{t('pdaPutaway.noOrders')}</div>
           )}
-          <div className="flex flex-col gap-2">
-            {shown.map((p) => (
-              <button
-                key={p.putawayNo}
-                type="button"
-                onClick={() => open(p.putawayNo)}
-                className="flex min-h-14 flex-col gap-1 rounded-xl bg-background p-3 text-left shadow-xs active:bg-accent"
-              >
-                <div className="flex items-center gap-2">
-                  <DocNoTail value={p.putawayNo} tail={4} className="text-base" />
-                  <QualityTag flow={flow} order={p} />
-                  <span className="ml-auto">
-                    <StatusBadge meta={putawayOrderStatusMeta[p.status]} />
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-                  <span className={p.containerNo ? 'font-mono text-foreground' : undefined}>{flow.containerLabel(p)}</span>
-                  <span>·</span>
-                  <DocNoTail value={p.inboundNo} tail={4} className="text-sm" />
-                  <span className="ml-auto text-base font-semibold text-primary tabular-nums">
-                    {t('pdaPutaway.recorded', { recorded: recordedQty(p), plan: planQty(p) })}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+          {shown.map((p) => (
+            <PdaListItem key={p.putawayNo} onClick={() => open(p.putawayNo)}>
+              <div className="flex items-center gap-2">
+                <DocNoTail value={p.putawayNo} tail={4} className="text-base" />
+                <QualityTag order={p} />
+                <span className="ml-auto">
+                  <StatusBadge meta={putawayOrderStatusMeta[p.status]} />
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+                <span className={p.containerNo ? 'font-mono text-foreground' : undefined}>{flow.containerLabel(p)}</span>
+                <span>·</span>
+                <DocNoTail value={p.inboundNo} tail={4} className="text-sm" />
+                <span className="ml-auto text-base font-semibold text-primary tabular-nums">
+                  {t('pdaPutaway.recorded', { recorded: recordedQty(p), plan: planQty(p) })}
+                </span>
+              </div>
+            </PdaListItem>
+          ))}
+        </PdaSection>
       </div>
     </>
   )

@@ -6,10 +6,14 @@ import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
 import { useMasterDiscardNavigate } from '@/hooks/use-master-discard-navigate'
 import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
-import { validateWarehouseMasterForm, type WarehouseMasterFormErrors } from '@/lib/warehouse-master'
+import {
+  createEmptyWarehouseForm,
+  validateWarehouseMasterForm,
+  type WarehouseMasterFormErrors,
+} from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 import type { WarehouseMaster } from '@/types/wms'
-import { createEmptyWarehouseForm, WarehouseFormFields } from './warehouse-form-fields'
+import { WarehouseFormFields } from './warehouse-form-fields'
 
 export function WarehouseCreatePage() {
   const { t } = useTranslation()

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { Num } from '@/components/biz/display'
+import { BizCode, Num } from '@/components/biz/display'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -36,7 +36,11 @@ export function ReceiptCloseDialog({
   const columns = useMemo(() => {
     const col = createDataColumns<(typeof lines)[number]>()
     return col.columns([
-      col.accessor('skuCode', { header: t('common.sku'), enableSorting: false }),
+      col.accessor('skuCode', {
+        header: t('common.sku'),
+        enableSorting: false,
+        cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
+      }),
       col.accessor('skuCode', {
         id: 'skuName',
         header: t('masterSku.name'),
@@ -56,7 +60,7 @@ export function ReceiptCloseDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('inbound.receiptCloseTitle')}</DialogTitle>
           <DialogDescription>{t('inbound.receiptCloseDesc')}</DialogDescription>

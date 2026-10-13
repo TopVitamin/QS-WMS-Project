@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { FormFieldLabel } from '@/components/biz/form-field-label'
+import { FormField, FormGrid } from '@/components/biz/form-field'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
   type CarrierMasterFormErrors,
 } from '@/lib/carrier-master'
 import { useDb } from '@/mock/db'
+
 type CarrierFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -28,6 +29,7 @@ type CarrierFormDialogProps = {
   onSaved?: () => void
 }
 
+/** 物流承运商新增/编辑弹窗（按 PRD 用弹窗维护）；使用状态不在弹窗里维护 */
 export function CarrierFormDialog({ open, onOpenChange, mode, carrierCode, onSaved }: CarrierFormDialogProps) {
   const { t } = useTranslation()
   const { confirm } = useConfirm()
@@ -113,83 +115,78 @@ export function CarrierFormDialog({ open, onOpenChange, mode, carrierCode, onSav
 
         <div className="space-y-4">
           <h3 className="text-sm font-medium">{t('masterCarrier.sectionBasic')}</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel required>{t('masterCarrier.code')}</FormFieldLabel>
+          <FormGrid columns={2}>
+            <FormField label={t('masterCarrier.code')} required span="full" error={fieldError(errors, 'code')}>
               <Input
                 value={form.code}
                 readOnly={mode === 'edit'}
+                className="tabular-nums"
                 placeholder={mode === 'create' ? t('masterCarrier.codePlaceholder') : undefined}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
+                aria-invalid={!!errors.code}
               />
-              {fieldError(errors, 'code')}
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel required>{t('masterCarrier.name')}</FormFieldLabel>
+            </FormField>
+            <FormField label={t('masterCarrier.name')} required span="full" error={fieldError(errors, 'name')}>
               <Input
                 value={form.name}
                 placeholder={t('masterCarrier.namePlaceholder')}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                aria-invalid={!!errors.name}
               />
-              {fieldError(errors, 'name')}
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel>{t('masterCarrier.shortName')}</FormFieldLabel>
+            </FormField>
+            <FormField label={t('masterCarrier.shortName')} span="full">
               <Input
                 value={form.shortName ?? ''}
                 placeholder={ph}
                 onChange={(e) => setForm({ ...form, shortName: e.target.value })}
               />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel>{t('masterCarrier.remark')}</FormFieldLabel>
+            </FormField>
+            <FormField label={t('masterCarrier.remark')} span="full">
               <Textarea
                 value={form.remark ?? ''}
                 rows={2}
                 placeholder={ph}
                 onChange={(e) => setForm({ ...form, remark: e.target.value })}
               />
-            </div>
-          </div>
+            </FormField>
+          </FormGrid>
 
           <h3 className="text-sm font-medium">{t('masterCarrier.sectionContact')}</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <FormFieldLabel>{t('masterCarrier.contactName')}</FormFieldLabel>
+          <FormGrid columns={2}>
+            <FormField label={t('masterCarrier.contactName')}>
               <Input
                 value={form.contactName ?? ''}
                 placeholder={ph}
                 onChange={(e) => setForm({ ...form, contactName: e.target.value })}
               />
-            </div>
-            <div className="space-y-1.5">
-              <FormFieldLabel>{t('masterCarrier.contactPhone')}</FormFieldLabel>
+            </FormField>
+            <FormField label={t('masterCarrier.contactPhone')}>
               <Input
                 value={form.contactPhone ?? ''}
                 placeholder={ph}
                 onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
               />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel>{t('masterCarrier.contactEmail')}</FormFieldLabel>
+            </FormField>
+            <FormField label={t('masterCarrier.contactEmail')} span="full" error={fieldError(errors, 'contactEmail')}>
               <Input
                 value={form.contactEmail ?? ''}
                 placeholder={ph}
                 onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+                aria-invalid={!!errors.contactEmail}
               />
-              {fieldError(errors, 'contactEmail')}
-            </div>
-          </div>
+            </FormField>
+          </FormGrid>
 
           <h3 className="text-sm font-medium">{t('masterCarrier.sectionIntegration')}</h3>
-          <div className="space-y-1.5">
-            <FormFieldLabel>{t('masterCarrier.externalCarrierCode')}</FormFieldLabel>
-            <Input
-              value={form.externalCarrierCode ?? ''}
-              placeholder={ph}
-              onChange={(e) => setForm({ ...form, externalCarrierCode: e.target.value })}
-            />
-          </div>
+          <FormGrid columns={2}>
+            <FormField label={t('masterCarrier.externalCarrierCode')} span="full">
+              <Input
+                value={form.externalCarrierCode ?? ''}
+                placeholder={ph}
+                onChange={(e) => setForm({ ...form, externalCarrierCode: e.target.value })}
+              />
+            </FormField>
+          </FormGrid>
         </div>
 
         <DialogFooter>

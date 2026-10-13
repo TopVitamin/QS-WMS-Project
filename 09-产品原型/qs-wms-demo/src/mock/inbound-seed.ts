@@ -615,8 +615,8 @@ function createFillerInboundsForOtherWarehouses(): InboundOrder[] {
               putawayQty: 0,
             }),
           ],
-          createdAt: `2026-10-0${1 + (wi % 3)}T0${8 + i}:00:00.000Z`,
-          updatedAt: `2026-10-0${1 + (wi % 3)}T0${8 + i}:00:00.000Z`,
+          createdAt: `2026-10-0${1 + (wi % 3)}T${String(8 + i).padStart(2, '0')}:00:00.000Z`,
+          updatedAt: `2026-10-0${1 + (wi % 3)}T${String(8 + i).padStart(2, '0')}:00:00.000Z`,
         }),
       )
     }

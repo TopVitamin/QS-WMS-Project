@@ -1,9 +1,8 @@
-import { ChevronRight } from 'lucide-react'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
+import { PdaButton, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { ScanInput } from '@/components/pda/scan-input'
-import { Button } from '@/components/ui/button'
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { cn } from '@/lib/utils'
 import { boxKeyOf } from '@/stores/pda-receive-session'
@@ -68,41 +67,30 @@ export function ReceiveContainerStep({ flow }: { flow: ReceiveFlow }) {
         <ScanInput label={t('pdaReceive.promptContainer')} onScan={onScan} candidates={candidates} />
 
         {boxes.length > 0 && (
-          <div>
-            <div className="mb-2 text-sm font-medium">{t('pdaReceive.sessionBoxes', { count: boxes.length })}</div>
-            <div className="flex flex-col gap-2">
-              {boxes.map((b) => (
-                <button
-                  key={b.key}
-                  type="button"
-                  onClick={() => openBox(b.containerNo, b.bulkPiece)}
-                  className="flex min-h-14 items-center gap-2 rounded-xl bg-background p-3 text-left shadow-xs active:bg-accent"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className={cn('text-base font-semibold', !b.bulkPiece && 'font-mono')}>{flow.boxLabel(b)}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {b.status === 'STASHED' ? t('pdaReceive.boxStashed') : t('pdaReceive.boxOpen')} ·{' '}
-                        {t('pdaReceive.lineCount', { count: b.lines.length })}
-                      </span>
-                    </div>
-                    <QtyTriple lines={b.lines} />
-                  </div>
-                  <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-          </div>
+          <PdaSection title={t('pdaReceive.sessionBoxes', { count: boxes.length })}>
+            {boxes.map((b) => (
+              <PdaListItem key={b.key} chevron onClick={() => openBox(b.containerNo, b.bulkPiece)}>
+                <div className="flex items-center gap-2">
+                  <span className={cn('text-base font-semibold', !b.bulkPiece && 'font-mono')}>{flow.boxLabel(b)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {b.status === 'STASHED' ? t('pdaReceive.boxStashed') : t('pdaReceive.boxOpen')} ·{' '}
+                    {t('pdaReceive.lineCount', { count: b.lines.length })}
+                  </span>
+                </div>
+                <QtyTriple lines={b.lines} />
+              </PdaListItem>
+            ))}
+          </PdaSection>
         )}
       </div>
       <PdaFooter>
-        <Button variant="outline" className="h-12 flex-1 text-base" onClick={() => openBox(undefined, true)}>
+        <PdaButton variant="outline" className="flex-1" onClick={() => openBox(undefined, true)}>
           {t('inbound.bulkPiece')}
-        </Button>
+        </PdaButton>
         {boxes.length > 0 && (
-          <Button className="h-12 flex-1 text-base" onClick={() => nav.go('submit')}>
+          <PdaButton className="flex-1" onClick={() => nav.go('submit')}>
             {t('pdaReceive.submitReceiptCount', { count: boxes.length })}
-          </Button>
+          </PdaButton>
         )}
       </PdaFooter>
     </>

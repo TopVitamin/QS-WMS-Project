@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { RotateCcw, Smartphone, Warehouse as WarehouseIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { BizCode } from '@/components/biz/display'
+import { TagLabel } from '@/components/biz/status-badge'
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,7 +15,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { wmsMenu } from '@/config/menu'
-import { useDb } from '@/mock/db'
+import { useResetDemo } from '@/hooks/use-reset-demo'
 import { warehouses } from '@/mock/seed'
 import { useSettings } from '@/stores/settings'
 import { useTabs } from '@/stores/tabs'
@@ -27,7 +29,7 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
   const { t } = useTranslation()
   const navigate = useNavigate()
   const settings = useSettings()
-  const resetDemo = useDb((s) => s.resetDemo)
+  const resetDemo = useResetDemo()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,10 +54,10 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
     onOpenChange(false)
   }
 
+  /** 危险操作：先关面板，再走统一的二次确认 */
   const handleResetDemo = () => {
-    resetDemo()
-    toast.success(t('common.resetDemoDone'))
     onOpenChange(false)
+    void resetDemo()
   }
 
   const handleOpenPda = () => {
@@ -96,11 +98,11 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
               </div>
               <div className="flex flex-1 items-center gap-2">
                 <span>{t('settings.switchWarehouse')}:</span>
-                <span className="font-mono font-medium">{w.code}</span>
+                <BizCode className="font-medium">{w.code}</BizCode>
                 <span>{t(w.nameKey)}</span>
               </div>
               {w.code === settings.warehouseCode && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">当前选中</span>
+                <TagLabel tone="blue">{t('common.currentSelected')}</TagLabel>
               )}
             </CommandItem>
           ))}
@@ -124,16 +126,8 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
                   </div>
                   <span className="flex-1 font-medium">{t(leaf.titleKey)}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-muted-foreground/60">{leaf.path}</span>
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-mono font-medium ${
-                        leaf.milestone === 'M0'
-                          ? 'bg-success/10 text-success'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {leaf.milestone}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{leaf.path}</span>
+                    <TagLabel tone={leaf.milestone === 'M0' ? 'green' : 'gray'}>{leaf.milestone}</TagLabel>
                   </div>
                 </CommandItem>
               ))}
@@ -146,18 +140,18 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
       <div className="flex h-10 items-center justify-between border-t border-border/60 bg-muted/30 px-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
-            <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-[10px] shadow-xs">↑</kbd>
-            <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-[10px] shadow-xs">↓</kbd>
-            <span>移动选择</span>
+            <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-xs shadow-xs">↑</kbd>
+            <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-xs shadow-xs">↓</kbd>
+            <span>{t('common.kbdMove')}</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-[10px] shadow-xs">↵</kbd>
-            <span>直达跳转</span>
+            <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-xs shadow-xs">↵</kbd>
+            <span>{t('common.kbdOpen')}</span>
           </span>
         </div>
         <span className="flex items-center gap-1.5">
-          <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-[10px] shadow-xs">ESC</kbd>
-          <span>关闭</span>
+          <kbd className="rounded border border-border/80 bg-background px-1.5 py-0.5 font-mono text-xs shadow-xs">ESC</kbd>
+          <span>{t('common.close')}</span>
         </span>
       </div>
     </CommandDialog>

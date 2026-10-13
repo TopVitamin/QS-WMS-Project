@@ -6,10 +6,15 @@ import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
 import { useMasterDiscardNavigate } from '@/hooks/use-master-discard-navigate'
 import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
-import { locationDetailPath, validateLocationMasterForm, type LocationMasterFormErrors } from '@/lib/location-master'
+import {
+  createEmptyLocationForm,
+  locationDetailPath,
+  validateLocationMasterForm,
+  type LocationMasterFormErrors,
+} from '@/lib/location-master'
 import { useDb } from '@/mock/db'
 import type { LocationMaster } from '@/types/wms'
-import { createEmptyLocationForm, LocationFormFields } from './location-form-fields'
+import { LocationFormFields } from './location-form-fields'
 
 type CreatePreset = { warehouseCode?: string; zoneCode?: string }
 
@@ -49,7 +54,7 @@ export function LocationCreatePage() {
       zoneCode: form.zoneCode,
       zoneType: form.zoneType,
       code,
-      status: form.status,
+      status: 'ENABLED',
       remark: form.remark?.trim() || undefined,
       allowMixSku: form.allowMixSku,
       allowMixBatch: form.allowMixBatch,

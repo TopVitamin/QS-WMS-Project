@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { Num } from '@/components/biz/display'
+import { BizCode, Num } from '@/components/biz/display'
+import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
+import { DetailSheet } from '@/components/biz/detail-sheet'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { putawayOrderStatusMeta } from '@/config/status'
+import { putawayOrderStatusMeta, qualityMeta } from '@/config/status'
 import type { PutawayOrder } from '@/types/inbound'
 
 export function InboundPutawaySheet({
@@ -21,7 +22,7 @@ export function InboundPutawaySheet({
     const col = createDataColumns<PutawayOrder['planLines'][number]>()
     return col.columns([
       col.accessor('lineNo', { header: t('inbound.lineNo'), meta: { align: 'right' } }),
-      col.accessor('skuCode', { header: t('common.sku') }),
+      col.accessor('skuCode', { header: t('common.sku'), cell: ({ getValue }) => <BizCode>{getValue()}</BizCode> }),
       col.accessor('planQty', {
         header: t('inbound.planPutawayQty'),
         meta: { align: 'right' },
@@ -33,8 +34,11 @@ export function InboundPutawaySheet({
   const actualColumns = useMemo(() => {
     const col = createDataColumns<PutawayOrder['actualLines'][number]>()
     return col.columns([
-      col.accessor('locationCode', { header: t('inbound.targetLocation') }),
-      col.accessor('skuCode', { header: t('common.sku') }),
+      col.accessor('locationCode', {
+        header: t('inbound.targetLocation'),
+        cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
+      }),
+      col.accessor('skuCode', { header: t('common.sku'), cell: ({ getValue }) => <BizCode>{getValue()}</BizCode> }),
       col.accessor('qty', {
         header: t('inbound.putawayQty'),
         meta: { align: 'right' },
@@ -44,53 +48,54 @@ export function InboundPutawaySheet({
   }, [t])
 
   return (
-    <Sheet open={!!order} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="gap-0 data-[side=right]:w-[880px] data-[side=right]:max-w-[92vw] data-[side=right]:sm:max-w-[92vw]">
-        {order && (
+    <DetailSheet
+      open={!!order}
+      onClose={onClose}
+      title={
+        order ? (
           <>
-            <SheetHeader className="border-b">
-              <SheetTitle className="flex flex-wrap items-center gap-2">
-                {order.putawayNo}
-                <StatusBadge meta={putawayOrderStatusMeta[order.status]} />
-                <TagLabel tone={order.qualityType === 'GOOD' ? 'green' : 'red'}>
-                  {t(`enum.quality.${order.qualityType}`)}
-                </TagLabel>
-              </SheetTitle>
-              <p className="text-sm text-muted-foreground">
-                {t('inbound.workContainerNo')}：{order.containerNo ? order.containerNo : t('inbound.bulkPiece')}
-              </p>
-            </SheetHeader>
-            <div className="p-4">
-              <Tabs defaultValue="plan">
-                <TabsList>
-                  <TabsTrigger value="plan">{t('inbound.putawayPlanTab')}</TabsTrigger>
-                  <TabsTrigger value="actual">{t('inbound.putawayActualTab')}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="plan" className="mt-3">
-                  <DataTable
-                    data={order.planLines}
-                    columns={planColumns}
-                    getRowId={(line) => String(line.lineNo)}
-                    selectable={false}
-                    showColumnSettings={false}
-                    paginate={false}
-                  />
-                </TabsContent>
-                <TabsContent value="actual" className="mt-3">
-                  <DataTable
-                    data={order.actualLines}
-                    columns={actualColumns}
-                    getRowId={(line) => `${line.locationCode}-${line.skuCode}-${line.qty}`}
-                    selectable={false}
-                    showColumnSettings={false}
-                    paginate={false}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
+            <BizCode className="text-base">{order.putawayNo}</BizCode>
+            <StatusBadge meta={putawayOrderStatusMeta[order.status]} />
+            <TagLabel meta={qualityMeta[order.qualityType]} />
           </>
-        )}
-      </SheetContent>
-    </Sheet>
+        ) : null
+      }
+    >
+      {order && (
+        <>
+          <Descriptions columns={4}>
+            <DescriptionItem label={t('inbound.workContainerNo')}>
+              {order.containerNo ? <BizCode>{order.containerNo}</BizCode> : t('inbound.bulkPiece')}
+            </DescriptionItem>
+          </Descriptions>
+          <Tabs defaultValue="plan" className="gap-3">
+            <TabsList>
+              <TabsTrigger value="plan">{t('inbound.putawayPlanTab')}</TabsTrigger>
+              <TabsTrigger value="actual">{t('inbound.putawayActualTab')}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="plan">
+              <DataTable
+                data={order.planLines}
+                columns={planColumns}
+                getRowId={(line) => String(line.lineNo)}
+                selectable={false}
+                showColumnSettings={false}
+                paginate={false}
+              />
+            </TabsContent>
+            <TabsContent value="actual">
+              <DataTable
+                data={order.actualLines}
+                columns={actualColumns}
+                getRowId={(line) => `${line.locationCode}-${line.skuCode}-${line.qty}`}
+                selectable={false}
+                showColumnSettings={false}
+                paginate={false}
+              />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+    </DetailSheet>
   )
 }

@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
-import { BizCode } from '@/components/biz/display'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
+import { BizCode, CodeName, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
-import { PageContainer, Panel } from '@/components/biz/page-container'
+import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
+import { MasterDetailActions } from '@/components/biz/master-detail-actions'
+import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
 import { StatusBadge } from '@/components/biz/status-badge'
-import { Button } from '@/components/ui/button'
 import { usageStatusMeta } from '@/config/status'
 import { useZoneMasterStatusToggle } from '@/hooks/use-zone-master-status'
 import { parseZoneWarehouse, zoneEditPath, ZONE_TYPE_I18N } from '@/lib/zone-master'
@@ -30,40 +30,24 @@ export function ZoneDetailPage() {
   if (!code || !warehouseCode) return <Navigate to="/wms/master/zones" replace />
   if (!zone) return <Navigate to="/wms/master/zones" replace />
 
-  const enabled = zone.status === 'ENABLED'
-  const warehouseLabel = warehouse ? `${warehouse.code} · ${warehouse.name}` : warehouseCode
-
   return (
     <PageContainer
-      title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>{t('masterZone.detailTitle')}</span>
-          <BizCode>{zone.code}</BizCode>
-          <StatusBadge meta={usageStatusMeta[zone.status]} />
-        </span>
-      }
+      title={<DetailTitle title={t('masterZone.detailTitle')} code={zone.code} status={usageStatusMeta[zone.status]} />}
       actions={
-        <>
-          <Button variant="outline" asChild>
-            <Link to="/wms/master/zones">{t('masterZone.backToList')}</Link>
-          </Button>
-          {enabled ? (
-            <Button variant="destructive" onClick={() => toggleStatus(zone, 'DISABLED')}>
-              {t('masterZone.disableAction')}
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => toggleStatus(zone, 'ENABLED')}>
-              {t('masterZone.enableAction')}
-            </Button>
-          )}
-          <Button onClick={() => navigate(zoneEditPath(zone.warehouseCode, zone.code))}>{t('masterZone.edit')}</Button>
-        </>
+        <MasterDetailActions
+          scope="masterZone"
+          backTo="/wms/master/zones"
+          enabled={zone.status === 'ENABLED'}
+          onToggle={(next) => toggleStatus(zone, next)}
+          onEdit={() => navigate(zoneEditPath(zone.warehouseCode, zone.code))}
+        />
       }
     >
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterZone.sectionBasic')}</h2>
+      <Section title={t('masterZone.sectionBasic')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterZone.warehouseCode')}>{warehouseLabel}</DescriptionItem>
+          <DescriptionItem label={t('masterZone.warehouseCode')}>
+            <CodeName code={zone.warehouseCode} name={warehouse?.name} />
+          </DescriptionItem>
           <DescriptionItem label={t('masterZone.code')}>
             <BizCode>{zone.code}</BizCode>
           </DescriptionItem>
@@ -73,10 +57,10 @@ export function ZoneDetailPage() {
             <StatusBadge meta={usageStatusMeta[zone.status]} />
           </DescriptionItem>
           <DescriptionItem label={t('masterZone.remark')} className="col-span-3">
-            {zone.remark || <span className="text-muted-foreground">-</span>}
+            {zone.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
       <MasterAuditPanel scope="masterZone" updatedBy={zone.updatedBy} updatedAt={zone.updatedAt} />
     </PageContainer>

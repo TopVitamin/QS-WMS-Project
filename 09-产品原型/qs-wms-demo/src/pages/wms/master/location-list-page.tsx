@@ -4,17 +4,18 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { DateTime, DocNo } from '@/components/biz/display'
+import { CodeName, DateTime, DocNo, Empty } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect, UsageStatusFilter, YesNoFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { useLocationMasterStatusToggle } from '@/hooks/use-location-master-status'
-import { FILTER_ALL, masterCompositeRowId, sortByUpdatedAtDesc } from '@/lib/master-data'
+import { FILTER_ALL, masterCompositeRowId, matchYesNo, sortByUpdatedAtDesc } from '@/lib/master-data'
 import {
   enabledZonesForWarehouse,
   hasAnyEnabledZone,
@@ -22,8 +23,7 @@ import {
   locationEditPath,
   ZONE_TYPE_I18N,
 } from '@/lib/location-master'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
+import { codeNameText } from '@/lib/typography'
 import { useDb } from '@/mock/db'
 import type { LocationMaster, UsageStatus, ZoneType } from '@/types/wms'
 
@@ -47,20 +47,14 @@ const emptyFilters: Filters = {
   allowMixBatch: FILTER_ALL,
 }
 
-function matchBoolFilter(value: boolean, filter: string): boolean {
-  if (filter === FILTER_ALL) return true
-  if (filter === 'yes') return value
-  return !value
-}
-
 function matchLocation(row: LocationMaster, filters: Filters): boolean {
   if (filters.warehouseCode !== FILTER_ALL && row.warehouseCode !== filters.warehouseCode) return false
   if (filters.zoneCode !== FILTER_ALL && row.zoneCode !== filters.zoneCode) return false
   if (filters.code && !row.code.toLowerCase().includes(filters.code.trim().toLowerCase())) return false
   if (filters.zoneType !== FILTER_ALL && row.zoneType !== filters.zoneType) return false
   if (filters.status !== FILTER_ALL && row.status !== filters.status) return false
-  if (!matchBoolFilter(row.allowMixSku, filters.allowMixSku)) return false
-  if (!matchBoolFilter(row.allowMixBatch, filters.allowMixBatch)) return false
+  if (!matchYesNo(row.allowMixSku, filters.allowMixSku)) return false
+  if (!matchYesNo(row.allowMixBatch, filters.allowMixBatch)) return false
   return true
 }
 
@@ -72,7 +66,7 @@ export function LocationListPage() {
   const zoneMasters = useDb((s) => s.zoneMasters)
   const toggleStatus = useLocationMasterStatusToggle()
 
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const canCreate = hasAnyEnabledZone(zoneMasters)
 
@@ -85,30 +79,22 @@ export function LocationListPage() {
     return sortByUpdatedAtDesc(locationMasters.filter((l) => matchLocation(l, filters)))
   }, [locationMasters, filters])
 
-  const warehouseLabel = (code: string) => {
-    const w = warehouseMasters.find((x) => x.code === code)
-    return w ? `${w.code} · ${w.name}` : code
-  }
-
-  const zoneLabel = (code: string) => {
-    const z = zoneMasters.find((x) => x.code === code)
-    return z ? `${z.code} · ${z.name}` : code
-  }
-
   const columns = useMemo(() => {
+    const warehouseName = (code: string) => warehouseMasters.find((x) => x.code === code)?.name
+    const zoneName = (code: string) => zoneMasters.find((x) => x.code === code)?.name
     const col = createDataColumns<LocationMaster>()
     return col.columns([
       col.accessor('warehouseCode', {
         header: t('masterLocation.warehouseCode'),
         enableSorting: false,
         meta: { label: t('masterLocation.warehouseCode') },
-        cell: ({ getValue }) => warehouseLabel(getValue()),
+        cell: ({ getValue }) => <CodeName code={getValue()} name={warehouseName(getValue())} />,
       }),
       col.accessor('zoneCode', {
         header: t('masterLocation.zoneCode'),
         enableSorting: false,
         meta: { label: t('masterLocation.zoneCode') },
-        cell: ({ getValue }) => zoneLabel(getValue()),
+        cell: ({ getValue }) => <CodeName code={getValue()} name={zoneName(getValue())} />,
       }),
       col.accessor('code', {
         header: t('masterLocation.code'),
@@ -116,9 +102,7 @@ export function LocationListPage() {
         enableHiding: false,
         meta: { pin: 'left', label: t('masterLocation.code') },
         cell: ({ row }) => (
-          <DocNo
-            onClick={() => navigate(locationDetailPath(row.original.warehouseCode, row.original.code))}
-          >
+          <DocNo onClick={() => navigate(locationDetailPath(row.original.warehouseCode, row.original.code))}>
             {row.original.code}
           </DocNo>
         ),
@@ -153,7 +137,7 @@ export function LocationListPage() {
         meta: { label: t('masterLocation.remark') },
         cell: ({ getValue }) => {
           const v = getValue() as string | undefined
-          return v ? <span className="max-w-[160px] truncate" title={v}>{v}</span> : <span className="text-muted-foreground">-</span>
+          return v ? <span className="block max-w-40 truncate" title={v}>{v}</span> : <Empty />
         },
       }),
       col.accessor('allowMixSku', {
@@ -178,24 +162,21 @@ export function LocationListPage() {
           const loc = row.original
           const enabled = loc.status === 'ENABLED'
           return (
-            <span className="inline-flex items-center gap-2">
-              <button
-                type="button"
-                className={textLink}
-                onClick={() => navigate(locationEditPath(loc.warehouseCode, loc.code))}
-              >
-                {t('masterLocation.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, enabled ? 'text-destructive' : undefined)}
-                onClick={() =>
-                  toggleStatus(loc.warehouseCode, loc.code, enabled ? 'DISABLED' : 'ENABLED')
-                }
-              >
-                {t(enabled ? 'masterLocation.disableAction' : 'masterLocation.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                {
+                  key: 'edit',
+                  label: t('masterLocation.edit'),
+                  onClick: () => navigate(locationEditPath(loc.warehouseCode, loc.code)),
+                },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterLocation.disableAction' : 'masterLocation.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(loc.warehouseCode, loc.code, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -233,76 +214,37 @@ export function LocationListPage() {
     >
       <Panel className="p-4">
         <FilterBar
-          columns={6}
           onSearch={applySearch}
           onReset={reset}
           advanced={
             <>
               <FilterItem label={t('masterLocation.allowMixSku')}>
-                <Select
-                  value={draft.allowMixSku}
-                  onValueChange={(v) => setDraft({ ...draft, allowMixSku: v })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t('common.selectPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                    <SelectItem value="yes">{t('common.yes')}</SelectItem>
-                    <SelectItem value="no">{t('common.no')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <YesNoFilter value={draft.allowMixSku} onValueChange={(v) => setDraft({ ...draft, allowMixSku: v })} />
               </FilterItem>
               <FilterItem label={t('masterLocation.allowMixBatch')}>
-                <Select
+                <YesNoFilter
                   value={draft.allowMixBatch}
                   onValueChange={(v) => setDraft({ ...draft, allowMixBatch: v })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t('common.selectPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                    <SelectItem value="yes">{t('common.yes')}</SelectItem>
-                    <SelectItem value="no">{t('common.no')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               </FilterItem>
             </>
           }
         >
           <FilterItem label={t('masterLocation.warehouseCode')}>
-            <Select
+            <OptionSelect
+              allOption
               value={draft.warehouseCode}
               onValueChange={(v) => setDraft({ ...draft, warehouseCode: v, zoneCode: FILTER_ALL })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {warehouseMasters.map((w) => (
-                  <SelectItem key={w.code} value={w.code}>
-                    {w.code} · {w.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={warehouseMasters.map((w) => ({ value: w.code, label: codeNameText(w.code, w.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('masterLocation.zoneCode')}>
-            <Select value={draft.zoneCode} onValueChange={(v) => setDraft({ ...draft, zoneCode: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {zoneOptions.map((z) => (
-                  <SelectItem key={z.code} value={z.code}>
-                    {z.code} · {z.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.zoneCode}
+              onValueChange={(v) => setDraft({ ...draft, zoneCode: v })}
+              options={zoneOptions.map((z) => ({ value: z.code, label: codeNameText(z.code, z.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('masterLocation.code')}>
             <Input
@@ -312,29 +254,18 @@ export function LocationListPage() {
             />
           </FilterItem>
           <FilterItem label={t('masterLocation.zoneType')}>
-            <Select value={draft.zoneType} onValueChange={(v) => setDraft({ ...draft, zoneType: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {(Object.keys(ZONE_TYPE_I18N) as ZoneType[]).map((zt) => (
-                  <SelectItem key={zt} value={zt}>{t(ZONE_TYPE_I18N[zt])}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.zoneType}
+              onValueChange={(v) => setDraft({ ...draft, zoneType: v })}
+              options={(Object.keys(ZONE_TYPE_I18N) as ZoneType[]).map((zt) => ({
+                value: zt,
+                label: t(ZONE_TYPE_I18N[zt]),
+              }))}
+            />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
         </FilterBar>
       </Panel>

@@ -38,7 +38,7 @@ PageContainer(title=menu.channels, actions=导出 Mock, 新增)
 
 与 [《业务组件与主数据页面》](../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md) 一致：**主数据列表一律 `columns={6}`**（常显最多 5 项 + 第 6 列查询/重置/展开），**不得**沿用详情区 `Descriptions columns={4}` 或单独写 4 列宽。
 
-`const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(empty)`；查询写入 `filters` 并回第一页；重置清空两者。
+`const { filters, draft, setDraft, applySearch, reset } = useListFilters(empty)`；查询写入 `filters` 并回第一页；重置清空两者。
 
 | 区域 | 字段 | 控件 | 匹配 |
 | --- | --- | --- | --- |

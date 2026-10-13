@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { DateTime } from '@/components/biz/display'
-import { FormFieldLabel } from '@/components/biz/form-field-label'
+import { FormField, FormGrid } from '@/components/biz/form-field'
+import { OptionSelect } from '@/components/biz/option-select'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,16 +15,18 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/biz/status-badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { usageStatusMeta } from '@/config/status'
 import { useConfirm } from '@/hooks/use-confirm'
 import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
 import { channelHasOpenReferences, createEmptyChannelForm, validateChannelMasterForm } from '@/lib/channel-master'
 import type { ChannelMasterFormErrors } from '@/lib/channel-master'
-import { cn } from '@/lib/utils'
+import { codeNameText } from '@/lib/typography'
 import { useDb } from '@/mock/db'
 import type { ChannelMaster } from '@/types/wms'
+
+const CHANNEL_TYPES: ChannelMaster['channelType'][] = ['EXPRESS', 'TRUCK', 'PICKUP', 'OTHER']
+const INTEGRATION_MODES: ChannelMaster['integrationMode'][] = ['OFFLINE_HANDOVER', 'API_RESERVED']
 
 type ChannelFormDialogProps = {
   open: boolean
@@ -131,7 +134,6 @@ export function ChannelFormDialog({
   const titleKey =
     mode === 'create' ? 'masterChannel.createTitle' : mode === 'edit' ? 'masterChannel.editTitle' : 'masterChannel.viewTitle'
   const ph = t('common.inputPlaceholder')
-  const sp = t('common.selectPlaceholder')
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && requestClose()}>
@@ -141,73 +143,51 @@ export function ChannelFormDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel required>{t('masterChannel.carrierCode')}</FormFieldLabel>
-              <Select
+          <FormGrid columns={2}>
+            <FormField label={t('masterChannel.carrierCode')} required span="full" error={fieldError(errors, 'carrierCode')}>
+              <OptionSelect
                 value={form.carrierCode}
                 disabled={readOnly || carrierLocked || mode === 'edit'}
                 onValueChange={(v) => setForm({ ...form, carrierCode: v })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={sp} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(mode === 'create' ? enabledCarriers : carrierMasters).map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.code} · {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldError(errors, 'carrierCode')}
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel required>{t('masterChannel.code')}</FormFieldLabel>
+                options={(mode === 'create' ? enabledCarriers : carrierMasters).map((c) => ({
+                  value: c.code,
+                  label: codeNameText(c.code, c.name),
+                }))}
+              />
+            </FormField>
+            <FormField label={t('masterChannel.code')} required span="full" error={fieldError(errors, 'code')}>
               <Input
                 value={form.code}
                 readOnly={mode !== 'create'}
+                className="tabular-nums"
                 placeholder={mode === 'create' ? t('masterChannel.codePlaceholder') : undefined}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
               />
-              {fieldError(errors, 'code')}
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel required>{t('masterChannel.name')}</FormFieldLabel>
+            </FormField>
+            <FormField label={t('masterChannel.name')} required span="full" error={fieldError(errors, 'name')}>
               <Input
                 value={form.name}
                 readOnly={readOnly}
-                placeholder={t('masterChannel.namePlaceholder')}
+                placeholder={readOnly ? undefined : t('masterChannel.namePlaceholder')}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
-              {fieldError(errors, 'name')}
-            </div>
-            <div className={cn('space-y-1.5', !readOnly && 'sm:col-span-2')}>
-              <FormFieldLabel required>{t('masterChannel.channelType')}</FormFieldLabel>
-              <Select
+            </FormField>
+            <FormField label={t('masterChannel.channelType')} required span={readOnly ? undefined : 'full'}>
+              <OptionSelect
                 value={form.channelType}
                 disabled={readOnly}
                 onValueChange={(v) => setForm({ ...form, channelType: v as ChannelMaster['channelType'] })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={sp} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EXPRESS">{t('masterChannel.types.EXPRESS')}</SelectItem>
-                  <SelectItem value="TRUCK">{t('masterChannel.types.TRUCK')}</SelectItem>
-                  <SelectItem value="PICKUP">{t('masterChannel.types.PICKUP')}</SelectItem>
-                  <SelectItem value="OTHER">{t('masterChannel.types.OTHER')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                options={CHANNEL_TYPES.map((ct) => ({ value: ct, label: t(`masterChannel.types.${ct}`) }))}
+              />
+            </FormField>
             {readOnly && existing && (
-              <div className="space-y-1.5">
-                <FormFieldLabel>{t('common.status')}</FormFieldLabel>
-                <StatusBadge meta={usageStatusMeta[existing.status]} />
-              </div>
+              <FormField label={t('common.status')}>
+                <div className="flex min-h-8 items-center">
+                  <StatusBadge meta={usageStatusMeta[existing.status]} />
+                </div>
+              </FormField>
             )}
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel>{t('masterChannel.remark')}</FormFieldLabel>
+            <FormField label={t('masterChannel.remark')} span="full">
               <Textarea
                 value={form.remark ?? ''}
                 rows={2}
@@ -215,37 +195,33 @@ export function ChannelFormDialog({
                 placeholder={readOnly ? undefined : ph}
                 onChange={(e) => setForm({ ...form, remark: e.target.value })}
               />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel required>{t('masterChannel.integrationMode')}</FormFieldLabel>
-              <Select
+            </FormField>
+            <FormField
+              label={t('masterChannel.integrationMode')}
+              required
+              span="full"
+              error={fieldError(errors, 'integrationMode')}
+            >
+              <OptionSelect
                 value={form.integrationMode}
                 disabled={readOnly}
                 onValueChange={(v) => setForm({ ...form, integrationMode: v as ChannelMaster['integrationMode'] })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={sp} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="OFFLINE_HANDOVER">{t('masterChannel.integrationModes.OFFLINE_HANDOVER')}</SelectItem>
-                  <SelectItem value="API_RESERVED">{t('masterChannel.integrationModes.API_RESERVED')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {fieldError(errors, 'integrationMode')}
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <FormFieldLabel>{t('masterChannel.externalProductCode')}</FormFieldLabel>
+                options={INTEGRATION_MODES.map((m) => ({ value: m, label: t(`masterChannel.integrationModes.${m}`) }))}
+              />
+            </FormField>
+            <FormField
+              label={t('masterChannel.externalProductCode')}
+              span="full"
+              hint={form.integrationMode === 'API_RESERVED' ? t('masterChannel.externalProductCodeHint') : undefined}
+            >
               <Input
                 value={form.externalProductCode ?? ''}
                 readOnly={readOnly}
                 placeholder={readOnly ? undefined : ph}
                 onChange={(e) => setForm({ ...form, externalProductCode: e.target.value })}
               />
-              {form.integrationMode === 'API_RESERVED' && (
-                <p className="text-xs text-muted-foreground">{t('masterChannel.externalProductCodeHint')}</p>
-              )}
-            </div>
-          </div>
+            </FormField>
+          </FormGrid>
 
           {readOnly && existing && (
             <div className="space-y-2 border-t pt-4">

@@ -1,13 +1,15 @@
 import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { BizCode } from '@/components/biz/display'
+import { BizCode, CodeName, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
-import { PageContainer, Panel } from '@/components/biz/page-container'
+import { MasterDetailActions } from '@/components/biz/master-detail-actions'
+import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { usageStatusMeta } from '@/config/status'
@@ -32,7 +34,7 @@ export function SkuDetailPage() {
   const [barcodeDialog, setBarcodeDialog] = useState<SkuBarcodeDialogState>(null)
 
   const master = ownerCode && skuCode ? findSkuMaster(skuMasters, ownerCode, skuCode) : undefined
-  const ownerName = customers.find((c) => c.code === ownerCode)?.name ?? ownerCode
+  const ownerName = customers.find((c) => c.code === ownerCode)?.name
 
   const barcodes = useMemo(
     () =>
@@ -43,11 +45,23 @@ export function SkuDetailPage() {
   )
 
   const barcodeColumns = useMemo(() => {
+    const disableBarcode = async (row: SkuBarcode) => {
+      const ok = await confirm({
+        title: t('masterSku.barcodeDisableTitle'),
+        description: row.barcode,
+        confirmText: t('masterSku.disableAction'),
+        cancelText: t('common.cancel'),
+        variant: 'destructive',
+      })
+      if (!ok) return
+      const res = setSkuBarcodeStatus(row.id, 'DISABLED')
+      if (!res.ok) toast.error(t(res.errorKey))
+    }
     const col = createDataColumns<SkuBarcode>()
     return col.columns([
       col.accessor('barcode', {
         header: t('masterSku.barcode'),
-        cell: ({ getValue }) => <BizCode className="font-mono">{getValue()}</BizCode>,
+        cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
       }),
       col.accessor('isPrimary', {
         header: t('masterSku.isPrimaryBarcode'),
@@ -61,36 +75,24 @@ export function SkuDetailPage() {
         id: 'barcodeActions',
         header: t('common.actions'),
         meta: { pin: 'right' },
-        cell: ({ row }) => {
-          const enabled = row.original.status === 'ENABLED'
-          return (
-            <div className="flex gap-2">
-              <Button variant="link" className="h-auto p-0" onClick={() => setBarcodeDialog({ mode: 'edit', row: row.original })}>
-                {t('masterSku.edit')}
-              </Button>
-              {enabled ? (
-                <Button
-                  variant="link"
-                  className="h-auto p-0 text-destructive"
-                  onClick={async () => {
-                    const ok = await confirm({
-                      title: t('masterSku.barcodeDisableTitle'),
-                      description: row.original.barcode,
-                      confirmText: t('masterSku.disableAction'),
-                      cancelText: t('common.cancel'),
-                      variant: 'destructive',
-                    })
-                    if (!ok) return
-                    const res = setSkuBarcodeStatus(row.original.id, 'DISABLED')
-                    if (!res.ok) toast.error(t(res.errorKey))
-                  }}
-                >
-                  {t('masterSku.disableAction')}
-                </Button>
-              ) : null}
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <RowActions
+            actions={[
+              {
+                key: 'edit',
+                label: t('masterSku.edit'),
+                onClick: () => setBarcodeDialog({ mode: 'edit', row: row.original }),
+              },
+              {
+                key: 'disable',
+                label: t('masterSku.disableAction'),
+                danger: true,
+                hidden: row.original.status !== 'ENABLED',
+                onClick: () => void disableBarcode(row.original),
+              },
+            ]}
+          />
+        ),
       }),
     ])
   }, [confirm, setSkuBarcodeStatus, t])
@@ -99,127 +101,113 @@ export function SkuDetailPage() {
   if (!master) return <Navigate to="/wms/master/skus" replace />
 
   const enabled = master.status === 'ENABLED'
+  const yesNo = (v: boolean | undefined) => (v ? t('common.yes') : t('common.no'))
 
   return (
     <PageContainer
       title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>{t('masterSku.detailTitle', { owner: ownerCode, code: skuCode })}</span>
-          <StatusBadge meta={usageStatusMeta[master.status]} />
-        </span>
+        <DetailTitle
+          title={t('masterSku.detailTitle')}
+          code={`${master.ownerCode} / ${master.code}`}
+          status={usageStatusMeta[master.status]}
+        />
       }
       actions={
-        <>
-          <Button variant="outline" asChild>
-            <Link to="/wms/master/skus">{t('masterSku.backToList')}</Link>
-          </Button>
-          {enabled ? (
-            <Button variant="destructive" onClick={() => toggleStatus(ownerCode, skuCode, 'DISABLED')}>
-              {t('masterSku.disableAction')}
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => toggleStatus(ownerCode, skuCode, 'ENABLED')}>
-              {t('masterSku.enableAction')}
-            </Button>
-          )}
-          <Button onClick={() => navigate(skuEditPath(ownerCode, skuCode))}>{t('masterSku.edit')}</Button>
-        </>
+        <MasterDetailActions
+          scope="masterSku"
+          backTo="/wms/master/skus"
+          enabled={enabled}
+          onToggle={(next) => toggleStatus(ownerCode, skuCode, next)}
+          onEdit={() => navigate(skuEditPath(ownerCode, skuCode))}
+        />
       }
     >
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterSku.sectionBasic')}</h2>
+      <Section title={t('masterSku.sectionBasic')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterSku.ownerCode')}>
-            <div>
-              <BizCode>{master.ownerCode}</BizCode>
-              <div className="text-xs text-muted-foreground">{ownerName}</div>
-            </div>
+            <CodeName code={master.ownerCode} name={ownerName} layout="stacked" />
           </DescriptionItem>
           <DescriptionItem label={t('masterSku.code')}>
             <BizCode>{master.code}</BizCode>
           </DescriptionItem>
           <DescriptionItem label={t('masterSku.name')}>{master.name}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.nameEn')}>{master.nameEn || '—'}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.nameEn')}>{master.nameEn || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('masterSku.unit')}>{master.unit}</DescriptionItem>
           <DescriptionItem label={t('masterSku.primaryBarcode')}>
-            {master.primaryBarcode ? <BizCode className="font-mono text-xs">{master.primaryBarcode}</BizCode> : '—'}
+            {master.primaryBarcode ? <BizCode>{master.primaryBarcode}</BizCode> : <Empty />}
           </DescriptionItem>
           <DescriptionItem label={t('common.status')}>
             <StatusBadge meta={usageStatusMeta[master.status]} />
           </DescriptionItem>
           <DescriptionItem label={t('masterSku.upstreamSkuId')} className="col-span-2">
-            <span className="font-mono text-xs">{master.upstreamSkuId}</span>
+            <BizCode>{master.upstreamSkuId}</BizCode>
           </DescriptionItem>
           <DescriptionItem label={t('masterSku.spec')} className="col-span-4" multiline>
-            {master.spec || '—'}
+            {master.spec || <Empty />}
           </DescriptionItem>
           <DescriptionItem label={t('masterSku.remark')} className="col-span-4" multiline>
-            {master.remark || '—'}
+            {master.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterSku.sectionForm')}</h2>
+      <Section title={t('masterSku.sectionForm')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterSku.productForm')}>{t(PRODUCT_FORM_I18N[master.productForm])}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.isBattery')}>
-            {master.isBattery ? t('common.yes') : t('common.no')}
-          </DescriptionItem>
+          <DescriptionItem label={t('masterSku.isBattery')}>{yesNo(master.isBattery)}</DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterSku.sectionTrace')}</h2>
+      <Section title={t('masterSku.sectionTrace')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterSku.snEnabled')}>{master.snEnabled ? t('common.yes') : t('common.no')}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.snFormat')}>{master.snFormat || '—'}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.batchEnabled')}>{master.batchEnabled ? t('common.yes') : t('common.no')}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.expiryEnabled')}>{master.expiryEnabled ? t('common.yes') : t('common.no')}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.snEnabled')}>{yesNo(master.snEnabled)}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.snFormat')}>{master.snFormat || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.batchEnabled')}>{yesNo(master.batchEnabled)}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.expiryEnabled')}>{yesNo(master.expiryEnabled)}</DescriptionItem>
           {master.expiryEnabled ? (
             <>
-              <DescriptionItem label={t('masterSku.shelfLifeDays')}>{master.shelfLifeDays ?? '—'}</DescriptionItem>
-              <DescriptionItem label={t('masterSku.inboundDays')}>{master.inboundDays ?? '—'}</DescriptionItem>
-              <DescriptionItem label={t('masterSku.nearExpiryDays')}>{master.nearExpiryDays ?? '—'}</DescriptionItem>
-              <DescriptionItem label={t('masterSku.expiredDays')}>{master.expiredDays ?? '—'}</DescriptionItem>
+              <DescriptionItem label={t('masterSku.shelfLifeDays')}>{master.shelfLifeDays ?? <Empty />}</DescriptionItem>
+              <DescriptionItem label={t('masterSku.inboundDays')}>{master.inboundDays ?? <Empty />}</DescriptionItem>
+              <DescriptionItem label={t('masterSku.nearExpiryDays')}>{master.nearExpiryDays ?? <Empty />}</DescriptionItem>
+              <DescriptionItem label={t('masterSku.expiredDays')}>{master.expiredDays ?? <Empty />}</DescriptionItem>
             </>
           ) : null}
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterSku.sectionQc')}</h2>
+      <Section title={t('masterSku.sectionQc')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterSku.qcRequired')}>{master.qcRequired ? t('common.yes') : t('common.no')}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.qcRequired')}>{yesNo(master.qcRequired)}</DescriptionItem>
           <DescriptionItem label={t('masterSku.qcFlowType')}>
-            {master.qcFlowType ? t(`masterSku.qcFlow.${master.qcFlowType}`) : '—'}
+            {master.qcFlowType ? t(`masterSku.qcFlow.${master.qcFlowType}`) : <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterSku.sectionDims')}</h2>
+      <Section title={t('masterSku.sectionDims')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterSku.grossWeightKg')}>{master.grossWeightKg ?? '—'}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.netWeightKg')}>{master.netWeightKg ?? '—'}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.lengthCm')}>{master.lengthCm ?? '—'}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.widthCm')}>{master.widthCm ?? '—'}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.heightCm')}>{master.heightCm ?? '—'}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.grossWeightKg')}>{master.grossWeightKg ?? <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.netWeightKg')}>{master.netWeightKg ?? <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.lengthCm')}>{master.lengthCm ?? <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.widthCm')}>{master.widthCm ?? <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterSku.heightCm')}>{master.heightCm ?? <Empty />}</DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="flex min-h-0 flex-col gap-3 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">{t('masterSku.sectionBarcodes')}</h2>
-          {enabled ? (
+      <Section
+        flush
+        title={t('masterSku.sectionBarcodes')}
+        extra={
+          enabled ? (
             <Button size="sm" variant="outline" onClick={() => setBarcodeDialog({ mode: 'create', ownerCode, skuCode })}>
               <Plus data-icon="inline-start" />
               {t('masterSku.barcodeAdd')}
             </Button>
-          ) : null}
-        </div>
+          ) : null
+        }
+      >
         <DataTable data={barcodes} columns={barcodeColumns} getRowId={(r) => r.id} pageSize={10} />
-      </Panel>
+      </Section>
 
       <MasterAuditPanel scope="masterSku" updatedBy={master.updatedBy} updatedAt={master.updatedAt} />
 

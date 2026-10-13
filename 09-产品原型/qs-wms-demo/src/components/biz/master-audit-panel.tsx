@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { DateTime } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
-import { Panel } from '@/components/biz/page-container'
+import { Section } from '@/components/biz/page-container'
 import type { MasterDataI18nScope } from '@/lib/master-data'
 
 type MasterAuditPanelProps = {
@@ -15,14 +15,13 @@ export function MasterAuditPanel({ scope, updatedBy, updatedAt }: MasterAuditPan
   const { t } = useTranslation()
 
   return (
-    <Panel className="space-y-3 p-4">
-      <h2 className="text-sm font-medium">{t(`${scope}.sectionAudit`)}</h2>
+    <Section title={t(`${scope}.sectionAudit`)}>
       <Descriptions columns={4}>
         <DescriptionItem label={t(`${scope}.updatedBy`)}>{updatedBy}</DescriptionItem>
         <DescriptionItem label={t(`${scope}.updatedAt`)}>
           <DateTime value={updatedAt} />
         </DescriptionItem>
       </Descriptions>
-    </Panel>
+    </Section>
   )
 }

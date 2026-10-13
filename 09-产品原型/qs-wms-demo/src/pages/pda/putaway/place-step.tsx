@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { PdaButton, PdaCard, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { QtyStepper } from '@/components/pda/qty-stepper'
 import { beep } from '@/components/pda/scan-input'
-import { Button } from '@/components/ui/button'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import { findLocation, remainingQty, suggestPutawayLocation, validatePutawayLocation } from '@/lib/putaway'
-import { cn } from '@/lib/utils'
 import type { PutawayOrder } from '@/types/inbound'
 import type { Location } from '@/types/wms'
 import { PutawayContext } from './putaway-shared'
@@ -122,36 +121,35 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
       <PdaHeader title={t('pda.putaway')} onBack={() => nav.back({ step: 'work', params: { po: order.putawayNo } })} />
       <PutawayContext flow={flow} order={order} />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <div className="rounded-xl bg-background px-3 py-2 shadow-xs">
+        <PdaCard className="py-2">
           <div className="text-sm text-muted-foreground">{t('pdaPutaway.targetLocation')}</div>
           <div className="font-mono text-2xl font-bold text-primary">{location.code}</div>
-        </div>
-        <div className="text-sm font-medium">{t('pdaPutaway.promptSku')}</div>
-        <div className="flex flex-col gap-2" role="radiogroup">
-          {openLines.map((l) => (
-            <button
-              key={l.skuCode}
-              type="button"
-              role="radio"
-              aria-checked={skuCode === l.skuCode}
-              onClick={() => select(l.skuCode)}
-              className={cn(
-                'flex min-h-14 items-center gap-3 rounded-xl border bg-background p-3 text-left active:bg-accent',
-                skuCode === l.skuCode ? 'border-primary' : 'border-transparent shadow-xs',
-              )}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="font-mono text-base font-semibold">{l.skuCode}</div>
-                <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
-              </div>
-              <div className="shrink-0 text-base font-semibold text-primary tabular-nums">
-                {t('pdaPutaway.lineRemain', { count: remainingQty(order, l.skuCode) })}
-              </div>
-            </button>
-          ))}
+        </PdaCard>
+        <div role="radiogroup">
+          <PdaSection title={t('pdaPutaway.promptSku')}>
+            {openLines.map((l) => (
+              <PdaListItem
+                key={l.skuCode}
+                role="radio"
+                selectable
+                selected={skuCode === l.skuCode}
+                onClick={() => select(l.skuCode)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-base font-semibold">{l.skuCode}</div>
+                    <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
+                  </div>
+                  <div className="shrink-0 text-base font-semibold text-primary tabular-nums">
+                    {t('pdaPutaway.lineRemain', { count: remainingQty(order, l.skuCode) })}
+                  </div>
+                </div>
+              </PdaListItem>
+            ))}
+          </PdaSection>
         </div>
         {skuCode && (
-          <div className="rounded-xl bg-background p-3 shadow-xs">
+          <PdaCard>
             <QtyStepper
               label={t('pdaPutaway.qty')}
               value={qty}
@@ -162,16 +160,16 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
               }}
               onScanText={onScan}
             />
-          </div>
+          </PdaCard>
         )}
       </div>
       <PdaFooter hint={skuCode ? undefined : t('pdaPutaway.pickSku')}>
-        <Button variant="outline" className="h-12 flex-1 text-base" onClick={placeAll}>
+        <PdaButton variant="outline" className="flex-1" onClick={placeAll}>
           {t('pdaPutaway.placeAll')}
-        </Button>
-        <Button className="h-12 flex-1 text-base" disabled={!skuCode || qty <= 0} onClick={save}>
+        </PdaButton>
+        <PdaButton className="flex-1" disabled={!skuCode || qty <= 0} onClick={save}>
           {t('pdaPutaway.save')}
-        </Button>
+        </PdaButton>
       </PdaFooter>
     </>
   )

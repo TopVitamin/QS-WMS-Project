@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { PdaButton, PdaCard } from '@/components/pda/pda-card'
 import { PdaChoiceGroup } from '@/components/pda/pda-choice-group'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { QtyStepper } from '@/components/pda/qty-stepper'
 import { beep } from '@/components/pda/scan-input'
-import { Button } from '@/components/ui/button'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import {
   applyReceiveDraftChange,
@@ -131,7 +131,7 @@ function LineEditor({
       <PdaHeader title={t('pda.receive')} onBack={() => nav.back({ step: 'box', params: { box: box.key } })} />
       <ReceiveContext flow={flow} box={box} />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <div className="rounded-xl bg-background p-3 shadow-xs">
+        <PdaCard>
           <div className="flex items-start justify-between gap-2">
             <div className="font-mono text-xl font-bold">{item.skuCode}</div>
             {saved && (
@@ -145,9 +145,9 @@ function LineEditor({
             {t('pdaReceive.planned', { planned: item.plannedQty, received: item.receivedQty })}{' '}
             <b className="text-base text-primary tabular-nums">{limit}</b>
           </div>
-        </div>
+        </PdaCard>
 
-        <div className="flex flex-col gap-2 rounded-xl bg-background p-3 shadow-xs">
+        <PdaCard className="flex flex-col gap-2">
           <QtyStepper
             label={t('pdaReceive.good')}
             value={draft.goodQty}
@@ -170,7 +170,7 @@ function LineEditor({
             onChange={change('rejectedQty')}
             onScanText={onScan}
           />
-        </div>
+        </PdaCard>
 
         {hasReject && (
           <div ref={reasonsRef} className="flex flex-col gap-2">
@@ -189,12 +189,12 @@ function LineEditor({
         </div>
       </div>
       <PdaFooter hint={blocker}>
-        <Button variant="outline" className="h-12 w-24 text-base" onClick={() => nav.returnTo('box', { box: box.key })}>
+        <PdaButton variant="outline" className="w-24" onClick={() => nav.returnTo('box', { box: box.key })}>
           {t('common.back')}
-        </Button>
-        <Button className="h-12 flex-1 text-base" disabled={!!blocker} onClick={save}>
+        </PdaButton>
+        <PdaButton className="flex-1" disabled={!!blocker} onClick={save}>
           {saved ? t('pdaReceive.saveLine') : t('pdaReceive.addToBox')}
-        </Button>
+        </PdaButton>
       </PdaFooter>
     </>
   )

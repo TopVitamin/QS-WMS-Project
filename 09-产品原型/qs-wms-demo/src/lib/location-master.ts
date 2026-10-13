@@ -69,3 +69,21 @@ export function locationEditPath(warehouseCode: string, code: string): string {
 }
 
 export { parseWarehouseScopeQuery as parseLocationWarehouse } from '@/lib/master-data'
+
+/** 新增货位表单的初始值（新建默认启用，状态不在表单里维护） */
+export function createEmptyLocationForm(warehouseCode = '', zoneCode = ''): LocationMaster {
+  return {
+    warehouseCode,
+    zoneCode,
+    zoneType: 'PICK',
+    code: '',
+    status: 'ENABLED',
+    allowMixSku: true,
+    allowMixBatch: false,
+    productForms: [],
+    createdAt: '',
+    createdBy: '',
+    updatedAt: '',
+    updatedBy: '',
+  }
+}

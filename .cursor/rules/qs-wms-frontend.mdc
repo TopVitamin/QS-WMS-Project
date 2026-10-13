@@ -6,34 +6,39 @@ alwaysApply: false
 
 # QS-WMS 前端规范
 
-工程目录 `09-产品原型/qs-wms-demo`。完整规范见 `docs/02-设计规范.md`，写页面前先读。
+工程目录 `09-产品原型/qs-wms-demo`。完整规范见 `docs/02-设计规范.md`，组件与 hooks 清单见 `docs/03-业务组件与主数据页面.md`，写页面前先读。
 
 ## 必须遵守
 
-- 界面文字全部 `t('key')`，`zh-CN.ts` 与 `en-US.ts` 同时补 key。
-- 金额 `<Money value={{amount, currency}} />`；时间存 UTC、用 `<DateTime>`；重量存克用 `<Weight>`；尺寸存厘米用 `<Dimension>`；数量用 `<Num>`。
-- 业务数据按 `useCurrentWarehouse().code` 过滤。
-- 状态用 `<StatusBadge>`，颜色映射只写在 `src/config/status.ts`。
-- 颜色用语义 token（`primary`、`muted-foreground`、`success`、`warning`、`destructive`、`bg-canvas`），不写 `bg-blue-500` 之类的原始色。
-- 表格用 `components/biz/data-table.tsx` 的 `DataTable` + `createDataColumns<T>()`，数字列 `meta: { align: 'right' }`，首列 `pin: 'left'`，操作列 `pin: 'right'`。
-- 改数据只能通过 `mock/db.ts` 里的 action（返回 `{ok}|{ok:false,errorKey}`）；改了 `seed.ts` 要把 persist `version` +1。
-- `components/ui/` 是 shadcn 源码，尽量不改；业务组件放 `components/biz/`。
+- 界面文字全部 `t('key')`（含 aria-label），`zh-CN.ts` 与 `en-US.ts` 同时补 key。含翻译的表格文本在 `cell` 里算，不放进 accessor。
+- 显示组件（`components/biz/display.tsx`）：数量 `<Num>`、金额 `<Money>`、时间 `<DateTime>`、重量 `<Weight>`、尺寸 `<Dimension>`、单号 `<DocNo>`、编码 `<BizCode>`、编码+名称 `<CodeName>`、进度 `<ProgressCell>`、空值 `<Empty />`（字符串场景 `EMPTY_TEXT`，不手写 `'-'`）。
+- 状态用 `<StatusBadge>`，枚举属性用 `<TagLabel meta>`，颜色映射只写在 `src/config/status.ts`；同一状态文案在任何单据上同色。
+- 颜色只用语义 token（`primary`、`destructive`、`success` / `success-text`、`warning` / `warning-text`、`tone-cyan`、`tone-purple`、`muted-foreground`、`bg-canvas`）；浅底上的文字用 `-text` 档。不写 `bg-blue-500`、`text-amber-600`、`bg-white` 之类原始色。
+- 字号只用 `text-xs` / `sm` / `base` / `xl`（PDA 另有档位），不写 `text-[13px]`；管理端不用 `font-mono`。
+- 页面骨架：`PageContainer` + `Section`（带标题的分区，表格用 `flush`）；表单 `Section` + `FormGrid` + `FormField`；详情标题 `<DetailTitle>`，主数据详情页头 `<MasterDetailActions>`。
+- 列表：`FilterBar`（固定 6 列，常显 ≤ 5 项）+ `useListFilters`；下拉用 `OptionSelect` / `UsageStatusFilter` / `YesNoFilter`；表格 `DataTable` + `createDataColumns<T>()`，编码列 `pin: 'left'`，操作列 `pin: 'right'` + `<RowActions>`（最多露 2 个）。
+- 使用状态不进新增/编辑表单；启停只在列表操作列和详情页头。
+- 弹窗宽度写 `sm:max-w-*`；二次确认用 `useConfirm()`；子记录查看用 `<DetailSheet>`；点编号即打开，不另设「查看」。
+- 业务数据按 `useCurrentWarehouse().code` 过滤；改数据只能通过 `mock/db.ts` 里的 action（返回 `{ok}|{ok:false,errorKey}`）；改了种子数据要把 persist `version` +1。
+- `components/ui/` 是 shadcn 源码，尽量不改；业务组件放 `components/biz/`，PDA 组件放 `components/pda/`。
 
 ## 照着样板写
 
 | 要做的 | 样板 |
 |---|---|
-| 列表页 | `pages/wms/inbound/inbound-order-list-page.tsx` |
-| 详情页 | `pages/wms/inbound/inbound-order-detail-page.tsx` |
-| 统计卡片 + 表格 | `pages/wms/inventory/stock-page.tsx` |
-| PDA 作业流程 | `pages/pda/receive-page.tsx` + `pages/pda/receive/*`（先读 `05-应用设计方案/.../7-PDA作业端/PDA作业端设计规范.md`，实现约定见设计规范 §7） |
+| 业务单据列表（状态页签、筛选进 URL） | `pages/wms/inbound/inbound-order-list-page.tsx` |
+| 主数据列表 / 详情 / 新增编辑 | `pages/wms/master/warehouse-list-page.tsx`、`warehouse-detail-page.tsx`、`warehouse-form-fields.tsx` |
+| 业务单据详情 + 子记录抽屉 | `pages/wms/inbound/inbound-order-detail-page.tsx`、`inbound-receipt-sheet.tsx` |
+| 统计卡片 + 表格 | `pages/wms/inventory/stock-page.tsx`、`pages/wms/dashboard/dashboard-page.tsx` |
+| 管理端扫码作业台 | `pages/wms/inbound/inbound-order-receive-page.tsx` |
+| PDA 作业流程 | `pages/pda/receive-page.tsx` + `pages/pda/receive/*`（先读 `05-应用设计方案/.../7-PDA作业端/PDA作业端设计规范.md`，实现约定见设计规范 §8） |
 
-新页面要在 `config/menu.ts` 有菜单项，并在 `app/router.tsx` 的 `wmsPages` 注册。
+新页面要在 `config/menu.ts` 有菜单项，并在 `app/router.tsx` 注册；详情/编辑等子路由在 `config/page-tabs.ts` 登记页签。
 
 ## 完成前自检
 
 ```bash
-npx tsc -p tsconfig.app.json --noEmit && npm run build
+npx tsc -p tsconfig.app.json --noEmit && npm run lint && npm run build
 ```
 
-然后在浏览器里切换英文、切换到 `DE-FRA-01`（欧元、公制、柏林时区）各看一遍。
+`npm run lint` 包含设计规范检查（`lint:design`）。然后在浏览器里切换英文、切换到 `DE-FRA-01`（欧元、公制、柏林时区）各看一遍。

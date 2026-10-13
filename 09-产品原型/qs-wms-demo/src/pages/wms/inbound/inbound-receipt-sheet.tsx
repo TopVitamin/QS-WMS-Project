@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { DateTime, Num } from '@/components/biz/display'
+import { BizCode, DateTime, Empty, Num } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { DetailSheet } from '@/components/biz/detail-sheet'
 import { receiptContainers } from '@/lib/inbound-receipt-container'
 import { useLookups } from '@/mock/db'
 import type { ReceiptRecord } from '@/types/inbound'
@@ -32,7 +32,11 @@ export function InboundReceiptSheet({
   const columns = useMemo(() => {
     const col = createDataColumns<ReceiptRecord['lines'][number]>()
     return col.columns([
-      col.accessor('skuCode', { header: t('common.sku'), enableSorting: false }),
+      col.accessor('skuCode', {
+        header: t('common.sku'),
+        enableSorting: false,
+        cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
+      }),
       col.accessor('skuCode', {
         id: 'name',
         header: t('masterSku.name'),
@@ -40,7 +44,10 @@ export function InboundReceiptSheet({
       }),
       col.accessor('containerNo', {
         header: t('inbound.workContainerNo'),
-        cell: ({ getValue }) => getValue() ?? t('inbound.bulkPiece'),
+        cell: ({ getValue }) => {
+          const v = getValue()
+          return v ? <BizCode>{v}</BizCode> : t('inbound.bulkPiece')
+        },
       }),
       col.accessor('receivedQty', {
         header: t('inbound.receivedQty'),
@@ -54,8 +61,7 @@ export function InboundReceiptSheet({
       }),
       col.accessor('rejectReason', {
         header: t('inbound.receive.rejectReasonLabel'),
-        cell: ({ getValue }) =>
-          getValue() ? t(`inbound.receive.rejectReason.${getValue()}`) : '—',
+        cell: ({ getValue }) => (getValue() ? t(`inbound.receive.rejectReason.${getValue()}`) : <Empty />),
       }),
       col.accessor('goodQty', {
         header: t('inbound.goodQty'),
@@ -69,50 +75,43 @@ export function InboundReceiptSheet({
       }),
       col.accessor('batchNo', {
         header: t('inbound.batchNo'),
-        cell: ({ getValue }) => getValue() ?? '—',
+        cell: ({ getValue }) => getValue() ?? <Empty />,
       }),
       col.accessor('productionDate', {
         header: t('inbound.productionDate'),
-        cell: ({ getValue }) => getValue() ?? '—',
+        cell: ({ getValue }) => getValue() ?? <Empty />,
       }),
       col.accessor('expiryDate', {
         header: t('inbound.expiryDate'),
-        cell: ({ getValue }) => getValue() ?? '—',
+        cell: ({ getValue }) => getValue() ?? <Empty />,
       }),
     ])
   }, [t, sku])
 
   return (
-    <Sheet open={!!record} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="gap-0 data-[side=right]:w-[880px] data-[side=right]:max-w-[92vw] data-[side=right]:sm:max-w-[92vw]">
-        {record && (
-          <>
-            <SheetHeader className="border-b">
-              <SheetTitle>{record.receiptNo}</SheetTitle>
-            </SheetHeader>
-            <div className="space-y-4 p-4">
-              <Descriptions columns={4}>
-                <DescriptionItem label={t('inbound.receiptTime')}>
-                  <DateTime value={record.receivedAt} />
-                </DescriptionItem>
-                <DescriptionItem label={t('inbound.receiptOperator')}>{record.operator}</DescriptionItem>
-                <DescriptionItem label={t('inbound.stagingLocation')}>{record.stagingLocationCode}</DescriptionItem>
-                <DescriptionItem label={t('inbound.workContainerNo')}>{containerList(record)}</DescriptionItem>
-              </Descriptions>
-              <DataTable
-                data={sortByContainer(record)}
-                columns={columns}
-                getRowId={(line) =>
-                  [line.skuCode, line.containerNo ?? '', line.batchNo ?? '', line.receivedQty].join('|')
-                }
-                selectable={false}
-                showColumnSettings={false}
-                paginate={false}
-              />
-            </div>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+    <DetailSheet open={!!record} onClose={onClose} title={record ? <BizCode className="text-base">{record.receiptNo}</BizCode> : null}>
+      {record && (
+        <>
+          <Descriptions columns={4}>
+            <DescriptionItem label={t('inbound.receiptTime')}>
+              <DateTime value={record.receivedAt} />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.receiptOperator')}>{record.operator}</DescriptionItem>
+            <DescriptionItem label={t('inbound.stagingLocation')}>
+              <BizCode>{record.stagingLocationCode}</BizCode>
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.workContainerNo')}>{containerList(record)}</DescriptionItem>
+          </Descriptions>
+          <DataTable
+            data={sortByContainer(record)}
+            columns={columns}
+            getRowId={(line) => [line.skuCode, line.containerNo ?? '', line.batchNo ?? '', line.receivedQty].join('|')}
+            selectable={false}
+            showColumnSettings={false}
+            paginate={false}
+          />
+        </>
+      )}
+    </DetailSheet>
   )
 }

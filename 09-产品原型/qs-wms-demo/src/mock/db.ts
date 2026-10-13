@@ -941,7 +941,7 @@ export const useDb = create<DbState>()(
     {
       name: 'qs-wms-demo-db',
       // 修改 seed.ts 或数据结构后把版本号 +1，浏览器里的旧演示数据会被替换为新种子
-      version: 17,
+      version: 18,
       migrate: (_persisted: unknown, fromVersion: number) => {
         if (fromVersion < 17) return createSeedData() as unknown as typeof _persisted
         return _persisted

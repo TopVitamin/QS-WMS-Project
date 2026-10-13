@@ -3,24 +3,23 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { CarrierFormDialog } from '@/components/biz/carrier-form-dialog'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateTime, DocNo } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { UsageStatusFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
 import { useCarrierMasterStatusToggle } from '@/hooks/use-carrier-master-status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
-import { carrierShortDisplay } from '@/lib/carrier-master'
+import { useListFilters } from '@/hooks/use-list-filters'
+import { carrierDetailPath, carrierShortDisplay } from '@/lib/carrier-master'
 import { FILTER_ALL, sortByUpdatedAtDesc } from '@/lib/master-data'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
 import { useDb } from '@/mock/db'
 import type { CarrierMaster, UsageStatus } from '@/types/wms'
+import { CarrierFormDialog } from './carrier-form-dialog'
 
 interface Filters {
   code: string
@@ -42,7 +41,7 @@ export function CarrierListPage() {
   const navigate = useNavigate()
   const carrierMasters = useDb((s) => s.carrierMasters)
   const toggleStatus = useCarrierMasterStatusToggle()
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const [dialog, setDialog] = useState<{ mode: 'create' | 'edit'; code?: string } | null>(null)
 
@@ -59,9 +58,7 @@ export function CarrierListPage() {
         enableSorting: false,
         enableHiding: false,
         meta: { pin: 'left', label: t('masterCarrier.code') },
-        cell: ({ getValue }) => (
-          <DocNo onClick={() => navigate(`/wms/master/carriers/${getValue()}`)}>{getValue()}</DocNo>
-        ),
+        cell: ({ getValue }) => <DocNo onClick={() => navigate(carrierDetailPath(getValue()))}>{getValue()}</DocNo>,
       }),
       col.accessor('name', {
         header: t('masterCarrier.name'),
@@ -102,22 +99,17 @@ export function CarrierListPage() {
           const c = row.original
           const enabled = c.status === 'ENABLED'
           return (
-            <span className="inline-flex items-center gap-2">
-              <button
-                type="button"
-                className={textLink}
-                onClick={() => setDialog({ mode: 'edit', code: c.code })}
-              >
-                {t('masterCarrier.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, enabled ? 'text-destructive' : undefined)}
-                onClick={() => toggleStatus(c.code, enabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(enabled ? 'masterCarrier.disableAction' : 'masterCarrier.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                { key: 'edit', label: t('masterCarrier.edit'), onClick: () => setDialog({ mode: 'edit', code: c.code }) },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterCarrier.disableAction' : 'masterCarrier.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(c.code, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -142,7 +134,7 @@ export function CarrierListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar columns={6} onSearch={applySearch} onReset={reset}>
+        <FilterBar onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterCarrier.code')}>
             <Input
               value={draft.code}
@@ -158,16 +150,7 @@ export function CarrierListPage() {
             />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
         </FilterBar>
       </Panel>

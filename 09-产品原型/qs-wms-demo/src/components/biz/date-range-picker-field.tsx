@@ -45,7 +45,7 @@ function formatRangeLabel(value: DateRangeValue): string | null {
 export function DateRangePickerField({ value, onChange, placeholder, className }: DateRangePickerFieldProps) {
   const { t } = useTranslation()
   const selected = useMemo(() => toRange(value), [value])
-  const text = formatRangeLabel(value) ?? (placeholder ?? t('masterWarehouse.updatedRangePlaceholder'))
+  const text = formatRangeLabel(value) ?? (placeholder ?? t('common.dateRangePlaceholder'))
 
   return (
     <Popover>

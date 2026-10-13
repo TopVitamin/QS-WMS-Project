@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { PageContainer, Panel } from '@/components/biz/page-container'
 import { findMenuLeaf } from '@/config/menu'
+import { EMPTY_TEXT } from '@/lib/typography'
 
 export function ComingSoonPage() {
   const { t } = useTranslation()
@@ -16,7 +17,7 @@ export function ComingSoonPage() {
         </div>
         <div className="text-base font-medium">{t('common.comingSoon')}</div>
         <p className="max-w-sm text-sm text-muted-foreground">
-          {t('common.comingSoonDesc', { milestone: leaf?.milestone ?? '-' })}
+          {t('common.comingSoonDesc', { milestone: leaf?.milestone ?? EMPTY_TEXT })}
         </p>
       </Panel>
     </PageContainer>

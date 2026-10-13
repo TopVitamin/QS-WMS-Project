@@ -56,7 +56,7 @@ export function WmsTabsBar() {
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" className="mb-1 rounded p-1 text-muted-foreground hover:bg-muted" aria-label="tabs menu">
+          <button type="button" className="mb-1 rounded p-1 text-muted-foreground hover:bg-muted" aria-label={t('common.tabsMenu')}>
             <ChevronDown className="size-4" />
           </button>
         </DropdownMenuTrigger>

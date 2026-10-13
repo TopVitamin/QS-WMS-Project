@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { FormFieldLabel } from '@/components/biz/form-field-label'
+import { FormField, FormGrid } from '@/components/biz/form-field'
+import { OptionSelect } from '@/components/biz/option-select'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,9 +14,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { usageStatusMeta } from '@/config/status'
 import { useDb } from '@/mock/db'
 import type { SkuBarcode, UsageStatus } from '@/types/wms'
+
+/** 条码是商品的子记录，按商品 PRD 可在弹窗里维护条码状态 */
+const USAGE_STATUSES: UsageStatus[] = ['ENABLED', 'DISABLED']
 
 export type SkuBarcodeDialogState =
   | { mode: 'create'; ownerCode: string; skuCode: string }
@@ -79,32 +83,27 @@ export function SkuBarcodeDialog({ state, onClose }: SkuBarcodeDialogProps) {
             {state.mode === 'create' ? t('masterSku.barcodeCreateTitle') : t('masterSku.barcodeEditTitle')}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <FormFieldLabel>{t('masterSku.ownerCode')}</FormFieldLabel>
-              <Input readOnly value={ownerCode} className="font-mono" />
-            </div>
-            <div className="space-y-1.5">
-              <FormFieldLabel>{t('masterSku.code')}</FormFieldLabel>
-              <Input readOnly value={skuCode} className="font-mono" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <FormFieldLabel required>{t('masterSku.barcode')}</FormFieldLabel>
+        <FormGrid columns={2}>
+          <FormField label={t('masterSku.ownerCode')}>
+            <Input readOnly value={ownerCode} className="tabular-nums" />
+          </FormField>
+          <FormField label={t('masterSku.code')}>
+            <Input readOnly value={skuCode} className="tabular-nums" />
+          </FormField>
+          <FormField label={t('masterSku.barcode')} required span="full">
             <Input
               readOnly={readOnlyBarcode}
               value={barcode}
+              placeholder={readOnlyBarcode ? undefined : t('common.inputPlaceholder')}
               onChange={(e) => setBarcode(e.target.value)}
-              className="font-mono"
+              className="tabular-nums"
             />
-          </div>
-          <div className="space-y-2">
-            <FormFieldLabel required>{t('masterSku.isPrimaryBarcode')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterSku.isPrimaryBarcode')} required>
             <RadioGroup
               value={isPrimary ? 'yes' : 'no'}
               onValueChange={(v) => setIsPrimary(v === 'yes')}
-              className="flex gap-4"
+              className="flex min-h-8 items-center gap-4"
             >
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="yes" id="primary-yes" />
@@ -115,20 +114,15 @@ export function SkuBarcodeDialog({ state, onClose }: SkuBarcodeDialogProps) {
                 <Label htmlFor="primary-no">{t('common.no')}</Label>
               </div>
             </RadioGroup>
-          </div>
-          <div className="space-y-1.5">
-            <FormFieldLabel>{t('masterSku.barcodeStatus')}</FormFieldLabel>
-            <Select value={status} onValueChange={(v) => setStatus(v as UsageStatus)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+          </FormField>
+          <FormField label={t('masterSku.barcodeStatus')}>
+            <OptionSelect
+              value={status}
+              onValueChange={(v) => setStatus(v as UsageStatus)}
+              options={USAGE_STATUSES.map((u) => ({ value: u, label: t(usageStatusMeta[u].labelKey) }))}
+            />
+          </FormField>
+        </FormGrid>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
           <Button onClick={onSave}>{t('common.save')}</Button>

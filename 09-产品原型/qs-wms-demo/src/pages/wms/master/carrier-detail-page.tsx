@@ -1,14 +1,14 @@
 import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useParams } from 'react-router'
-import { CarrierFormDialog } from '@/components/biz/carrier-form-dialog'
-import { ChannelFormDialog } from '@/components/biz/channel-form-dialog'
+import { Navigate, useParams } from 'react-router'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { BizCode, DocNo } from '@/components/biz/display'
+import { BizCode, DocNo, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
-import { PageContainer, Panel } from '@/components/biz/page-container'
+import { MasterDetailActions } from '@/components/biz/master-detail-actions'
+import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { usageStatusMeta } from '@/config/status'
@@ -16,10 +16,10 @@ import { useCarrierMasterStatusToggle } from '@/hooks/use-carrier-master-status'
 import { useChannelMasterStatusToggle } from '@/hooks/use-channel-master-status'
 import { carrierShortDisplay } from '@/lib/carrier-master'
 import { sortByUpdatedAtDesc } from '@/lib/master-data'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
 import { useDb } from '@/mock/db'
 import type { ChannelMaster, UsageStatus } from '@/types/wms'
+import { CarrierFormDialog } from './carrier-form-dialog'
+import { ChannelFormDialog } from './channel-form-dialog'
 
 type ChannelDialogState =
   | { mode: 'create' }
@@ -35,12 +35,11 @@ export function CarrierDetailPage() {
 
   const [carrierDialog, setCarrierDialog] = useState(false)
   const [channelDialog, setChannelDialog] = useState<ChannelDialogState | null>(null)
-  const [channelRefresh, setChannelRefresh] = useState(0)
 
   const channels = useMemo(() => {
     if (!code) return []
     return sortByUpdatedAtDesc(channelMasters.filter((ch) => ch.carrierCode === code))
-  }, [channelMasters, code, channelRefresh])
+  }, [channelMasters, code])
 
   const channelColumns = useMemo(() => {
     const col = createDataColumns<ChannelMaster>()
@@ -84,29 +83,21 @@ export function CarrierDetailPage() {
           const ch = row.original
           const chEnabled = ch.status === 'ENABLED'
           return (
-            <span className="inline-flex items-center gap-2">
-              <button
-                type="button"
-                className={textLink}
-                onClick={() => setChannelDialog({ mode: 'view', code: ch.code })}
-              >
-                {t('masterChannel.view')}
-              </button>
-              <button
-                type="button"
-                className={textLink}
-                onClick={() => setChannelDialog({ mode: 'edit', code: ch.code })}
-              >
-                {t('masterChannel.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, chEnabled ? 'text-destructive' : undefined)}
-                onClick={() => toggleChannel(ch.code, chEnabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(chEnabled ? 'masterChannel.disableAction' : 'masterChannel.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                {
+                  key: 'edit',
+                  label: t('masterChannel.edit'),
+                  onClick: () => setChannelDialog({ mode: 'edit', code: ch.code }),
+                },
+                {
+                  key: 'toggle',
+                  label: t(chEnabled ? 'masterChannel.disableAction' : 'masterChannel.enableAction'),
+                  danger: chEnabled,
+                  onClick: () => toggleChannel(ch.code, chEnabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -121,35 +112,25 @@ export function CarrierDetailPage() {
   return (
     <PageContainer
       title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>{t('masterCarrier.detailTitle', { code: carrier.code })}</span>
-          <StatusBadge meta={usageStatusMeta[carrier.status]} />
-        </span>
+        <DetailTitle title={t('masterCarrier.detailTitle')} code={carrier.code} status={usageStatusMeta[carrier.status]} />
       }
       actions={
-        <>
-          <Button variant="outline" asChild>
-            <Link to="/wms/master/carriers">{t('masterCarrier.backToList')}</Link>
-          </Button>
-          {enabled ? (
-            <Button variant="destructive" onClick={() => toggleCarrier(carrier.code, 'DISABLED')}>
-              {t('masterCarrier.disableAction')}
+        <MasterDetailActions
+          scope="masterCarrier"
+          backTo="/wms/master/carriers"
+          enabled={enabled}
+          onToggle={(next) => toggleCarrier(carrier.code, next)}
+          onEdit={() => setCarrierDialog(true)}
+          extra={
+            <Button disabled={!enabled} onClick={() => setChannelDialog({ mode: 'create' })}>
+              <Plus data-icon="inline-start" />
+              {t('masterCarrier.addChannel')}
             </Button>
-          ) : (
-            <Button variant="outline" onClick={() => toggleCarrier(carrier.code, 'ENABLED')}>
-              {t('masterCarrier.enableAction')}
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => setCarrierDialog(true)}>{t('masterCarrier.edit')}</Button>
-          <Button disabled={!enabled} onClick={() => setChannelDialog({ mode: 'create' })}>
-            <Plus data-icon="inline-start" />
-            {t('masterCarrier.addChannel')}
-          </Button>
-        </>
+          }
+        />
       }
     >
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterCarrier.sectionBasic')}</h2>
+      <Section title={t('masterCarrier.sectionBasic')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterCarrier.code')}>
             <BizCode>{carrier.code}</BizCode>
@@ -160,34 +141,31 @@ export function CarrierDetailPage() {
             <StatusBadge meta={usageStatusMeta[carrier.status]} />
           </DescriptionItem>
           <DescriptionItem label={t('masterCarrier.remark')} className="col-span-3">
-            {carrier.remark || <span className="text-muted-foreground">-</span>}
+            {carrier.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterCarrier.sectionContact')}</h2>
+      <Section title={t('masterCarrier.sectionContact')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterCarrier.contactName')}>{carrier.contactName || '-'}</DescriptionItem>
-          <DescriptionItem label={t('masterCarrier.contactPhone')}>{carrier.contactPhone || '-'}</DescriptionItem>
-          <DescriptionItem label={t('masterCarrier.contactEmail')}>{carrier.contactEmail || '-'}</DescriptionItem>
+          <DescriptionItem label={t('masterCarrier.contactName')}>{carrier.contactName || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterCarrier.contactPhone')}>{carrier.contactPhone || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterCarrier.contactEmail')}>{carrier.contactEmail || <Empty />}</DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterCarrier.sectionIntegration')}</h2>
+      <Section title={t('masterCarrier.sectionIntegration')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterCarrier.externalCarrierCode')}>
-            {carrier.externalCarrierCode || '-'}
+            {carrier.externalCarrierCode ? <BizCode>{carrier.externalCarrierCode}</BizCode> : <Empty />}
           </DescriptionItem>
           <DescriptionItem label={t('masterCarrier.integrationPlaceholder')} className="col-span-3">
             <span className="text-muted-foreground">{t('masterCarrier.integrationPlaceholderDesc')}</span>
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="flex min-h-0 flex-col gap-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterCarrier.sectionChannels')}</h2>
+      <Section flush title={t('masterCarrier.sectionChannels')}>
         <DataTable
           data={channels}
           columns={channelColumns}
@@ -195,7 +173,7 @@ export function CarrierDetailPage() {
           pageSize={20}
           selectable={false}
         />
-      </Panel>
+      </Section>
 
       <MasterAuditPanel scope="masterCarrier" updatedBy={carrier.updatedBy} updatedAt={carrier.updatedAt} />
 
@@ -212,7 +190,6 @@ export function CarrierDetailPage() {
         channelCode={channelDialog && channelDialog.mode !== 'create' ? channelDialog.code : undefined}
         defaultCarrierCode={carrier.code}
         onOpenChange={(open) => !open && setChannelDialog(null)}
-        onSaved={() => setChannelRefresh((n) => n + 1)}
       />
     </PageContainer>
   )

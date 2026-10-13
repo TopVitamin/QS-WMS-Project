@@ -1,3 +1,4 @@
+import { formatFullAddress } from '@/lib/warehouse-master'
 import type { CustomerMaster, InventoryRecord, PutawayRecommendTiming } from '@/types/wms'
 
 export const PUTAWAY_RECOMMEND_I18N: Record<PutawayRecommendTiming, string> = {
@@ -35,17 +36,9 @@ export function customerDetailPath(code: string, edit?: boolean): string {
   return edit ? `${base}?edit=1` : base
 }
 
-export function formatCustomerFullAddress(c: CustomerMaster): string {
-  const parts = [
-    c.countryCode,
-    c.state,
-    c.city,
-    c.district,
-    c.address1,
-    c.address2,
-    c.postalCode,
-  ].filter(Boolean)
-  return parts.join(' · ') || '—'
+/** 货主完整地址，规则同仓库（见 formatFullAddress）；国家名由调用方翻译后传入 */
+export function formatCustomerFullAddress(c: CustomerMaster, countryLabel?: string): string {
+  return formatFullAddress(c, countryLabel)
 }
 
 export function customerHasInventory(customer: CustomerMaster, inventory: InventoryRecord[]): boolean {

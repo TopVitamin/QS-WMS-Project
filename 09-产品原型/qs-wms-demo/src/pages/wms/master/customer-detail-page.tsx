@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import { BizCode, DateTime } from '@/components/biz/display'
+import { BizCode, DateTime, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
-import { PageContainer, Panel } from '@/components/biz/page-container'
+import { MasterDetailActions } from '@/components/biz/master-detail-actions'
+import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { usageStatusMeta } from '@/config/status'
@@ -20,11 +21,12 @@ import {
   validateCustomerMasterForm,
   type CustomerMasterFormErrors,
 } from '@/lib/customer-master'
-import { WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
+import { countryLabelKey } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 import type { PutawayRecommendTiming } from '@/types/wms'
 import { CustomerFormFields } from './customer-form-fields'
 
+/** 货主详情：按货主 PRD，查看与编辑同路由（`?edit=1`），本期无新增页与独立编辑路由 */
 export function CustomerDetailPage() {
   const { t } = useTranslation()
   const { code } = useParams<{ code: string }>()
@@ -52,10 +54,7 @@ export function CustomerDetailPage() {
   if (!code) return <Navigate to="/wms/master/customers" replace />
   if (!customer || !form) return <Navigate to="/wms/master/customers" replace />
 
-  const enabled = customer.status === 'ENABLED'
-  const countryLabel =
-    WAREHOUSE_COUNTRY_OPTIONS.find((c) => c.value === customer.countryCode)?.labelKey ??
-    'masterWarehouse.country.OTHER'
+  const countryLabel = countryLabelKey(customer.countryCode)
 
   const onSave = () => {
     const nextErrors = validateCustomerMasterForm(form)
@@ -96,11 +95,11 @@ export function CustomerDetailPage() {
         editing ? (
           t('masterCustomer.editTitle')
         ) : (
-          <span className="flex flex-wrap items-center gap-2">
-            <span>{t('masterCustomer.detailTitle')}</span>
-            <BizCode>{customer.code}</BizCode>
-            <StatusBadge meta={usageStatusMeta[customer.status]} />
-          </span>
+          <DetailTitle
+            title={t('masterCustomer.detailTitle')}
+            code={customer.code}
+            status={usageStatusMeta[customer.status]}
+          />
         )
       }
       actions={
@@ -110,21 +109,13 @@ export function CustomerDetailPage() {
             <Button onClick={onSave}>{t('common.save')}</Button>
           </>
         ) : (
-          <>
-            <Button variant="outline" asChild>
-              <Link to="/wms/master/customers">{t('masterCustomer.backToList')}</Link>
-            </Button>
-            {enabled ? (
-              <Button variant="destructive" onClick={() => toggleStatus(customer, 'DISABLED')}>
-                {t('masterCustomer.disableAction')}
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={() => toggleStatus(customer, 'ENABLED')}>
-                {t('masterCustomer.enableAction')}
-              </Button>
-            )}
-            <Button onClick={() => setSearchParams({ edit: '1' })}>{t('masterCustomer.edit')}</Button>
-          </>
+          <MasterDetailActions
+            scope="masterCustomer"
+            backTo="/wms/master/customers"
+            enabled={customer.status === 'ENABLED'}
+            onToggle={(next) => toggleStatus(customer, next)}
+            onEdit={() => setSearchParams({ edit: '1' })}
+          />
         )
       }
     >
@@ -132,8 +123,7 @@ export function CustomerDetailPage() {
         <CustomerFormFields form={form} setForm={setForm} errors={errors} fieldError={showFieldError} />
       ) : (
         <>
-          <Panel className="space-y-3 p-4">
-            <h2 className="text-sm font-medium">{t('masterCustomer.sectionBasic')}</h2>
+          <Section title={t('masterCustomer.sectionBasic')}>
             <Descriptions columns={4}>
               <DescriptionItem label={t('masterCustomer.code')}><BizCode>{customer.code}</BizCode></DescriptionItem>
               <DescriptionItem label={t('masterCustomer.name')}>{customer.name}</DescriptionItem>
@@ -145,41 +135,38 @@ export function CustomerDetailPage() {
                 {t(PUTAWAY_RECOMMEND_I18N[customer.putawayRecommendTiming as PutawayRecommendTiming])}
               </DescriptionItem>
               <DescriptionItem label={t('masterCustomer.remark')} className="col-span-3">
-                {customer.remark || '—'}
+                {customer.remark || <Empty />}
               </DescriptionItem>
             </Descriptions>
-          </Panel>
-          <Panel className="space-y-3 p-4">
-            <h2 className="text-sm font-medium">{t('masterCustomer.sectionUpstream')}</h2>
+          </Section>
+          <Section title={t('masterCustomer.sectionUpstream')}>
             <Descriptions columns={4}>
-              <DescriptionItem label={t('masterCustomer.upstreamOwnerId')}>{customer.upstreamOwnerId}</DescriptionItem>
+              <DescriptionItem label={t('masterCustomer.upstreamOwnerId')}>
+                <BizCode>{customer.upstreamOwnerId}</BizCode>
+              </DescriptionItem>
               <DescriptionItem label={t('masterCustomer.lastSyncAt')}>
                 <DateTime value={customer.lastSyncAt} />
               </DescriptionItem>
             </Descriptions>
-          </Panel>
-          <Panel className="space-y-3 p-4">
-            <h2 className="text-sm font-medium">{t('masterCustomer.sectionAddress')}</h2>
+          </Section>
+          <Section title={t('masterCustomer.sectionAddress')}>
             <Descriptions columns={4}>
               <DescriptionItem label={t('masterCustomer.countryCode')}>{t(countryLabel)}</DescriptionItem>
-              <DescriptionItem label={t('masterCustomer.city')}>{customer.city || '—'}</DescriptionItem>
+              <DescriptionItem label={t('masterCustomer.city')}>{customer.city || <Empty />}</DescriptionItem>
               <DescriptionItem label={t('masterCustomer.fullAddress')} className="col-span-2">
-                {formatCustomerFullAddress(customer)}
+                {formatCustomerFullAddress(customer, t(countryLabel)) || <Empty />}
               </DescriptionItem>
             </Descriptions>
-          </Panel>
-          <Panel className="space-y-3 p-4">
-            <h2 className="text-sm font-medium">{t('masterCustomer.sectionContact')}</h2>
+          </Section>
+          <Section title={t('masterCustomer.sectionContact')}>
             <Descriptions columns={4}>
-              <DescriptionItem label={t('masterCustomer.contactName')}>{customer.contactName || '—'}</DescriptionItem>
-              <DescriptionItem label={t('masterCustomer.contactPhone')}>{customer.contactPhone || '—'}</DescriptionItem>
-              <DescriptionItem label={t('masterCustomer.contactEmail')}>{customer.contactEmail || '—'}</DescriptionItem>
+              <DescriptionItem label={t('masterCustomer.contactName')}>{customer.contactName || <Empty />}</DescriptionItem>
+              <DescriptionItem label={t('masterCustomer.contactPhone')}>{customer.contactPhone || <Empty />}</DescriptionItem>
+              <DescriptionItem label={t('masterCustomer.contactEmail')}>{customer.contactEmail || <Empty />}</DescriptionItem>
             </Descriptions>
-          </Panel>
+          </Section>
+          <MasterAuditPanel scope="masterCustomer" updatedBy={customer.updatedBy} updatedAt={customer.updatedAt} />
         </>
-      )}
-      {!editing && (
-        <MasterAuditPanel scope="masterCustomer" updatedBy={customer.updatedBy} updatedAt={customer.updatedAt} />
       )}
     </PageContainer>
   )

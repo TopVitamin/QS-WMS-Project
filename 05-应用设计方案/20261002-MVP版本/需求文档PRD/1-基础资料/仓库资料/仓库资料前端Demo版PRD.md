@@ -62,7 +62,7 @@
 
 ## 三、详情页
 
-- `title`「查看仓库详情」；标题旁 `StatusBadge`。
+- `title`：`DetailTitle`「查看仓库详情 · 仓库编码」+ `StatusBadge`（与库区、货位等主数据详情一致）。
 - `actions`：`返回列表`、`停用`/`启用`（停用 `destructive` outline）、`编辑`（primary）。
 - 启停：`useConfirm` → `toast.success`「状态已更新」；Mock 写库即可（完整 MD-FR-006 见主 PRD F03）。
 - 分组 `Panel` + `Descriptions columns={4}`；地址完整展示用 `WarehouseFullAddressPreview`。

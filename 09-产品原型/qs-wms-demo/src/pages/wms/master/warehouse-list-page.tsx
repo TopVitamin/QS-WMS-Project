@@ -5,20 +5,19 @@ import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateRangePickerField } from '@/components/biz/date-range-picker-field'
-import { BizCode, DateTime, DocNo } from '@/components/biz/display'
+import { BizCode, DateTime, DocNo, Empty } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect, UsageStatusFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { useWarehouseMasterStatusToggle } from '@/hooks/use-warehouse-master-status'
 import { FILTER_ALL } from '@/lib/master-data'
-import { formatWarehouseFullAddress } from '@/lib/warehouse-master'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
+import { countryLabelKey, formatWarehouseFullAddress, WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 import type { UsageStatus, WarehouseMaster } from '@/types/wms'
 
@@ -61,7 +60,7 @@ export function WarehouseListPage() {
   const navigate = useNavigate()
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const toggleStatus = useWarehouseMasterStatusToggle()
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const rows = useMemo(() => {
     const list = warehouseMasters.filter((w) => matchWarehouse(w, filters))
@@ -97,14 +96,15 @@ export function WarehouseListPage() {
         meta: { label: t('common.status') },
         cell: ({ getValue }) => <StatusBadge meta={usageStatusMeta[getValue() as UsageStatus]} />,
       }),
-      col.accessor((row) => formatWarehouseFullAddress(row), {
+      // 含翻译的文本在 cell 里算：accessor 的结果按行缓存，切换语言时不会重算
+      col.display({
         id: 'fullAddress',
         header: t('masterWarehouse.fullAddress'),
-        enableSorting: false,
         meta: { label: t('masterWarehouse.fullAddress') },
-        cell: ({ getValue }) => (
-          <span className="max-w-[240px] truncate" title={getValue()}>{getValue()}</span>
-        ),
+        cell: ({ row }) => {
+          const v = formatWarehouseFullAddress(row.original, t(countryLabelKey(row.original.countryCode)))
+          return v ? <span className="block max-w-60 truncate" title={v}>{v}</span> : <Empty />
+        },
       }),
       col.accessor('updatedAt', {
         header: t('masterWarehouse.updatedAt'),
@@ -132,7 +132,7 @@ export function WarehouseListPage() {
         header: t('masterWarehouse.contactName'),
         enableSorting: false,
         meta: { label: t('masterWarehouse.contactName') },
-        cell: ({ getValue }) => getValue() || <span className="text-muted-foreground">-</span>,
+        cell: ({ getValue }) => getValue() || <Empty />,
       }),
       col.display({
         id: 'actions',
@@ -144,18 +144,21 @@ export function WarehouseListPage() {
           const w = row.original
           const enabled = w.status === 'ENABLED'
           return (
-            <span className="inline-flex items-center gap-2">
-              <button type="button" className={textLink} onClick={() => navigate(`/wms/master/warehouses/${w.code}/edit`)}>
-                {t('masterWarehouse.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, enabled ? 'text-destructive' : undefined)}
-                onClick={() => toggleStatus(w.code, enabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(enabled ? 'masterWarehouse.disableAction' : 'masterWarehouse.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                {
+                  key: 'edit',
+                  label: t('masterWarehouse.edit'),
+                  onClick: () => navigate(`/wms/master/warehouses/${w.code}/edit`),
+                },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterWarehouse.disableAction' : 'masterWarehouse.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(w.code, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -180,11 +183,7 @@ export function WarehouseListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
-          columns={6}
-          onSearch={applySearch}
-          onReset={reset}
-        >
+        <FilterBar onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterWarehouse.code')}>
             <Input
               value={draft.code}
@@ -200,29 +199,15 @@ export function WarehouseListPage() {
             />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
           <FilterItem label={t('masterWarehouse.countryName')}>
-            <Select value={draft.countryCode} onValueChange={(v) => setDraft({ ...draft, countryCode: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="HK">{t('masterWarehouse.country.HK')}</SelectItem>
-                <SelectItem value="US">{t('masterWarehouse.country.US')}</SelectItem>
-                <SelectItem value="DE">{t('masterWarehouse.country.DE')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.countryCode}
+              onValueChange={(v) => setDraft({ ...draft, countryCode: v })}
+              options={WAREHOUSE_COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: t(c.labelKey) }))}
+            />
           </FilterItem>
           <FilterItem label={t('masterWarehouse.updatedRange')}>
             <DateRangePickerField

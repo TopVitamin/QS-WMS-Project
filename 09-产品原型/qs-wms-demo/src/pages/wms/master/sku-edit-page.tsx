@@ -56,7 +56,6 @@ export function SkuEditPage() {
       nameEn: form.nameEn,
       spec: form.spec,
       unit: form.unit,
-      status: form.status,
       remark: form.remark,
       productForm: form.productForm,
       isBattery: form.isBattery,

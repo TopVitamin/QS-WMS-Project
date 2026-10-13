@@ -4,25 +4,24 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { DateTime, DocNo } from '@/components/biz/display'
+import { DateTime, DocNo, Empty } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect, UsageStatusFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
 import { useCustomerMasterStatusToggle } from '@/hooks/use-customer-master-status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
+import { useListFilters } from '@/hooks/use-list-filters'
 import {
   customerDetailPath,
   formatCustomerFullAddress,
   OWNER_TYPE_I18N,
 } from '@/lib/customer-master'
 import { FILTER_ALL, sortByUpdatedAtDesc } from '@/lib/master-data'
-import { WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
+import { countryLabelKey, WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 import type { CustomerMaster, CustomerOwnerType, UsageStatus } from '@/types/wms'
 
@@ -44,6 +43,8 @@ const emptyFilters: Filters = {
   upstreamOwnerId: '',
 }
 
+const OWNER_TYPES: CustomerOwnerType[] = ['SELF', 'EXTERNAL']
+
 function matchCustomer(row: CustomerMaster, filters: Filters): boolean {
   if (filters.code && !row.code.toLowerCase().includes(filters.code.trim().toLowerCase())) return false
   if (filters.name && !row.name.toLowerCase().includes(filters.name.trim().toLowerCase())) return false
@@ -64,7 +65,7 @@ export function CustomerListPage() {
   const navigate = useNavigate()
   const customerMasters = useDb((s) => s.customerMasters)
   const toggleStatus = useCustomerMasterStatusToggle()
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const rows = useMemo(
     () => sortByUpdatedAtDesc(customerMasters.filter((c) => matchCustomer(c, filters))),
@@ -95,8 +96,8 @@ export function CustomerListPage() {
         id: 'fullAddress',
         header: t('masterCustomer.fullAddress'),
         cell: ({ row }) => {
-          const v = formatCustomerFullAddress(row.original)
-          return <span className="max-w-[200px] truncate" title={v}>{v}</span>
+          const v = formatCustomerFullAddress(row.original, t(countryLabelKey(row.original.countryCode)))
+          return v ? <span className="block max-w-52 truncate" title={v}>{v}</span> : <Empty />
         },
       }),
       col.accessor('updatedAt', {
@@ -115,18 +116,21 @@ export function CustomerListPage() {
           const c = row.original
           const enabled = c.status === 'ENABLED'
           return (
-            <span className="inline-flex gap-2">
-              <button type="button" className={textLink} onClick={() => navigate(customerDetailPath(c.code, true))}>
-                {t('masterCustomer.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, enabled ? 'text-destructive' : undefined)}
-                onClick={() => toggleStatus(c, enabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(enabled ? 'masterCustomer.disableAction' : 'masterCustomer.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                {
+                  key: 'edit',
+                  label: t('masterCustomer.edit'),
+                  onClick: () => navigate(customerDetailPath(c.code, true)),
+                },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterCustomer.disableAction' : 'masterCustomer.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(c, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -146,7 +150,6 @@ export function CustomerListPage() {
     >
       <Panel className="p-4">
         <FilterBar
-          columns={6}
           onSearch={applySearch}
           onReset={reset}
           advanced={
@@ -174,41 +177,23 @@ export function CustomerListPage() {
             />
           </FilterItem>
           <FilterItem label={t('masterCustomer.ownerType')}>
-            <Select value={draft.ownerType} onValueChange={(v) => setDraft({ ...draft, ownerType: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="SELF">{t('masterCustomer.ownerTypes.SELF')}</SelectItem>
-                <SelectItem value="EXTERNAL">{t('masterCustomer.ownerTypes.EXTERNAL')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.ownerType}
+              onValueChange={(v) => setDraft({ ...draft, ownerType: v })}
+              options={OWNER_TYPES.map((o) => ({ value: o, label: t(OWNER_TYPE_I18N[o]) }))}
+            />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
           <FilterItem label={t('masterCustomer.countryCode')}>
-            <Select value={draft.countryCode} onValueChange={(v) => setDraft({ ...draft, countryCode: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {WAREHOUSE_COUNTRY_OPTIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{t(c.labelKey)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.countryCode}
+              onValueChange={(v) => setDraft({ ...draft, countryCode: v })}
+              options={WAREHOUSE_COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: t(c.labelKey) }))}
+            />
           </FilterItem>
         </FilterBar>
       </Panel>

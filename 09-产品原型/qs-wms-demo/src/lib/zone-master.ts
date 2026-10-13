@@ -76,3 +76,19 @@ export function zoneHasAnyLocation(zone: ZoneMaster, locations: LocationMaster[]
 export function hasEnabledWarehouse(warehouses: { code: string; status: string }[]): boolean {
   return warehouses.some((w) => w.status === 'ENABLED')
 }
+
+/** 新增库区表单的初始值（新建默认启用，状态不在表单里维护） */
+export function createEmptyZoneForm(warehouseCode = ''): ZoneMaster {
+  return {
+    warehouseCode,
+    code: '',
+    name: '',
+    zoneType: 'STORAGE',
+    status: 'ENABLED',
+    remark: '',
+    createdAt: '',
+    createdBy: '',
+    updatedAt: '',
+    updatedBy: '',
+  }
+}

@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
-import { BizCode } from '@/components/biz/display'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
+import { BizCode, CodeName, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
-import { PageContainer, Panel } from '@/components/biz/page-container'
+import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
+import { MasterDetailActions } from '@/components/biz/master-detail-actions'
+import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
 import { StatusBadge } from '@/components/biz/status-badge'
-import { Button } from '@/components/ui/button'
 import { usageStatusMeta } from '@/config/status'
 import { useLocationMasterStatusToggle } from '@/hooks/use-location-master-status'
 import {
@@ -36,69 +36,52 @@ export function LocationDetailPage() {
   if (!code || !warehouseCode) return <Navigate to="/wms/master/locations" replace />
   if (!location) return <Navigate to="/wms/master/locations" replace />
 
-  const enabled = location.status === 'ENABLED'
-  const occupancy =
-    location.occupyingCustomerId
-      ? `${customerCode(location.occupyingCustomerId)} · ${customerName(location.occupyingCustomerId)}`
-      : t('masterLocation.occupancyIdle')
-
   const productFormsLabel =
     location.productForms.length > 0
-      ? location.productForms.map((f) => t(PRODUCT_FORM_I18N[f])).join('、')
+      ? location.productForms.map((f) => t(PRODUCT_FORM_I18N[f])).join(t('common.listSeparator'))
       : t('masterLocation.productFormUnlimited')
 
   return (
     <PageContainer
       title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>{t('masterLocation.detailTitle')}</span>
-          <BizCode>{location.code}</BizCode>
-          <StatusBadge meta={usageStatusMeta[location.status]} />
-        </span>
+        <DetailTitle
+          title={t('masterLocation.detailTitle')}
+          code={location.code}
+          status={usageStatusMeta[location.status]}
+        />
       }
       actions={
-        <>
-          <Button variant="outline" asChild>
-            <Link to="/wms/master/locations">{t('masterLocation.backToList')}</Link>
-          </Button>
-          {enabled ? (
-            <Button
-              variant="destructive"
-              onClick={() => toggleStatus(location.warehouseCode, location.code, 'DISABLED')}
-            >
-              {t('masterLocation.disableAction')}
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => toggleStatus(location.warehouseCode, location.code, 'ENABLED')}
-            >
-              {t('masterLocation.enableAction')}
-            </Button>
-          )}
-          <Button onClick={() => navigate(locationEditPath(location.warehouseCode, location.code))}>
-            {t('masterLocation.edit')}
-          </Button>
-        </>
+        <MasterDetailActions
+          scope="masterLocation"
+          backTo="/wms/master/locations"
+          enabled={location.status === 'ENABLED'}
+          onToggle={(next) => toggleStatus(location.warehouseCode, location.code, next)}
+          onEdit={() => navigate(locationEditPath(location.warehouseCode, location.code))}
+        />
       }
     >
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionOccupancy')}</h2>
+      <Section title={t('masterLocation.sectionOccupancy')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterLocation.currentOccupancy')} className="col-span-3">
-            {occupancy}
+            {location.occupyingCustomerId ? (
+              <CodeName
+                code={customerCode(location.occupyingCustomerId)}
+                name={customerName(location.occupyingCustomerId)}
+              />
+            ) : (
+              t('masterLocation.occupancyIdle')
+            )}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionBasic')}</h2>
+      <Section title={t('masterLocation.sectionBasic')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterLocation.zoneCode')}>
-            {zone ? `${zone.code} · ${zone.name}` : location.zoneCode}
+            <CodeName code={location.zoneCode} name={zone?.name} />
           </DescriptionItem>
           <DescriptionItem label={t('masterLocation.warehouseCode')}>
-            {warehouse ? `${warehouse.code} · ${warehouse.name}` : location.warehouseCode}
+            <CodeName code={location.warehouseCode} name={warehouse?.name} />
           </DescriptionItem>
           <DescriptionItem label={t('masterLocation.zoneType')}>
             {t(ZONE_TYPE_I18N[location.zoneType])}
@@ -110,13 +93,12 @@ export function LocationDetailPage() {
             <StatusBadge meta={usageStatusMeta[location.status]} />
           </DescriptionItem>
           <DescriptionItem label={t('masterLocation.remark')} className="col-span-3">
-            {location.remark || <span className="text-muted-foreground">-</span>}
+            {location.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionMix')}</h2>
+      <Section title={t('masterLocation.sectionMix')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterLocation.allowMixSku')}>
             {location.allowMixSku ? t('common.yes') : t('common.no')}
@@ -125,37 +107,34 @@ export function LocationDetailPage() {
             {location.allowMixBatch ? t('common.yes') : t('common.no')}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionOps')}</h2>
+      <Section title={t('masterLocation.sectionOps')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterLocation.putawaySequence')}>
-            {location.putawaySequence ?? '-'}
+            {location.putawaySequence ?? <Empty />}
           </DescriptionItem>
           <DescriptionItem label={t('masterLocation.pickSequence')}>
-            {location.pickSequence ?? '-'}
+            {location.pickSequence ?? <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionStructure')}</h2>
+      <Section title={t('masterLocation.sectionStructure')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterLocation.aisle')}>{location.aisle || '-'}</DescriptionItem>
-          <DescriptionItem label={t('masterLocation.bay')}>{location.bay || '-'}</DescriptionItem>
-          <DescriptionItem label={t('masterLocation.level')}>{location.level || '-'}</DescriptionItem>
+          <DescriptionItem label={t('masterLocation.aisle')}>{location.aisle || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterLocation.bay')}>{location.bay || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterLocation.level')}>{location.level || <Empty />}</DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterLocation.sectionAdapt')}</h2>
+      <Section title={t('masterLocation.sectionAdapt')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterLocation.productForms')} className="col-span-3">
             {productFormsLabel}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
       <MasterAuditPanel scope="masterLocation" updatedBy={location.updatedBy} updatedAt={location.updatedAt} />
     </PageContainer>

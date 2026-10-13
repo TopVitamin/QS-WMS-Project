@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "qs-wms-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "09-产品原型/qs-wms-demo", "run", "dev", "--", "--port", "5173", "--strictPort"],
+      "port": 5173
+    }
+  ]
+}

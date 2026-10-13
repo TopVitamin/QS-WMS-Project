@@ -1,9 +1,8 @@
-import { ChevronRight } from 'lucide-react'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
+import { PdaButton, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { ScanInput } from '@/components/pda/scan-input'
-import { Button } from '@/components/ui/button'
 import { lineUnreceivedQty } from '@/lib/inbound-derive'
 import { QtyTriple, ReceiveContext } from './receive-shared'
 import type { ReceiveFlow } from './use-receive-flow'
@@ -86,46 +85,32 @@ export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
         />
 
         {box.lines.length > 0 && (
-          <div>
-            <div className="mb-2 text-sm font-medium">{t('pdaReceive.boxLines', { count: box.lines.length })}</div>
-            <div className="flex flex-col gap-2">
-              {box.lines.map((l) => (
-                <button
-                  key={l.skuCode}
-                  type="button"
-                  onClick={() => openLine(l.skuCode, 'pick')}
-                  className="flex min-h-14 items-center gap-2 rounded-xl bg-background p-3 text-left shadow-xs active:bg-accent"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-base font-semibold">{l.skuCode}</div>
-                    <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
-                    <QtyTriple lines={[l]} />
-                  </div>
-                  <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-          </div>
+          <PdaSection title={t('pdaReceive.boxLines', { count: box.lines.length })}>
+            {box.lines.map((l) => (
+              <PdaListItem key={l.skuCode} chevron onClick={() => openLine(l.skuCode, 'pick')}>
+                <div className="font-mono text-base font-semibold">{l.skuCode}</div>
+                <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
+                <QtyTriple lines={[l]} />
+              </PdaListItem>
+            ))}
+          </PdaSection>
         )}
 
-        <div>
-          <div className="mb-2 text-sm font-medium">{t('pdaReceive.remainTitle')}</div>
-          <div className="flex flex-col gap-2">
-            {openItems.map((i) => {
-              const remain = flow.thisRemain(i.skuCode)
-              return (
-                <button
-                  key={i.skuCode}
-                  type="button"
-                  onClick={() => {
-                    if (remain <= 0 && !box.lines.some((l) => l.skuCode === i.skuCode)) {
-                      flow.failScan(t('pdaReceive.fullThisTime', { sku: i.skuCode }))
-                      return
-                    }
-                    openLine(i.skuCode, 'pick')
-                  }}
-                  className="flex min-h-14 items-center gap-3 rounded-xl bg-background p-3 text-left shadow-xs active:bg-accent"
-                >
+        <PdaSection title={t('pdaReceive.remainTitle')}>
+          {openItems.map((i) => {
+            const remain = flow.thisRemain(i.skuCode)
+            return (
+              <PdaListItem
+                key={i.skuCode}
+                onClick={() => {
+                  if (remain <= 0 && !box.lines.some((l) => l.skuCode === i.skuCode)) {
+                    flow.failScan(t('pdaReceive.fullThisTime', { sku: i.skuCode }))
+                    return
+                  }
+                  openLine(i.skuCode, 'pick')
+                }}
+              >
+                <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="font-mono text-base font-semibold">{i.skuCode}</div>
                     <div className="line-clamp-2 text-sm">{flow.sku(i.skuCode)?.name}</div>
@@ -133,19 +118,19 @@ export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
                   <div className="shrink-0 text-right text-base font-semibold text-primary tabular-nums">
                     {t('pdaReceive.thisRemain', { count: remain })}
                   </div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+                </div>
+              </PdaListItem>
+            )
+          })}
+        </PdaSection>
       </div>
       <PdaFooter hint={hasSessionLines ? undefined : t('pdaReceive.boxEmptyHint')}>
-        <Button variant="outline" className="h-12 flex-1 text-base" onClick={addContainer}>
+        <PdaButton variant="outline" className="flex-1" onClick={addContainer}>
           {t('pdaReceive.addContainer')}
-        </Button>
-        <Button className="h-12 flex-1 text-base" disabled={!hasSessionLines} onClick={submit}>
+        </PdaButton>
+        <PdaButton className="flex-1" disabled={!hasSessionLines} onClick={submit}>
           {t('pdaReceive.submitReceipt')}
-        </Button>
+        </PdaButton>
       </PdaFooter>
     </>
   )

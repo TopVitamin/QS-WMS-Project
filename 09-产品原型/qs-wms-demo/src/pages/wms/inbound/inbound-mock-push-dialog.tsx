@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FormField, FormGrid } from '@/components/biz/form-field'
+import { OptionSelect } from '@/components/biz/option-select'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -9,7 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { inboundBizTypeMeta } from '@/config/status'
+import { codeNameText } from '@/lib/typography'
 import { useSettings } from '@/stores/settings'
 import { useDb } from '@/mock/db'
 import type { InboundBizType } from '@/types/wms'
@@ -58,72 +61,46 @@ export function InboundMockPushDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('inbound.mockPush')}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3">
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">{t('common.customer')}</span>
-            <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.code} · {c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">{t('common.warehouse')}</span>
-            <Input value={warehouseCode} readOnly />
-          </div>
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">{t('inbound.bizType')}</span>
-            <Select value={bizType} onValueChange={(v) => setBizType(v as InboundBizType)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {BIZ_TYPES.map((b) => (
-                  <SelectItem key={b} value={b}>{t(`enum.inboundBizType.${b}`)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">{t('inbound.upstreamNo')}</span>
+        <FormGrid columns={2}>
+          <FormField label={t('common.customer')} required span="full">
+            <OptionSelect
+              value={customerId}
+              onValueChange={setCustomerId}
+              options={customers.map((c) => ({ value: c.id, label: codeNameText(c.code, c.name) }))}
+            />
+          </FormField>
+          <FormField label={t('common.warehouse')}>
+            <Input value={warehouseCode} readOnly className="tabular-nums" />
+          </FormField>
+          <FormField label={t('inbound.bizType')} required>
+            <OptionSelect
+              value={bizType}
+              onValueChange={(v) => setBizType(v as InboundBizType)}
+              options={BIZ_TYPES.map((b) => ({ value: b, label: t(inboundBizTypeMeta[b].labelKey) }))}
+            />
+          </FormField>
+          <FormField label={t('inbound.upstreamNo')} required span="full">
             <Input
               value={upstreamNo}
               placeholder={t('inbound.filters.upstreamNoPlaceholder')}
               onChange={(e) => setUpstreamNo(e.target.value)}
             />
-          </div>
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">{t('common.sku')}</span>
-            <Select value={skuCode} onValueChange={setSkuCode}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {ownerSkus.map((s) => (
-                  <SelectItem key={s.code} value={s.code}>{s.code} · {s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <span className="text-sm text-muted-foreground">{t('inbound.plannedQty')}</span>
-            <Input
-              type="number"
-              min={1}
-              value={plannedQty}
-              onChange={(e) => setPlannedQty(e.target.value)}
+          </FormField>
+          <FormField label={t('common.sku')} required>
+            <OptionSelect
+              value={skuCode}
+              onValueChange={setSkuCode}
+              options={ownerSkus.map((m) => ({ value: m.code, label: codeNameText(m.code, m.name) }))}
             />
-          </div>
-        </div>
+          </FormField>
+          <FormField label={t('inbound.plannedQty')} required>
+            <Input type="number" min={1} value={plannedQty} onChange={(e) => setPlannedQty(e.target.value)} />
+          </FormField>
+        </FormGrid>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
           <Button

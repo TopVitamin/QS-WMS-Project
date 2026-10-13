@@ -11,7 +11,7 @@
 | 能力 | 路径 |
 | --- | --- |
 | 筛选项「全部」、排序、行 id | `lib/master-data.ts`（`FILTER_ALL`、`masterCompositeRowId`、`sortByUpdatedAtDesc`） |
-| 列表 draft / filters | `hooks/use-master-list-filters.ts` |
+| 列表 draft / filters | `hooks/use-list-filters.ts` |
 | 离开未保存编辑 | `hooks/use-master-discard-navigate.ts` → `useMasterDiscardNavigate('masterCustomer')` |
 | 启停 | `hooks/use-master-usage-status-toggle.ts`（模块薄封装 `useCustomerMasterStatusToggle`，R06 用 `beforeDisable`） |
 | 字段错误行 | `hooks/use-master-form-field-error.tsx` |
@@ -49,7 +49,7 @@ PageContainer(title=t('menu.customers'), actions=仅导出)
 
 ### 2.2 FilterBar（`columns={6}`：5 筛选项 + 操作列）
 
-`useMasterListFilters` 管理 `draft` / `filters`；「查询」写入 `filters` 并回第一页；「重置」清空两者。
+`useListFilters` 管理 `draft` / `filters`；「查询」写入 `filters` 并回第一页；「重置」清空两者。
 
 | 区域 | 字段 | 控件 | 匹配 |
 | --- | --- | --- | --- |
@@ -144,4 +144,4 @@ PageContainer(title=t('menu.customers'), actions=仅导出)
 - [ ] 编码链详情；行内编辑为同路由 `?edit=1`
 - [ ] 启停：列表与详情一致；编辑表单无使用状态
 - [ ] 维护信息仅最后修改人/时间；列表维护列一致
-- [ ] 复用 `use-master-list-filters`、`use-master-discard-navigate`、`use-master-usage-status-toggle`、`lib/master-data.ts`
+- [ ] 复用 `use-list-filters`、`use-master-discard-navigate`、`use-master-usage-status-toggle`、`lib/master-data.ts`

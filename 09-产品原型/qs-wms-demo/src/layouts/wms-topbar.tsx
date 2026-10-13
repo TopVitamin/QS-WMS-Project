@@ -2,17 +2,9 @@ import { Bell, Check, ChevronDown, Clock, Globe, PanelLeftClose, PanelLeftOpen, 
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
-import { toast } from 'sonner'
+import { BizCode } from '@/components/biz/display'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { findMenuGroup, findMenuLeaf } from '@/config/menu'
 import { formatDateTime, formatTzOffset } from '@/lib/format'
-import { useDb } from '@/mock/db'
+import { useResetDemo } from '@/hooks/use-reset-demo'
 import { warehouses } from '@/mock/seed'
 import {
   useCurrentWarehouse,
@@ -38,8 +30,9 @@ import {
 } from '@/stores/settings'
 import { WmsCommandPalette } from './wms-command-palette'
 
+/** 语言名称按各自语言原文显示，不翻译 */
 const languages: { value: Language; label: string }[] = [
-  { value: 'zh-CN', label: '简体中文' },
+  { value: 'zh-CN', label: '简体中文' }, // design-lint-ignore 语言名称按原文显示
   { value: 'en-US', label: 'English' },
 ]
 
@@ -59,8 +52,7 @@ export function WmsTopbar() {
   const warehouse = useCurrentWarehouse()
   const tz = useDisplayTimezone()
   const now = useNow()
-  const resetDemo = useDb((s) => s.resetDemo)
-  const [confirmReset, setConfirmReset] = useState(false)
+  const resetDemo = useResetDemo()
   const [commandOpen, setCommandOpen] = useState(false)
 
   const group = findMenuGroup(location.pathname)
@@ -76,7 +68,7 @@ export function WmsTopbar() {
             size="icon"
             className="size-8"
             onClick={settings.toggleSidebar}
-            aria-label="toggle sidebar"
+            aria-label={t('common.toggleSidebar')}
           >
             {settings.sidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
           </Button>
@@ -103,13 +95,13 @@ export function WmsTopbar() {
               >
                 <div className="flex items-center gap-1.5">
                   <Warehouse data-icon="inline-start" className="size-3.5 text-primary" />
-                  <span className="font-mono font-medium text-foreground">{warehouse.code}</span>
+                  <BizCode className="text-xs font-medium text-foreground">{warehouse.code}</BizCode>
                   <span className="hidden whitespace-nowrap text-muted-foreground xl:inline">{t(warehouse.nameKey)}</span>
                 </div>
                 <div className="h-3 w-px bg-border shrink-0" />
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Clock className="size-3" />
-                  <span className="tabular-nums font-mono text-[11px]">{formatDateTime(now.toISOString(), tz, 'HH:mm')}</span>
+                  <span className="text-xs tabular-nums">{formatDateTime(now.toISOString(), tz, 'HH:mm')}</span>
                 </div>
                 <ChevronDown data-icon="inline-end" className="size-3 opacity-40 ml-0.5" />
               </Button>
@@ -123,7 +115,7 @@ export function WmsTopbar() {
                 <DropdownMenuItem key={w.code} onSelect={() => settings.setWarehouse(w.code)} className="gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold">{w.code}</span>
+                      <BizCode className="text-xs font-semibold">{w.code}</BizCode>
                       <span className="text-sm">{t(w.nameKey)}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -223,7 +215,7 @@ export function WmsTopbar() {
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  {t('settings.language')} · {settings.language === 'zh-CN' ? '中文' : 'EN'}
+                  {t('settings.language')} · {languages.find((l) => l.value === settings.language)?.label}
                 </TooltipContent>
               </Tooltip>
               <DropdownMenuContent align="end" className="w-36">
@@ -265,7 +257,7 @@ export function WmsTopbar() {
                 type="button"
                 className="flex h-8 items-center gap-2 rounded-lg px-2 hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Avatar className="size-6 text-[11px]">
+                <Avatar className="size-6 text-xs">
                   <AvatarFallback className="bg-primary/10 font-semibold text-primary">LC</AvatarFallback>
                 </Avatar>
                 <span className="hidden text-xs font-medium text-foreground 2xl:inline">{settings.operator}</span>
@@ -274,35 +266,13 @@ export function WmsTopbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem>{t('common.profile')}</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setConfirmReset(true)}>{t('common.resetDemo')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void resetDemo()}>{t('common.resetDemo')}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>{t('common.logout')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{t('common.resetDemo')}</DialogTitle>
-              <DialogDescription>{t('common.resetDemoConfirm')}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmReset(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                onClick={() => {
-                  resetDemo()
-                  setConfirmReset(false)
-                  toast.success(t('common.resetDemoDone'))
-                }}
-              >
-                {t('common.confirm')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </header>
 
       {/* Cmd+K 全局命令面板 */}

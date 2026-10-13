@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useCurrentWarehouse } from '@/stores/settings'
 
@@ -10,6 +11,7 @@ interface PdaHeaderProps {
 }
 
 export function PdaHeader({ title, onBack, right }: PdaHeaderProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const warehouse = useCurrentWarehouse()
   return (
@@ -17,13 +19,15 @@ export function PdaHeader({ title, onBack, right }: PdaHeaderProps) {
       <button
         type="button"
         onClick={() => (onBack ? onBack() : navigate('/pda'))}
-        className="flex size-10 items-center justify-center rounded-lg active:bg-white/15"
-        aria-label="back"
+        className="flex size-12 items-center justify-center rounded-lg active:bg-primary-foreground/15"
+        aria-label={t('common.back')}
       >
         <ChevronLeft className="size-6" />
       </button>
       <h1 className="flex-1 text-lg font-semibold">{title}</h1>
-      {right ?? <span className="rounded bg-white/15 px-2 py-0.5 font-mono text-xs">{warehouse.code}</span>}
+      {right ?? (
+        <span className="rounded bg-primary-foreground/15 px-2 py-0.5 font-mono text-xs">{warehouse.code}</span>
+      )}
     </header>
   )
 }

@@ -1,21 +1,21 @@
 import { Download, Radio } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateRangePickerField } from '@/components/biz/date-range-picker-field'
-import { DateTime, DocNo, Num } from '@/components/biz/display'
+import { CodeName, DateTime, DocNo, Num, ProgressCell } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { OptionSelect } from '@/components/biz/option-select'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { StatusTabs } from '@/components/biz/status-tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { inboundOrderStatusMeta } from '@/config/status'
+import { inboundBizTypeMeta, inboundOrderStatusMeta } from '@/config/status'
 import { useInbound } from '@/hooks/use-inbound'
 import {
   canConfirmReceiptClose,
@@ -32,7 +32,7 @@ import {
   type InboundListFilters,
 } from '@/lib/inbound-list-match'
 import { FILTER_ALL } from '@/lib/master-data'
-import { textLink } from '@/lib/typography'
+import { codeNameText } from '@/lib/typography'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { InboundBizType, InboundOrder, InboundOrderStatus } from '@/types/wms'
@@ -88,17 +88,6 @@ function toSearchParams(filters: InboundListFilters, tab: StatusTab): URLSearchP
   return params
 }
 
-function ProgressCell({ done, total, pct }: { done: number; total: number; pct: number }) {
-  return (
-    <div className="flex min-w-[9rem] items-center gap-2">
-      <Progress value={pct} className="h-1.5 flex-1" />
-      <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-        {done}/{total}
-      </span>
-    </div>
-  )
-}
-
 export function InboundOrderListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -113,9 +102,12 @@ export function InboundOrderListPage() {
   const [mockOpen, setMockOpen] = useState(false)
   const [closeOrder, setCloseOrder] = useState<InboundOrder>()
 
-  useEffect(() => {
+  // URL 上的筛选变化（返回、分享链接）时同步草稿
+  const [syncedFilters, setSyncedFilters] = useState(filters)
+  if (syncedFilters !== filters) {
+    setSyncedFilters(filters)
     setDraft(filters)
-  }, [filters])
+  }
 
   const updateListState = useCallback(
     (nextFilters: InboundListFilters, nextTab: StatusTab) => {
@@ -182,18 +174,13 @@ export function InboundOrderListPage() {
         header: t('common.customer'),
         enableSorting: false,
         cell: ({ getValue }) => (
-          <div className="max-w-44 truncate" title={customerName(getValue())}>
-            <span className="mr-1.5 text-xs text-muted-foreground tabular-nums">{customerCode(getValue())}</span>
-            {customerName(getValue())}
-          </div>
+          <CodeName code={customerCode(getValue())} name={customerName(getValue())} className="max-w-52" />
         ),
       }),
       col.accessor('bizType', {
         header: t('inbound.bizType'),
         enableSorting: false,
-        cell: ({ getValue }) => (
-          <TagLabel tone={getValue() === 'NORMAL' ? 'gray' : 'cyan'}>{t(`enum.inboundBizType.${getValue()}`)}</TagLabel>
-        ),
+        cell: ({ getValue }) => <TagLabel meta={inboundBizTypeMeta[getValue()]} />,
       }),
       col.accessor('upstreamNo', {
         header: t('inbound.upstreamNo'),
@@ -232,20 +219,12 @@ export function InboundOrderListPage() {
       col.display({
         id: 'receiptProgress',
         header: t('inbound.receiptProgress'),
-        cell: ({ row }) => {
-          const p = receiptProgress(row.original)
-          if (p.pct === null) return '—'
-          return <ProgressCell done={p.done} total={p.total} pct={p.pct} />
-        },
+        cell: ({ row }) => <ProgressCell {...receiptProgress(row.original)} />,
       }),
       col.display({
         id: 'putawayProgress',
         header: t('inbound.putawayProgress'),
-        cell: ({ row }) => {
-          const p = putawayProgress(row.original)
-          if (p.pct === null) return '—'
-          return <ProgressCell done={p.done} total={p.total} pct={p.pct} />
-        },
+        cell: ({ row }) => <ProgressCell {...putawayProgress(row.original)} />,
       }),
       col.accessor('createdAt', {
         header: t('common.createdAt'),
@@ -260,39 +239,32 @@ export function InboundOrderListPage() {
         meta: { pin: 'right' },
         cell: ({ row }) => {
           const o = row.original
-          const showReceive = canReceiveInbound(o)
-          const showClose = canConfirmReceiptClose(o)
-          if (!showReceive && !showClose) return null
+          const canReceive = canReceiveInbound(o)
+          const listSearch = searchParams.toString()
+          // 横排、最多露 2 个；三个都可用时「PDA 收货」收进「更多」
           return (
-            <div className="flex min-w-[6.5rem] flex-col items-start gap-1">
-              {showReceive && (
-                <>
-                  <button
-                    type="button"
-                    className={textLink}
-                    onClick={() =>
-                      navigate(`/wms/inbound/orders/${o.inboundNo}/receive`, {
-                        state: { listSearch: searchParams.toString() },
-                      })
-                    }
-                  >
-                    {t('inbound.receive.action')}
-                  </button>
-                  <button
-                    type="button"
-                    className={textLink}
-                    onClick={() => navigate('/pda/receive', { state: { inboundNo: o.inboundNo } })}
-                  >
-                    {t('inbound.openPdaReceive')}
-                  </button>
-                </>
-              )}
-              {showClose && (
-                <button type="button" className={textLink} onClick={() => openReceiptClose(o)}>
-                  {t('inbound.receiptClose')}
-                </button>
-              )}
-            </div>
+            <RowActions
+              actions={[
+                {
+                  key: 'receive',
+                  label: t('inbound.receive.action'),
+                  hidden: !canReceive,
+                  onClick: () => navigate(`/wms/inbound/orders/${o.inboundNo}/receive`, { state: { listSearch } }),
+                },
+                {
+                  key: 'close',
+                  label: t('inbound.receiptClose'),
+                  hidden: !canConfirmReceiptClose(o),
+                  onClick: () => openReceiptClose(o),
+                },
+                {
+                  key: 'pda',
+                  label: t('inbound.openPdaReceive'),
+                  hidden: !canReceive,
+                  onClick: () => navigate('/pda/receive', { state: { inboundNo: o.inboundNo } }),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -317,7 +289,7 @@ export function InboundOrderListPage() {
       }
     >
       {warehouseRows.length === 0 && (
-        <Alert variant="default" className="mx-4 mb-0 border-warning/40 bg-warning/5">
+        <Alert className="border-warning/40 bg-warning/5">
           <AlertTitle>{t('inbound.emptyWarehouseTitle')}</AlertTitle>
           <AlertDescription>{t('inbound.emptyWarehouseHint', { warehouse: warehouseLabel })}</AlertDescription>
         </Alert>
@@ -325,7 +297,6 @@ export function InboundOrderListPage() {
 
       <Panel className="p-4">
         <FilterBar
-          columns={6}
           onSearch={() => updateListState(draft, tab)}
           onReset={() => {
             setDraft(emptyInboundListFilters)
@@ -334,20 +305,12 @@ export function InboundOrderListPage() {
           advanced={
             <>
               <FilterItem label={t('inbound.arrivalMethod')}>
-                <Select
+                <OptionSelect
+                  allOption
                   value={draft.arrivalMethod}
                   onValueChange={(v) => setDraft({ ...draft, arrivalMethod: v })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t('common.selectPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                    {INBOUND_ARRIVAL_METHODS.map((m) => (
-                      <SelectItem key={m} value={m}>{t(`enum.arrivalMethod.${m}`)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={INBOUND_ARRIVAL_METHODS.map((m) => ({ value: m, label: t(`enum.arrivalMethod.${m}`) }))}
+                />
               </FilterItem>
               <FilterItem label={t('inbound.containerNo')}>
                 <Input
@@ -381,30 +344,20 @@ export function InboundOrderListPage() {
             />
           </FilterItem>
           <FilterItem label={t('common.customer')}>
-            <Select value={draft.customerId} onValueChange={(v) => setDraft({ ...draft, customerId: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.code} · {c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.customerId}
+              onValueChange={(v) => setDraft({ ...draft, customerId: v })}
+              options={customers.map((c) => ({ value: c.id, label: codeNameText(c.code, c.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('inbound.bizType')}>
-            <Select value={draft.bizType} onValueChange={(v) => setDraft({ ...draft, bizType: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {bizTypes.map((b) => (
-                  <SelectItem key={b} value={b}>{t(`enum.inboundBizType.${b}`)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.bizType}
+              onValueChange={(v) => setDraft({ ...draft, bizType: v })}
+              options={bizTypes.map((b) => ({ value: b, label: t(inboundBizTypeMeta[b].labelKey) }))}
+            />
           </FilterItem>
           <FilterItem label={t('inbound.upstreamNo')}>
             <Input

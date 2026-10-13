@@ -20,8 +20,8 @@ ERP 项目仍用 [《页面骨架模板-V2》](页面骨架模板-V2.md)；本�
 
 | 场景 | 容器 | 样板 |
 | --- | --- | --- |
-| 列表 | `PageContainer` + 双 `Panel` | `inbound-list-page.tsx`（主数据可去掉 `StatusTabs`、`selectable`） |
-| 字段少、边看列表边查看 | 右侧 `Sheet` 880px | `inbound-detail-sheet.tsx` |
+| 列表 | `PageContainer` + 双 `Panel` | `inbound-order-list-page.tsx`（主数据见 `warehouse-list-page.tsx`：无 `StatusTabs`、无勾选列） |
+| 字段少、边看列表边查看 | 右侧 `DetailSheet` 880px | `inbound-receipt-sheet.tsx` |
 | 分组多、子表、长表单 | 独立路由页 | 基础资料仓库/商品/货位等 |
 | 二次确认、≤3 字段 | `Dialog` | `useConfirm` / 小表单弹窗 |
 
@@ -34,7 +34,7 @@ ERP 项目仍用 [《页面骨架模板-V2》](页面骨架模板-V2.md)；本�
 | 项 | 约定 |
 | --- | --- |
 | 页面壳 | 左侧菜单 + 顶栏（含当前仓库切换）；内容区 `p-4`、`gap-3` |
-| 列表上块 | `Panel` + `FilterBar`：业务单据 **4 列** + 展开；**基础资料** `columns={6}` 为 **5 筛选项 + 第 6 列按钮组**（底对齐） |
+| 列表上块 | `Panel` + `FilterBar columns={6}`：业务单据与基础资料统一为 **5 筛选项 + 第 6 列按钮组**（底对齐），超出 5 项放「展开」 |
 | 查询按钮行 | 与最后一列筛选项同一行：**查询**、**重置**、**展开/收起**（有 advanced 时） |
 | 列表下块 | `Panel flex-1` + `DataTable`；**列设置**在表格工具区（非 ERP 六列栅格） |
 | 主数据列表 | 一般 **无** 状态页签、**无** 批量勾选栏；页头 **无** 导入 |

@@ -3,24 +3,24 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { ChannelFormDialog } from '@/components/biz/channel-form-dialog'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { BizCode, DateTime, DocNo } from '@/components/biz/display'
+import { CodeName, DateTime, DocNo } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect, UsageStatusFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usageStatusMeta } from '@/config/status'
 import { useChannelMasterStatusToggle } from '@/hooks/use-channel-master-status'
-import { useMasterListFilters } from '@/hooks/use-master-list-filters'
+import { useListFilters } from '@/hooks/use-list-filters'
 import { carrierDetailPath } from '@/lib/carrier-master'
 import { FILTER_ALL, sortByUpdatedAtDesc } from '@/lib/master-data'
-import { textLink } from '@/lib/typography'
-import { cn } from '@/lib/utils'
+import { codeNameText } from '@/lib/typography'
 import { useDb } from '@/mock/db'
 import type { ChannelMaster, UsageStatus } from '@/types/wms'
+import { ChannelFormDialog } from './channel-form-dialog'
 
 interface Filters {
   code: string
@@ -40,6 +40,9 @@ const emptyFilters: Filters = {
   integrationMode: FILTER_ALL,
 }
 
+const CHANNEL_TYPES: ChannelMaster['channelType'][] = ['EXPRESS', 'TRUCK', 'PICKUP', 'OTHER']
+const INTEGRATION_MODES: ChannelMaster['integrationMode'][] = ['OFFLINE_HANDOVER', 'API_RESERVED']
+
 function matchChannel(ch: ChannelMaster, filters: Filters): boolean {
   if (filters.code && !ch.code.toLowerCase().includes(filters.code.trim().toLowerCase())) return false
   if (filters.name && !ch.name.includes(filters.name.trim())) return false
@@ -58,10 +61,9 @@ export function ChannelListPage() {
   const channelMasters = useDb((s) => s.channelMasters)
   const carrierMasters = useDb((s) => s.carrierMasters)
   const toggleStatus = useChannelMasterStatusToggle()
-  const { filters, draft, setDraft, applySearch, reset } = useMasterListFilters(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const [dialog, setDialog] = useState<DialogState>(null)
-  const [listRefresh, setListRefresh] = useState(0)
 
   const hasEnabledCarrier = carrierMasters.some((c) => c.status === 'ENABLED')
 
@@ -73,12 +75,10 @@ export function ChannelListPage() {
   const rows = useMemo(() => {
     const list = channelMasters.filter((ch) => matchChannel(ch, filters))
     return sortByUpdatedAtDesc(list)
-  }, [channelMasters, filters, listRefresh])
-
-  const carrierName = (carrierCode: string) =>
-    carrierMasters.find((c) => c.code === carrierCode)?.name ?? carrierCode
+  }, [channelMasters, filters])
 
   const columns = useMemo(() => {
+    const carrierName = (carrierCode: string) => carrierMasters.find((c) => c.code === carrierCode)?.name
     const col = createDataColumns<ChannelMaster>()
     return col.columns([
       col.accessor('code', {
@@ -100,14 +100,11 @@ export function ChannelListPage() {
         enableSorting: false,
         meta: { label: t('masterChannel.carrierCode') },
         cell: ({ getValue }) => (
-          <button
-            type="button"
-            className="inline-flex max-w-full items-center gap-1 text-left"
+          <CodeName
+            code={getValue()}
+            name={carrierName(getValue())}
             onClick={() => navigate(carrierDetailPath(getValue()))}
-          >
-            <BizCode>{getValue()}</BizCode>
-            <span className="truncate text-muted-foreground">{carrierName(getValue())}</span>
-          </button>
+          />
         ),
       }),
       col.accessor('channelType', {
@@ -142,18 +139,17 @@ export function ChannelListPage() {
           const ch = row.original
           const enabled = ch.status === 'ENABLED'
           return (
-            <span className="inline-flex items-center gap-2">
-              <button type="button" className={textLink} onClick={() => setDialog({ mode: 'edit', code: ch.code })}>
-                {t('masterChannel.edit')}
-              </button>
-              <button
-                type="button"
-                className={cn(textLink, enabled ? 'text-destructive' : undefined)}
-                onClick={() => toggleStatus(ch.code, enabled ? 'DISABLED' : 'ENABLED')}
-              >
-                {t(enabled ? 'masterChannel.disableAction' : 'masterChannel.enableAction')}
-              </button>
-            </span>
+            <RowActions
+              actions={[
+                { key: 'edit', label: t('masterChannel.edit'), onClick: () => setDialog({ mode: 'edit', code: ch.code }) },
+                {
+                  key: 'toggle',
+                  label: t(enabled ? 'masterChannel.disableAction' : 'masterChannel.enableAction'),
+                  danger: enabled,
+                  onClick: () => toggleStatus(ch.code, enabled ? 'DISABLED' : 'ENABLED'),
+                },
+              ]}
+            />
           )
         },
       }),
@@ -187,24 +183,16 @@ export function ChannelListPage() {
     >
       <Panel className="p-4">
         <FilterBar
-          columns={6}
           onSearch={applySearch}
           onReset={reset}
           advanced={
             <FilterItem label={t('masterChannel.integrationMode')}>
-              <Select
+              <OptionSelect
+                allOption
                 value={draft.integrationMode}
                 onValueChange={(v) => setDraft({ ...draft, integrationMode: v })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('common.selectPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                  <SelectItem value="OFFLINE_HANDOVER">{t('masterChannel.integrationModes.OFFLINE_HANDOVER')}</SelectItem>
-                  <SelectItem value="API_RESERVED">{t('masterChannel.integrationModes.API_RESERVED')}</SelectItem>
-                </SelectContent>
-              </Select>
+                options={INTEGRATION_MODES.map((m) => ({ value: m, label: t(`masterChannel.integrationModes.${m}`) }))}
+              />
             </FilterItem>
           }
         >
@@ -223,45 +211,23 @@ export function ChannelListPage() {
             />
           </FilterItem>
           <FilterItem label={t('masterChannel.carrierCode')}>
-            <Select value={draft.carrierCode} onValueChange={(v) => setDraft({ ...draft, carrierCode: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                {carrierOptions.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.code} · {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.carrierCode}
+              onValueChange={(v) => setDraft({ ...draft, carrierCode: v })}
+              options={carrierOptions.map((c) => ({ value: c.code, label: codeNameText(c.code, c.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('common.status')}>
-            <Select value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="ENABLED">{t('status.usage.ENABLED')}</SelectItem>
-                <SelectItem value="DISABLED">{t('status.usage.DISABLED')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <UsageStatusFilter value={draft.status} onValueChange={(v) => setDraft({ ...draft, status: v })} />
           </FilterItem>
           <FilterItem label={t('masterChannel.channelType')}>
-            <Select value={draft.channelType} onValueChange={(v) => setDraft({ ...draft, channelType: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('common.selectPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={FILTER_ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="EXPRESS">{t('masterChannel.types.EXPRESS')}</SelectItem>
-                <SelectItem value="TRUCK">{t('masterChannel.types.TRUCK')}</SelectItem>
-                <SelectItem value="PICKUP">{t('masterChannel.types.PICKUP')}</SelectItem>
-                <SelectItem value="OTHER">{t('masterChannel.types.OTHER')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.channelType}
+              onValueChange={(v) => setDraft({ ...draft, channelType: v })}
+              options={CHANNEL_TYPES.map((ct) => ({ value: ct, label: t(`masterChannel.types.${ct}`) }))}
+            />
           </FilterItem>
         </FilterBar>
       </Panel>
@@ -282,7 +248,6 @@ export function ChannelListPage() {
         mode={dialog?.mode ?? 'create'}
         channelCode={dialog?.code}
         onOpenChange={(open) => !open && setDialog(null)}
-        onSaved={() => setListRefresh((n) => n + 1)}
       />
     </PageContainer>
   )

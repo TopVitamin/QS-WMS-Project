@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
-import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
-import { BizCode } from '@/components/biz/display'
+import { Navigate, useNavigate, useParams } from 'react-router'
+import { BizCode, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
-import { PageContainer, Panel } from '@/components/biz/page-container'
+import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
+import { MasterDetailActions } from '@/components/biz/master-detail-actions'
+import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
 import { StatusBadge } from '@/components/biz/status-badge'
-import { Button } from '@/components/ui/button'
-import { usageStatusMeta } from '@/config/status'
 import { WarehouseFullAddressPreview } from '@/components/biz/warehouse-full-address-preview'
-import { WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
+import { usageStatusMeta } from '@/config/status'
 import { useWarehouseMasterStatusToggle } from '@/hooks/use-warehouse-master-status'
+import { countryLabelKey } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 
 export function WarehouseDetailPage() {
@@ -22,38 +22,28 @@ export function WarehouseDetailPage() {
   if (!code || code === 'new') return <Navigate to="/wms/master/warehouses" replace />
   if (!warehouse) return <Navigate to="/wms/master/warehouses" replace />
 
-  const countryLabel =
-    WAREHOUSE_COUNTRY_OPTIONS.find((c) => c.value === warehouse.countryCode)?.labelKey ??
-    'masterWarehouse.country.OTHER'
+  const countryLabel = countryLabelKey(warehouse.countryCode)
 
   return (
     <PageContainer
       title={
-        <span className="flex flex-wrap items-center gap-2">
-          <span>{t('masterWarehouse.detailTitle')}</span>
-          <StatusBadge meta={usageStatusMeta[warehouse.status]} />
-        </span>
+        <DetailTitle
+          title={t('masterWarehouse.detailTitle')}
+          code={warehouse.code}
+          status={usageStatusMeta[warehouse.status]}
+        />
       }
       actions={
-        <>
-          <Button variant="outline" asChild>
-            <Link to="/wms/master/warehouses">{t('masterWarehouse.backToList')}</Link>
-          </Button>
-          {warehouse.status === 'ENABLED' ? (
-            <Button variant="destructive" onClick={() => toggleStatus(warehouse.code, 'DISABLED')}>
-              {t('masterWarehouse.disableAction')}
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => toggleStatus(warehouse.code, 'ENABLED')}>
-              {t('masterWarehouse.enableAction')}
-            </Button>
-          )}
-          <Button onClick={() => navigate(`/wms/master/warehouses/${code}/edit`)}>{t('masterWarehouse.edit')}</Button>
-        </>
+        <MasterDetailActions
+          scope="masterWarehouse"
+          backTo="/wms/master/warehouses"
+          enabled={warehouse.status === 'ENABLED'}
+          onToggle={(next) => toggleStatus(warehouse.code, next)}
+          onEdit={() => navigate(`/wms/master/warehouses/${code}/edit`)}
+        />
       }
     >
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterWarehouse.sectionBasic')}</h2>
+      <Section title={t('masterWarehouse.sectionBasic')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterWarehouse.code')}>
             <BizCode>{warehouse.code}</BizCode>
@@ -67,37 +57,35 @@ export function WarehouseDetailPage() {
             <StatusBadge meta={usageStatusMeta[warehouse.status]} />
           </DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.remark')} className="col-span-3">
-            {warehouse.remark || <span className="text-muted-foreground">-</span>}
+            {warehouse.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterWarehouse.sectionAddress')}</h2>
+      <Section title={t('masterWarehouse.sectionAddress')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterWarehouse.countryName')}>{t(countryLabel)}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.state')}>{warehouse.state || '-'}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.state')}>{warehouse.state || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.city')}>{warehouse.city}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.district')}>{warehouse.district || '-'}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.district')}>{warehouse.district || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.address1')} className="col-span-2">{warehouse.address1}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.address2')} className="col-span-2">
-            {warehouse.address2 || '-'}
+            {warehouse.address2 || <Empty />}
           </DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.postalCode')}>{warehouse.postalCode || '-'}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.postalCode')}>{warehouse.postalCode || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.fullAddress')} className="col-span-3" multiline>
             <WarehouseFullAddressPreview data={warehouse} countryLabel={t(countryLabel)} />
           </DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
-      <Panel className="space-y-3 p-4">
-        <h2 className="text-sm font-medium">{t('masterWarehouse.sectionContact')}</h2>
+      <Section title={t('masterWarehouse.sectionContact')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterWarehouse.contactName')}>{warehouse.contactName || '-'}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.contactPhone')}>{warehouse.contactPhone || '-'}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.contactEmail')}>{warehouse.contactEmail || '-'}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.contactName')}>{warehouse.contactName || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.contactPhone')}>{warehouse.contactPhone || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.contactEmail')}>{warehouse.contactEmail || <Empty />}</DescriptionItem>
         </Descriptions>
-      </Panel>
+      </Section>
 
       <MasterAuditPanel scope="masterWarehouse" updatedBy={warehouse.updatedBy} updatedAt={warehouse.updatedAt} />
     </PageContainer>

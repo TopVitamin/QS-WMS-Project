@@ -66,7 +66,6 @@ export function ZoneEditPage() {
     const res = updateZoneMaster(warehouseCode, code, {
       name: form.name.trim(),
       zoneType: form.zoneType,
-      status: form.status,
       remark: form.remark?.trim() || undefined,
       warehouseCode: warehouseReadOnly ? warehouseCode : form.warehouseCode,
     })

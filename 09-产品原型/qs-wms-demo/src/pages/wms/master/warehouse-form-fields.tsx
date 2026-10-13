@@ -1,36 +1,19 @@
 import { useTranslation } from 'react-i18next'
-import { FormFieldLabel } from '@/components/biz/form-field-label'
+import { FormField, FormGrid } from '@/components/biz/form-field'
+import { OptionSelect } from '@/components/biz/option-select'
+import { Section } from '@/components/biz/page-container'
 import { WarehouseFullAddressPreview } from '@/components/biz/warehouse-full-address-preview'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  countryLabelKey,
   WAREHOUSE_COUNTRY_OPTIONS,
   WAREHOUSE_TIMEZONE_OPTIONS,
   type WarehouseMasterFormErrors,
 } from '@/lib/warehouse-master'
 import type { CurrencyCode, WarehouseMaster } from '@/types/wms'
-import { Panel } from '@/components/biz/page-container'
 
 const CURRENCIES: CurrencyCode[] = ['HKD', 'USD', 'EUR', 'GBP', 'JPY', 'CNY']
-
-export function createEmptyWarehouseForm(): WarehouseMaster {
-  const now = ''
-  return {
-    code: '',
-    name: '',
-    timezone: WAREHOUSE_TIMEZONE_OPTIONS[0],
-    currency: 'USD',
-    status: 'ENABLED',
-    countryCode: 'HK',
-    city: '',
-    address1: '',
-    createdAt: now,
-    createdBy: '',
-    updatedAt: now,
-    updatedBy: '',
-  }
-}
 
 interface WarehouseFormFieldsProps {
   mode: 'create' | 'edit'
@@ -43,18 +26,12 @@ interface WarehouseFormFieldsProps {
 export function WarehouseFormFields({ mode, form, setForm, errors, fieldError }: WarehouseFormFieldsProps) {
   const { t } = useTranslation()
   const ph = t('common.inputPlaceholder')
-  const sp = t('common.selectPlaceholder')
-  const countryLabel = t(
-    WAREHOUSE_COUNTRY_OPTIONS.find((c) => c.value === form.countryCode)?.labelKey ?? 'masterWarehouse.country.OTHER',
-  )
 
   return (
     <>
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterWarehouse.sectionBasic')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterWarehouse.code')}</FormFieldLabel>
+      <Section title={t('masterWarehouse.sectionBasic')}>
+        <FormGrid>
+          <FormField label={t('masterWarehouse.code')} required error={fieldError('code')}>
             <Input
               value={form.code}
               readOnly={mode === 'edit'}
@@ -63,99 +40,71 @@ export function WarehouseFormFields({ mode, form, setForm, errors, fieldError }:
               onChange={(e) => setForm({ ...form, code: e.target.value })}
               aria-invalid={!!errors.code}
             />
-            {fieldError('code')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterWarehouse.name')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.name')} required error={fieldError('name')}>
             <Input
               value={form.name}
               placeholder={t('masterWarehouse.namePlaceholder')}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               aria-invalid={!!errors.name}
             />
-            {fieldError('name')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterWarehouse.timezone')}</FormFieldLabel>
-            <Select value={form.timezone} onValueChange={(v) => setForm({ ...form, timezone: v })}>
-              <SelectTrigger className="w-full" aria-invalid={!!errors.timezone}>
-                <SelectValue placeholder={sp} />
-              </SelectTrigger>
-              <SelectContent>
-                {WAREHOUSE_TIMEZONE_OPTIONS.map((tz) => (
-                  <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldError('timezone')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterWarehouse.currency')}</FormFieldLabel>
-            <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v as CurrencyCode })}>
-              <SelectTrigger className="w-full" aria-invalid={!!errors.currency}>
-                <SelectValue placeholder={sp} />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCIES.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldError('currency')}
-          </div>
-          <div className="flex flex-col gap-1.5 xl:col-span-4">
-            <FormFieldLabel>{t('masterWarehouse.remark')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.timezone')} required error={fieldError('timezone')}>
+            <OptionSelect
+              value={form.timezone}
+              onValueChange={(v) => setForm({ ...form, timezone: v })}
+              invalid={!!errors.timezone}
+              options={WAREHOUSE_TIMEZONE_OPTIONS.map((tz) => ({ value: tz, label: tz }))}
+            />
+          </FormField>
+          <FormField label={t('masterWarehouse.currency')} required error={fieldError('currency')}>
+            <OptionSelect
+              value={form.currency}
+              onValueChange={(v) => setForm({ ...form, currency: v as CurrencyCode })}
+              invalid={!!errors.currency}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+            />
+          </FormField>
+          <FormField label={t('masterWarehouse.remark')} span="full">
             <Textarea
               value={form.remark ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, remark: e.target.value })}
               rows={2}
             />
-          </div>
-        </div>
-      </Panel>
+          </FormField>
+        </FormGrid>
+      </Section>
 
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterWarehouse.sectionAddress')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterWarehouse.countryName')}</FormFieldLabel>
-            <Select value={form.countryCode} onValueChange={(v) => setForm({ ...form, countryCode: v })}>
-              <SelectTrigger className="w-full" aria-invalid={!!errors.countryCode}>
-                <SelectValue placeholder={sp} />
-              </SelectTrigger>
-              <SelectContent>
-                {WAREHOUSE_COUNTRY_OPTIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{t(c.labelKey)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldError('countryCode')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterWarehouse.state')}</FormFieldLabel>
+      <Section title={t('masterWarehouse.sectionAddress')}>
+        <FormGrid>
+          <FormField label={t('masterWarehouse.countryName')} required error={fieldError('countryCode')}>
+            <OptionSelect
+              value={form.countryCode}
+              onValueChange={(v) => setForm({ ...form, countryCode: v })}
+              invalid={!!errors.countryCode}
+              options={WAREHOUSE_COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: t(c.labelKey) }))}
+            />
+          </FormField>
+          <FormField label={t('masterWarehouse.state')}>
             <Input value={form.state ?? ''} placeholder={ph} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel required>{t('masterWarehouse.city')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.city')} required error={fieldError('city')}>
             <Input
               value={form.city}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
               aria-invalid={!!errors.city}
             />
-            {fieldError('city')}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterWarehouse.district')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.district')}>
             <Input
               value={form.district ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, district: e.target.value })}
             />
-          </div>
-          <div className="flex flex-col gap-1.5 xl:col-span-2">
-            <FormFieldLabel required>{t('masterWarehouse.address1')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.address1')} required span={2} error={fieldError('address1')}>
             <Textarea
               value={form.address1}
               placeholder={ph}
@@ -163,63 +112,54 @@ export function WarehouseFormFields({ mode, form, setForm, errors, fieldError }:
               rows={2}
               aria-invalid={!!errors.address1}
             />
-            {fieldError('address1')}
-          </div>
-          <div className="flex flex-col gap-1.5 xl:col-span-2">
-            <FormFieldLabel>{t('masterWarehouse.address2')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.address2')} span={2}>
             <Textarea
               value={form.address2 ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, address2: e.target.value })}
               rows={2}
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterWarehouse.postalCode')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.postalCode')}>
             <Input
               value={form.postalCode ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
             />
-          </div>
-          <div className="flex flex-col gap-1.5 xl:col-span-3">
-            <FormFieldLabel>{t('masterWarehouse.fullAddress')}</FormFieldLabel>
-            <WarehouseFullAddressPreview data={form} countryLabel={countryLabel} />
-          </div>
-        </div>
-      </Panel>
+          </FormField>
+          <FormField label={t('masterWarehouse.fullAddress')} span={3}>
+            <WarehouseFullAddressPreview data={form} countryLabel={t(countryLabelKey(form.countryCode))} />
+          </FormField>
+        </FormGrid>
+      </Section>
 
-      <Panel className="space-y-4 p-4">
-        <h2 className="text-sm font-medium">{t('masterWarehouse.sectionContact')}</h2>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterWarehouse.contactName')}</FormFieldLabel>
+      <Section title={t('masterWarehouse.sectionContact')}>
+        <FormGrid>
+          <FormField label={t('masterWarehouse.contactName')}>
             <Input
               value={form.contactName ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, contactName: e.target.value })}
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterWarehouse.contactPhone')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.contactPhone')}>
             <Input
               value={form.contactPhone ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <FormFieldLabel>{t('masterWarehouse.contactEmail')}</FormFieldLabel>
+          </FormField>
+          <FormField label={t('masterWarehouse.contactEmail')} error={fieldError('contactEmail')}>
             <Input
               value={form.contactEmail ?? ''}
               placeholder={ph}
               onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
               aria-invalid={!!errors.contactEmail}
             />
-            {fieldError('contactEmail')}
-          </div>
-        </div>
-      </Panel>
+          </FormField>
+        </FormGrid>
+      </Section>
     </>
   )
 }

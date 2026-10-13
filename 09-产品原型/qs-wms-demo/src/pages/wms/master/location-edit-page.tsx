@@ -59,7 +59,6 @@ export function LocationEditPage() {
     }
     const res = updateLocationMaster(warehouseCode, code, {
       ...(occupied ? {} : { zoneCode: form.zoneCode }),
-      status: form.status,
       remark: form.remark?.trim() || undefined,
       allowMixSku: form.allowMixSku,
       allowMixBatch: form.allowMixBatch,

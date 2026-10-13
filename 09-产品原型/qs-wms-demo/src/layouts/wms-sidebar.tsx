@@ -139,7 +139,7 @@ export function WmsSidebar() {
         {!collapsed && (
           <div className="leading-tight">
             <div className="text-sm font-semibold">{t('app.name')}</div>
-            <div className="text-[10px] text-muted-foreground">{t('app.fullName')}</div>
+            <div className="text-xs text-muted-foreground">{t('app.fullName')}</div>
           </div>
         )}
       </div>

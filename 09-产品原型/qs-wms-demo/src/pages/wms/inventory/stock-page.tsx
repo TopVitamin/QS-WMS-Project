@@ -1,30 +1,37 @@
 import { Download } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { DateTime, Dimension, Money, Num, Weight } from '@/components/biz/display'
+import { BizCode, CodeName, DateTime, Dimension, Empty, Money, Num, Weight } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
+import { OptionSelect } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
+import { StatCard } from '@/components/biz/stat-card'
 import { TagLabel } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { qualityMeta } from '@/config/status'
 import { useInventory } from '@/hooks/use-inventory'
+import { useListFilters } from '@/hooks/use-list-filters'
+import { FILTER_ALL } from '@/lib/master-data'
+import { toneTextClass } from '@/lib/tone-styles'
+import { codeNameText } from '@/lib/typography'
+import { cn } from '@/lib/utils'
 import { useLookups } from '@/mock/db'
-import type { InventoryRecord } from '@/types/wms'
+import type { InventoryRecord, QualityType } from '@/types/wms'
 
-const ALL = '__all'
 interface Filters {
   keyword: string
   customerId: string
   quality: string
 }
-const emptyFilters: Filters = { keyword: '', customerId: ALL, quality: ALL }
+const emptyFilters: Filters = { keyword: '', customerId: FILTER_ALL, quality: FILTER_ALL }
+const QUALITIES: QualityType[] = ['GOOD', 'DEFECTIVE']
 
 export function StockPage() {
   const { t } = useTranslation()
-  const [draft, setDraft] = useState<Filters>(emptyFilters)
-  const [filters, setFilters] = useState<Filters>(emptyFilters)
+  const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
   const { rows, summary, locations, customers, warehouseCode } = useInventory(filters)
   const { customerCode, sku } = useLookups()
 
@@ -36,40 +43,33 @@ export function StockPage() {
         header: t('common.location'),
         enableHiding: false,
         meta: { pin: 'left' },
-        cell: ({ getValue }) => <span className="font-mono text-[13px] font-medium">{getValue()}</span>,
+        cell: ({ getValue }) => <BizCode className="font-medium">{getValue()}</BizCode>,
       }),
       col.accessor((r) => locType(r.locationCode) ?? '', {
         id: 'locationType',
         header: t('inventory.locationType'),
         enableSorting: false,
-        cell: ({ getValue }) => (getValue() ? t(`enum.locationType.${getValue()}`) : '-'),
+        cell: ({ getValue }) => (getValue() ? t(`enum.locationType.${getValue()}`) : <Empty />),
       }),
       col.accessor('skuCode', {
         header: t('common.sku'),
-        cell: ({ getValue }) => (
-          <div className="leading-tight">
-            <div className="font-mono text-xs">{getValue()}</div>
-            <div className="max-w-52 truncate text-xs text-muted-foreground">{sku(getValue())?.name}</div>
-          </div>
-        ),
+        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue())?.name} className="max-w-64" />,
       }),
       col.accessor((r) => sku(r.skuCode)?.barcode ?? '', {
         id: 'barcode',
         header: t('common.barcode'),
         enableSorting: false,
-        cell: ({ getValue }) => <span className="font-mono text-xs">{getValue()}</span>,
+        cell: ({ getValue }) => (getValue() ? <BizCode>{getValue()}</BizCode> : <Empty />),
       }),
       col.accessor('customerId', {
         header: t('common.customer'),
         enableSorting: false,
-        cell: ({ getValue }) => <span className="font-mono text-xs">{customerCode(getValue())}</span>,
+        cell: ({ getValue }) => <BizCode>{customerCode(getValue())}</BizCode>,
       }),
       col.accessor('qualityType', {
         header: t('inventory.quality'),
         enableSorting: false,
-        cell: ({ getValue }) => (
-          <TagLabel tone={getValue() === 'GOOD' ? 'green' : 'red'}>{t(`enum.quality.${getValue()}`)}</TagLabel>
-        ),
+        cell: ({ getValue }) => <TagLabel meta={qualityMeta[getValue()]} />,
       }),
       col.accessor('onHandQty', {
         header: t('inventory.onHand'),
@@ -79,13 +79,15 @@ export function StockPage() {
       col.accessor('lockedQty', {
         header: t('inventory.locked'),
         meta: { align: 'right' },
-        cell: ({ getValue }) => <Num value={getValue()} className={getValue() ? 'text-amber-600' : 'text-muted-foreground'} />,
+        cell: ({ getValue }) => (
+          <Num value={getValue()} className={getValue() ? toneTextClass.orange : toneTextClass.gray} />
+        ),
       }),
       col.accessor((r) => r.onHandQty - r.lockedQty, {
         id: 'available',
         header: t('inventory.available'),
         meta: { align: 'right' },
-        cell: ({ getValue }) => <Num value={getValue()} className="text-emerald-700" />,
+        cell: ({ getValue }) => <Num value={getValue()} className={cn('font-medium', toneTextClass.green)} />,
       }),
       col.display({
         id: 'weight',
@@ -93,7 +95,7 @@ export function StockPage() {
         meta: { label: t('inventory.weight') },
         cell: ({ row }) => {
           const s = sku(row.original.skuCode)
-          return s ? <Weight grams={s.weightG} /> : '-'
+          return s ? <Weight grams={s.weightG} /> : <Empty />
         },
       }),
       col.display({
@@ -102,7 +104,7 @@ export function StockPage() {
         meta: { label: t('inventory.dimension') },
         cell: ({ row }) => {
           const s = sku(row.original.skuCode)
-          return s ? <Dimension l={s.lengthCm} w={s.widthCm} h={s.heightCm} /> : '-'
+          return s ? <Dimension l={s.lengthCm} w={s.widthCm} h={s.heightCm} /> : <Empty />
         },
       }),
       col.display({
@@ -111,7 +113,7 @@ export function StockPage() {
         meta: { label: t('inventory.declaredValue'), align: 'right' },
         cell: ({ row }) => {
           const s = sku(row.original.skuCode)
-          return s ? <Money value={s.declaredValue} /> : '-'
+          return s ? <Money value={s.declaredValue} /> : <Empty />
         },
       }),
       col.accessor((r) => Math.floor((Date.now() - new Date(r.firstInboundAt).getTime()) / 86_400_000), {
@@ -122,46 +124,33 @@ export function StockPage() {
       }),
       col.accessor('firstInboundAt', {
         header: t('common.createdAt'),
+        enableSorting: true,
+        sortFn: 'datetime',
         cell: ({ getValue }) => <DateTime value={getValue()} />,
       }),
     ])
   }, [t, sku, customerCode, locations, warehouseCode])
-
-  const stats = [
-    { label: t('inventory.totalSku'), value: <Num value={summary.skus} /> },
-    { label: t('inventory.totalQty'), value: <Num value={summary.qty} /> },
-    { label: t('inventory.totalLocations'), value: <Num value={summary.locations} /> },
-    { label: t('inventory.stockValue'), value: <Money value={summary.value} /> },
-  ]
 
   return (
     <PageContainer
       fill
       title={t('menu.stock')}
       actions={
-        <Button variant="outline">
+        <Button variant="outline" onClick={() => toast.info(t('common.exportMock'))}>
           <Download data-icon="inline-start" />
           {t('common.export')}
         </Button>
       }
     >
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {stats.map((s) => (
-          <Panel key={s.label} className="px-4 py-3">
-            <div className="text-xs text-muted-foreground">{s.label}</div>
-            <div className="mt-1 text-xl font-semibold">{s.value}</div>
-          </Panel>
-        ))}
+        <StatCard label={t('inventory.totalSku')} value={summary.skus} />
+        <StatCard label={t('inventory.totalQty')} value={summary.qty} />
+        <StatCard label={t('inventory.totalLocations')} value={summary.locations} />
+        <StatCard label={t('inventory.stockValue')} value={<Money value={summary.value} />} />
       </div>
 
       <Panel className="p-4">
-        <FilterBar
-          onSearch={() => setFilters(draft)}
-          onReset={() => {
-            setDraft(emptyFilters)
-            setFilters(emptyFilters)
-          }}
-        >
+        <FilterBar onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('common.sku')}>
             <Input
               value={draft.keyword}
@@ -170,36 +159,25 @@ export function StockPage() {
             />
           </FilterItem>
           <FilterItem label={t('common.customer')}>
-            <Select value={draft.customerId} onValueChange={(v) => setDraft({ ...draft, customerId: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t('common.all')}</SelectItem>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.code} · {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.customerId}
+              onValueChange={(v) => setDraft({ ...draft, customerId: v })}
+              options={customers.map((c) => ({ value: c.id, label: codeNameText(c.code, c.name) }))}
+            />
           </FilterItem>
           <FilterItem label={t('inventory.quality')}>
-            <Select value={draft.quality} onValueChange={(v) => setDraft({ ...draft, quality: v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t('common.all')}</SelectItem>
-                <SelectItem value="GOOD">{t('enum.quality.GOOD')}</SelectItem>
-                <SelectItem value="DEFECTIVE">{t('enum.quality.DEFECTIVE')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <OptionSelect
+              allOption
+              value={draft.quality}
+              onValueChange={(v) => setDraft({ ...draft, quality: v })}
+              options={QUALITIES.map((q) => ({ value: q, label: t(qualityMeta[q].labelKey) }))}
+            />
           </FilterItem>
         </FilterBar>
       </Panel>
 
-      <Panel className="flex min-h-[420px] flex-1 flex-col overflow-hidden">
+      <Panel className="flex min-h-105 flex-1 flex-col overflow-hidden">
         <DataTable className="flex-1" data={rows} columns={columns} getRowId={(r) => r.id} />
       </Panel>
     </PageContainer>

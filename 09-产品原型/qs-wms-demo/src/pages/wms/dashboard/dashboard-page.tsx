@@ -1,17 +1,23 @@
 import dayjs from 'dayjs'
-import { AlertTriangle, ArrowRight, ArrowUpFromLine, Boxes, PackageOpen, Printer, Smartphone, Truck } from 'lucide-react'
+import { AlertTriangle, ArrowRight, ArrowUpFromLine, Boxes, PackageOpen, Printer, Smartphone, Truck, type LucideIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { DateTime, DocNo, Money, Num } from '@/components/biz/display'
-import { Panel } from '@/components/biz/page-container'
-import { StatCard, type StatCardTone } from '@/components/biz/stat-card'
+import { PageContainer, Section } from '@/components/biz/page-container'
+import { StatCard } from '@/components/biz/stat-card'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
-import { inboundOrderStatusMeta, packageStatusMeta } from '@/config/status'
+import {
+  inboundOrderStatusMeta,
+  packageStatusMeta,
+  putawayOrderStatusMeta,
+  type StatusTone,
+} from '@/config/status'
 import { formatDateTime } from '@/lib/format'
 import { listOpenPutawayOrders, pendingPutawayQty } from '@/lib/putaway'
 import { toneDotClass } from '@/lib/tone-styles'
+import { textLink } from '@/lib/typography'
 import { cn } from '@/lib/utils'
 import { useDb, useLookups } from '@/mock/db'
 import { useCurrentWarehouse, useSettings } from '@/stores/settings'
@@ -59,29 +65,54 @@ export function DashboardPage() {
     }
   }, [allInbounds, allPackages, allPutawayOrders, warehouse])
 
-  const kpis: { label: string; value: number; icon: typeof PackageOpen; tone: StatCardTone; to: string }[] = [
-    { label: t('dashboard.pendingInbound'), value: data.pendingInbound, icon: PackageOpen, tone: 'warning', to: '/wms/inbound/orders' },
-    { label: t('dashboard.pendingPutaway'), value: data.pendingPutaway, icon: ArrowUpFromLine, tone: 'primary', to: '/wms/inbound/putaway' },
-    { label: t('dashboard.readyPrint'), value: data.readyPrint, icon: Printer, tone: 'accent', to: '/wms/outbound/packages' },
-    { label: t('dashboard.shippedToday'), value: data.shipped, icon: Truck, tone: 'success', to: '/wms/outbound/packages' },
-    { label: t('dashboard.abnormal'), value: data.abnormal, icon: AlertTriangle, tone: 'destructive', to: '/wms/inbound/orders' },
+  /** 每张 KPI 的颜色取它所统计状态的色调，保证「同一状态同一颜色」 */
+  const kpis: { label: string; value: number; icon: LucideIcon; tone: StatusTone; to: string }[] = [
+    {
+      label: t('dashboard.pendingInbound'),
+      value: data.pendingInbound,
+      icon: PackageOpen,
+      tone: inboundOrderStatusMeta.PENDING_RECEIVE.tone,
+      to: '/wms/inbound/orders',
+    },
+    {
+      label: t('dashboard.pendingPutaway'),
+      value: data.pendingPutaway,
+      icon: ArrowUpFromLine,
+      tone: putawayOrderStatusMeta.PENDING.tone,
+      to: '/wms/inbound/putaway',
+    },
+    {
+      label: t('dashboard.readyPrint'),
+      value: data.readyPrint,
+      icon: Printer,
+      tone: packageStatusMeta.READY_PRINT.tone,
+      to: '/wms/outbound/packages',
+    },
+    {
+      label: t('dashboard.shippedToday'),
+      value: data.shipped,
+      icon: Truck,
+      tone: packageStatusMeta.SHIPPED.tone,
+      to: '/wms/outbound/packages',
+    },
+    {
+      label: t('dashboard.abnormal'),
+      value: data.abnormal,
+      icon: AlertTriangle,
+      tone: packageStatusMeta.HOLD.tone,
+      to: '/wms/inbound/orders',
+    },
   ]
   const maxTrend = Math.max(1, ...data.trend.map((d) => d.count))
 
   return (
-    <div className="flex flex-col gap-3 p-4">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">{t('dashboard.greeting', { name: operator })}</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {t('dashboard.subtitle', {
-              warehouse: `${warehouse.code} ${t(warehouse.nameKey)}`,
-              time: formatDateTime(new Date().toISOString(), warehouse.timezone),
-            })}
-          </p>
-        </div>
-      </div>
-
+    <PageContainer
+      title={t('dashboard.greeting', { name: operator })}
+      description={t('dashboard.subtitle', {
+        warehouse: `${warehouse.code} ${t(warehouse.nameKey)}`,
+        time: formatDateTime(new Date().toISOString(), warehouse.timezone),
+      })}
+    >
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {kpis.map((k) => (
           <StatCard key={k.label} label={k.label} value={k.value} icon={k.icon} tone={k.tone} to={k.to} />
@@ -89,10 +120,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <Panel className="p-4 lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-medium">{t('dashboard.inboundTrend')}</h2>
-          </div>
+        <Section title={t('dashboard.inboundTrend')} className="lg:col-span-2">
           <div className="flex h-44 items-end gap-3">
             {data.trend.map((d) => (
               <div key={d.label} className="flex flex-1 flex-col items-center gap-1.5">
@@ -105,16 +133,17 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-        </Panel>
+        </Section>
 
-        <Panel className="p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-medium">{t('dashboard.packageStatus')}</h2>
+        <Section
+          title={t('dashboard.packageStatus')}
+          extra={
             <span className="text-xs text-muted-foreground">
               {t('dashboard.shippingFee')}: <Money value={data.fee} className="font-medium text-foreground" />
             </span>
-          </div>
-          <div className="mb-4 flex h-2.5 overflow-hidden rounded-full bg-muted">
+          }
+        >
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
             {data.pkgDist.map((d) =>
               d.count ? (
                 <div
@@ -136,21 +165,24 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-        </Panel>
+        </Section>
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <Panel className="lg:col-span-2">
-          <div className="flex h-11 items-center justify-between border-b px-4">
-            <h2 className="text-sm font-medium">{t('dashboard.recentInbounds')}</h2>
-            <Link to="/wms/inbound/orders" className="text-xs text-primary hover:underline">
+        <Section
+          flush
+          className="lg:col-span-2"
+          title={t('dashboard.recentInbounds')}
+          extra={
+            <Link to="/wms/inbound/orders" className={textLink}>
               {t('dashboard.viewAll')}
             </Link>
-          </div>
-          <div className="divide-y">
+          }
+        >
+          <div className="divide-y border-t">
             {data.recent.map((o) => (
               <div key={o.inboundNo} className="flex items-center gap-4 px-4 py-2.5 text-sm">
-                <DocNo>{o.inboundNo}</DocNo>
+                <DocNo onClick={() => navigate(`/wms/inbound/orders/${o.inboundNo}`)}>{o.inboundNo}</DocNo>
                 <span className="min-w-0 flex-1 truncate text-muted-foreground">{customerName(o.customerId)}</span>
                 <span className="text-xs text-muted-foreground">
                   {o.items.length} SKU · <Num value={o.items.reduce((a, i) => a + i.plannedQty, 0)} />
@@ -160,10 +192,9 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
-        </Panel>
+        </Section>
 
-        <Panel className="flex flex-col gap-3 p-4">
-          <h2 className="text-sm font-medium">{t('dashboard.demoFlow')}</h2>
+        <Section title={t('dashboard.demoFlow')}>
           <p className="text-xs leading-relaxed text-muted-foreground">{t('dashboard.demoFlowDesc')}</p>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" asChild>
@@ -187,12 +218,12 @@ export function DashboardPage() {
               {t('menu.stock')}
             </Button>
           </div>
-          <Link to="/wms/inbound/orders" className="mt-auto flex items-center gap-1 text-xs text-primary hover:underline">
+          <Link to="/wms/inbound/orders" className={cn(textLink, 'mt-auto inline-flex items-center gap-1')}>
             {t('dashboard.viewAll')}
-            <ArrowRight className="size-3" />
+            <ArrowRight className="size-3.5" />
           </Link>
-        </Panel>
+        </Section>
       </div>
-    </div>
+    </PageContainer>
   )
 }
