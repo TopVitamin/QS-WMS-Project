@@ -1,7 +1,7 @@
 # 入库单前端Demo版PRD·弹窗与Mock
 
 > **版本**：WMS-V0.4  
-> **更新时间**：2026-10-12  
+> **更新时间**：2026-10-14  
 > **定位**：统一定义入库单**确认收货完结**、**模拟推送入库指令（Demo）**及 **Mock 数据/动作**；正式验收不以 Demo Mock 推单为准。  
 > **业务规则**：[《入库单主PRD》](../入库单主PRD.md)（§6.5、R01～R02、R07～R08；F04、F06）。
 
@@ -30,7 +30,7 @@
 | 重复上游单号 | AC03 | `inbound.mockDuplicateUpstream`，不增单 |
 | 确认收货完结 | AC08、AC12 | 弹窗列未收行；确认后状态/短少 |
 | 并发/状态已变 | AC13 | 确认时 toast `receiptCloseStale` |
-| 零实收取消 | AC06 | 种子 0002 全单拒收，经 OMS Mock 取消受理后为已取消 |
+| 零实收取消 | AC06 | 种子0002展示终态；另从零实收单实际下发取消消息，核对受理、保留拒收与重复消息幂等 |
 
 ---
 
@@ -97,9 +97,9 @@
 | 明细商品 | ✅ | `Select`（该货主**启用**的商品资料 `skuMasters`） | 非本货主/未启用 SKU → `inbound.mock.skuInvalid` |
 | 明细预计数量 | ✅ | `Input` number | ≤0 → `inbound.mock.qtyInvalid` |
 
-> 一期 Demo 简化：明细为**单商品单行**（多 SKU 多次推送）；到货方式、预计到仓、柜号、运单号接口已支持，弹窗一期不提供入口，后续补。
+> 页面可保留单行快速推单，但完整Mock收发台须支持一张单1～多SKU、到货方式、预计到仓时间、柜号、运单及箱唛线索。同一SKU不重复行；多SKU不能通过多次新建指令冒充一张单。现有原型是否支持完整表单需按实现核验。
 
-校验 R02：货主/仓/SKU/数量；同货主**上游单号唯一**（AC03）→ `inbound.mockDuplicateUpstream`。
+校验 R02：货主/仓/SKU/数量；按来源＋业务类型＋上游单号定位对象、消息标识去重（AC03）→ `inbound.mockDuplicateUpstream`。
 
 ### 4.3 提交流程
 
@@ -109,7 +109,7 @@
   → 成功：toast.success(mockPushSuccess) → 关窗 → 刷新列表（定位新单可选）
 ```
 
-`mockPushInboundInstruction` → 生成 `RK-yyyymmdd-####`，`recompute`，关闭 Dialog。
+`mockPushInboundInstruction` → 生成 `IB-yyyymmdd-####`，`recompute`，关闭 Dialog。
 
 ---
 
@@ -145,7 +145,7 @@
 | --- | --- |
 | `mock/inbound-seed.ts` | 固定场景单 |
 | `lib/inbound-derive.ts` | 派生（状态、进度、暂存库位） |
-| `lib/doc-no.ts` | 单号生成 `RK/RC/PA/EX-yyyyMMdd-四位流水` |
+| `lib/doc-no.ts` | 单号生成 `IB/RC/PA/EX-yyyyMMdd-四位流水` |
 | `mock/db.ts` | actions；改种子 `persist version +1` |
 
 ### 6.2 固定种子（`US-LA-01` / `ANKR`）
@@ -162,7 +162,7 @@
 | 0008 | 无容器收货上架 AC19 |
 | 0009 | 调拨 + 快递、双 SKU、分批收货中（列表 Web/PDA 收货走查） |
 
-其它顶栏仓库：`RK-20261001-*` 填充单；`US-NJ-01` 第二条为部分实收（收货中）。
+其它顶栏仓库：`IB-20261001-*` 填充单；`US-NJ-01` 第二条为部分实收（收货中）。
 种子自洽：已完成单均带收货记录与上架单；入库异常的收货记录号均指向真实收货记录。
 
 AC02 推送：`OMS-IN-DEMO-001` + CABLE-01×500。  

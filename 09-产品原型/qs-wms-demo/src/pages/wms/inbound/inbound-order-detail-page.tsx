@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { BizCode, CodeName, DateTime, DocNo, Empty, Num, ProgressCell } from '@/components/biz/display'
+import { DetailTabs } from '@/components/biz/detail-tabs'
+import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
-import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
+import { DetailOverview, DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
+import { SummaryCard, SummaryMetrics, SummaryProgress } from '@/components/biz/summary-card'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { inboundBizTypeMeta, inboundOrderStatusMeta, putawayOrderStatusMeta, qualityMeta } from '@/config/status'
 import { useInbound } from '@/hooks/use-inbound'
 import {
@@ -24,7 +25,7 @@ import { receiptContainerLabel } from '@/lib/inbound-receipt-container'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { InboundException, PutawayOrder, ReceiptRecord } from '@/types/inbound'
-import type { InboundOrderLine } from '@/types/wms'
+import type { AuditLog, InboundOrderLine } from '@/types/wms'
 import { InboundPutawaySheet } from './inbound-putaway-sheet'
 import { InboundReceiptSheet } from './inbound-receipt-sheet'
 import { ReceiptCloseDialog } from './receipt-close-dialog'
@@ -41,6 +42,7 @@ export function InboundOrderDetailPage() {
   const receiptRecords = useDb((s) => s.receiptRecords)
   const putawayOrders = useDb((s) => s.putawayOrders)
   const inboundExceptions = useDb((s) => s.inboundExceptions)
+  const auditLogs = useDb((s) => s.auditLogs)
   const { customerCode, customerName, sku } = useLookups()
   const warehouseMasters = useDb((s) => s.warehouseMasters)
 
@@ -127,9 +129,13 @@ export function InboundOrderDetailPage() {
   const receipts = receiptRecords.filter((r) => r.inboundNo === inboundNo)
   const putaways = putawayOrders.filter((p) => p.inboundNo === inboundNo)
   const exceptions = inboundExceptions.filter((e) => e.inboundNo === inboundNo)
+  const logs = auditLogs.filter((l) => l.refType === 'INBOUND' && l.refNo === inboundNo)
 
   const showReceiptClose = canConfirmReceiptClose(order)
   const showReceive = canReceiveInbound(order)
+
+  const rejectedQty = sumLines(order, (l) => l.rejectedQty)
+  const unreceivedQty = sumLines(order, lineUnreceivedQty)
 
   return (
     <PageContainer
@@ -155,158 +161,148 @@ export function InboundOrderDetailPage() {
         </>
       }
     >
-      <Section title={t('inbound.sectionBasic')}>
-        <Descriptions columns={4}>
-          <DescriptionItem label={t('inbound.inboundNo')}>
-            <BizCode>{order.inboundNo}</BizCode>
-          </DescriptionItem>
-          <DescriptionItem label={t('common.status')}>
-            <StatusBadge meta={inboundOrderStatusMeta[order.status]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.bizType')}>
-            <TagLabel meta={inboundBizTypeMeta[order.bizType]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('common.warehouse')}>
-            <CodeName code={order.warehouseCode} name={warehouseName} />
-          </DescriptionItem>
-          <DescriptionItem label={t('common.customer')}>
-            <CodeName code={customerCode(order.customerId)} name={customerName(order.customerId)} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.upstreamNo')}>
-            <BizCode>{order.upstreamNo}</BizCode>
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.skuCount')}>
-            <Num value={skuKindCount(order)} />
-          </DescriptionItem>
-        </Descriptions>
-      </Section>
-
-      <Section title={t('inbound.sectionArrival')}>
-        <Descriptions columns={4}>
-          <DescriptionItem label={t('inbound.arrivalMethod')}>
-            {order.arrivalMethod ? t(`enum.arrivalMethod.${order.arrivalMethod}`) : <Empty />}
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.containerNo')}>
-            {order.containerNo ? <BizCode>{order.containerNo}</BizCode> : <Empty />}
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.trackingNos')} className="col-span-2" multiline>
-            {order.trackingNos ? <BizCode className="whitespace-pre-line">{order.trackingNos}</BizCode> : <Empty />}
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.eta')}>
-            <DateTime value={order.etaAt} pattern="YYYY-MM-DD" />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.firstArrival')}>
-            <DateTime value={order.firstArrivalAt} />
-          </DescriptionItem>
-        </Descriptions>
-      </Section>
-
-      <Section title={t('inbound.sectionQty')}>
-        <Descriptions columns={4}>
-          <DescriptionItem label={t('inbound.plannedQty')}>
-            <Num value={sumLines(order, (l) => l.plannedQty)} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.receivedQty')}>
-            <Num value={sumLines(order, (l) => l.receivedQty)} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.rejectedQty')}>
-            <Num value={sumLines(order, (l) => l.rejectedQty)} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.putawayQty')}>
-            <Num value={sumLines(order, (l) => l.putawayQty)} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.receiptProgress')} className="col-span-2">
-            <ProgressCell {...receiptProgress(order)} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.putawayProgress')} className="col-span-2">
-            <ProgressCell {...putawayProgress(order)} />
-          </DescriptionItem>
-        </Descriptions>
-      </Section>
-
-      <Section title={t('inbound.sectionTime')}>
-        <Descriptions columns={4}>
-          <DescriptionItem label={t('common.createdAt')}>
-            <DateTime value={order.createdAt} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.completedAt')}>
-            <DateTime value={order.completedAt} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.receiptCloseFlag')}>
-            {order.receiptCloseFlag === 'CONFIRMED' ? t('inbound.receiptCloseConfirmed') : t('inbound.receiptClosePending')}
-          </DescriptionItem>
-          <DescriptionItem label={t('inbound.receiptClosedBy')}>{order.receiptClosedBy ?? <Empty />}</DescriptionItem>
-          <DescriptionItem label={t('inbound.receiptClosedAt')}>
-            <DateTime value={order.receiptClosedAt} />
-          </DescriptionItem>
-          <DescriptionItem label={t('common.remark')} className="col-span-3" multiline>
-            {order.remark ?? <Empty />}
-          </DescriptionItem>
-        </Descriptions>
-      </Section>
-
-      <Section flush title={t('inbound.items')}>
-        <DataTable data={order.items} columns={lineColumns} getRowId={(line) => String(line.lineNo)} selectable={false} />
-      </Section>
-
-      <Section flush>
-        <Tabs defaultValue="receipts" className="gap-3">
-          <div className="px-4">
-            <TabsList>
-              <TabsTrigger value="receipts">{t('inbound.tabs.receipts', { count: receipts.length })}</TabsTrigger>
-              <TabsTrigger value="putaway">{t('inbound.tabs.putaway', { count: putaways.length })}</TabsTrigger>
-              <TabsTrigger value="exceptions">{t('inbound.tabs.exceptions', { count: exceptions.length })}</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="receipts">
-            <DataTable
-              data={[...receipts].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))}
-              columns={receiptTabColumns(t, setReceipt)}
-              getRowId={(r) => r.receiptNo}
-              selectable={false}
-              emptyText={t('inbound.tabs.empty.receipts')}
+      <DetailOverview
+        aside={
+          <SummaryCard title={t('inbound.progressTitle')} description={t('inbound.progressHint')}>
+            <SummaryProgress label={t('inbound.receiptProgress')} {...receiptProgress(order)} />
+            <SummaryProgress label={t('inbound.putawayProgress')} tone="green" {...putawayProgress(order)} />
+            <SummaryMetrics
+              items={[
+                { label: t('inbound.skuCount'), value: skuKindCount(order) },
+                { label: t('inbound.plannedQty'), value: sumLines(order, (l) => l.plannedQty) },
+                { label: t('inbound.receivedQty'), value: sumLines(order, (l) => l.receivedQty), tone: 'blue' },
+                { label: t('inbound.rejectedQty'), value: rejectedQty, tone: 'red', hidden: rejectedQty === 0 },
+                { label: t('inbound.unreceivedQty'), value: unreceivedQty, tone: unreceivedQty > 0 ? 'orange' : undefined },
+                { label: t('inbound.putawayQty'), value: sumLines(order, (l) => l.putawayQty), tone: 'green' },
+              ]}
             />
-          </TabsContent>
-          <TabsContent value="putaway">
-            <DataTable
-              data={putaways}
-              columns={putawayTabColumns(t, setPutaway)}
-              getRowId={(p) => p.putawayNo}
-              selectable={false}
-              emptyText={t('inbound.tabs.empty.putaway')}
-            />
-          </TabsContent>
-          <TabsContent value="exceptions">
-            <DataTable
-              data={exceptions}
-              columns={exceptionTabColumns(t, (code) => sku(code)?.name ?? code)}
-              getRowId={(e) => e.exceptionNo}
-              selectable={false}
-              emptyText={t('inbound.tabs.empty.exceptions')}
-            />
-          </TabsContent>
-        </Tabs>
-      </Section>
+          </SummaryCard>
+        }
+      >
+        <Section title={t('inbound.sectionBasic')}>
+          <Descriptions columns={3}>
+            <DescriptionItem label={t('common.customer')}>
+              <CodeName code={customerCode(order.customerId)} name={customerName(order.customerId)} />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.upstreamNo')}>
+              <BizCode>{order.upstreamNo}</BizCode>
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.bizType')}>
+              <TagLabel meta={inboundBizTypeMeta[order.bizType]} />
+            </DescriptionItem>
+            <DescriptionItem label={t('common.warehouse')}>
+              <CodeName code={order.warehouseCode} name={warehouseName} />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.arrivalMethod')}>
+              {order.arrivalMethod ? t(`enum.arrivalMethod.${order.arrivalMethod}`) : <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.containerNo')}>
+              {order.containerNo ? <BizCode>{order.containerNo}</BizCode> : <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.eta')}>
+              <DateTime value={order.etaAt} pattern="YYYY-MM-DD" />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.firstArrival')}>
+              <DateTime value={order.firstArrivalAt} />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.trackingNos')} multiline>
+              {order.trackingNos ? <BizCode className="whitespace-pre-line">{order.trackingNos}</BizCode> : <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('common.createdAt')}>
+              <DateTime value={order.createdAt} />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.completedAt')}>
+              <DateTime value={order.completedAt} />
+            </DescriptionItem>
+            <DescriptionItem label={t('inbound.receiptCloseFlag')}>
+              {order.receiptCloseFlag === 'CONFIRMED' ? (
+                <span>
+                  {t('inbound.receiptCloseConfirmed')}
+                  <span className="text-muted-foreground">
+                    {' · '}
+                    {order.receiptClosedBy} <DateTime value={order.receiptClosedAt} />
+                  </span>
+                </span>
+              ) : (
+                t('inbound.receiptClosePending')
+              )}
+            </DescriptionItem>
+            <DescriptionItem label={t('common.remark')} className="col-span-3" multiline>
+              {order.remark ?? <Empty />}
+            </DescriptionItem>
+          </Descriptions>
+        </Section>
+      </DetailOverview>
 
-      <Section title={t('inbound.opsPanel.title')}>
-        <Tabs defaultValue="receiptClose" className="gap-3">
-          <TabsList>
-            <TabsTrigger value="receiptClose">{t('inbound.opsPanel.tabReceiptClose')}</TabsTrigger>
-            <TabsTrigger value="note">{t('inbound.opsPanel.tabNote')}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="receiptClose">
-            <Descriptions columns={4}>
-              <DescriptionItem label={t('inbound.receiptClosedBy')}>{order.receiptClosedBy ?? <Empty />}</DescriptionItem>
-              <DescriptionItem label={t('inbound.receiptClosedAt')}>
-                <DateTime value={order.receiptClosedAt} />
-              </DescriptionItem>
-            </Descriptions>
-          </TabsContent>
-          <TabsContent value="note">
-            <p className="text-sm text-muted-foreground">{t('inbound.opsPanel.note')}</p>
-          </TabsContent>
-        </Tabs>
-      </Section>
+      <DetailTabs
+        param="tab"
+        items={[
+          {
+            value: 'items',
+            label: t('inbound.items'),
+            count: order.items.length,
+            content: (
+              <DataTable data={order.items} columns={lineColumns} getRowId={(line) => String(line.lineNo)} selectable={false} />
+            ),
+          },
+          {
+            value: 'receipts',
+            label: t('inbound.tabs.receipts'),
+            count: receipts.length,
+            content: (
+              <DataTable
+                data={[...receipts].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))}
+                columns={receiptTabColumns(t, setReceipt)}
+                getRowId={(r) => r.receiptNo}
+                selectable={false}
+                emptyText={t('inbound.tabs.empty.receipts')}
+              />
+            ),
+          },
+          {
+            value: 'putaway',
+            label: t('inbound.tabs.putaway'),
+            count: putaways.length,
+            content: (
+              <DataTable
+                data={putaways}
+                columns={putawayTabColumns(t, setPutaway)}
+                getRowId={(p) => p.putawayNo}
+                selectable={false}
+                emptyText={t('inbound.tabs.empty.putaway')}
+              />
+            ),
+          },
+          {
+            value: 'exceptions',
+            label: t('inbound.tabs.exceptions'),
+            count: exceptions.length,
+            content: (
+              <DataTable
+                data={exceptions}
+                columns={exceptionTabColumns(t, (code) => sku(code)?.name ?? code)}
+                getRowId={(e) => e.exceptionNo}
+                selectable={false}
+                emptyText={t('inbound.tabs.empty.exceptions')}
+              />
+            ),
+          },
+          {
+            value: 'logs',
+            label: t('inbound.tabs.logs'),
+            count: logs.length,
+            content: (
+              <DataTable
+                data={logs}
+                columns={logTabColumns(t)}
+                getRowId={(l) => l.id}
+                selectable={false}
+                emptyText={t('inbound.tabs.empty.logs')}
+              />
+            ),
+          },
+        ]}
+      />
 
       <InboundReceiptSheet record={receipt} onClose={() => setReceipt(undefined)} />
       <InboundPutawaySheet order={putaway} onClose={() => setPutaway(undefined)} />
@@ -424,5 +420,19 @@ function exceptionTabColumns(t: Translate, skuName: (code: string) => string) {
       header: t('inbound.exceptionTime'),
       cell: ({ getValue }) => <DateTime value={getValue()} />,
     }),
+  ])
+}
+
+/** 操作日志：按时间倒序（库里新记录在前） */
+function logTabColumns(t: Translate) {
+  const col = createDataColumns<AuditLog>()
+  return col.columns([
+    col.accessor('createdAt', {
+      header: t('inbound.tabs.logTime'),
+      cell: ({ getValue }) => <DateTime value={getValue()} />,
+    }),
+    col.accessor('action', { header: t('inbound.tabs.logAction'), cell: ({ getValue }) => t(`audit.action.${getValue()}`) }),
+    col.accessor('operator', { header: t('common.operator') }),
+    col.accessor('detail', { header: t('inbound.tabs.logDetail'), cell: ({ getValue }) => getValue() ?? <Empty /> }),
   ])
 }

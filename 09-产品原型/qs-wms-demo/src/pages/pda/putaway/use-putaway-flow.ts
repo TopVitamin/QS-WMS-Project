@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { beep } from '@/components/pda/scan-input'
+import { beep } from '@/lib/scan-beep'
 import { useConfirm } from '@/hooks/use-confirm'
 import { usePdaStep } from '@/hooks/use-pda-step'
 import { usePutaway } from '@/hooks/use-putaway'

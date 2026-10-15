@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { tabBarClass, tabCountClass, tabItemClass } from '@/lib/tab-styles'
 
 export interface StatusTabItem<T extends string> {
   value: T
@@ -17,32 +17,13 @@ export function StatusTabs<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex items-center gap-1 overflow-x-auto border-b px-4">
+    <div className={tabBarClass}>
       {items.map((item) => {
         const active = item.value === value
         return (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => onChange(item.value)}
-            className={cn(
-              'relative -mb-px flex h-10 shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm transition-colors',
-              active
-                ? 'border-primary font-medium text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}
-          >
+          <button key={item.value} type="button" onClick={() => onChange(item.value)} className={tabItemClass(active)}>
             {item.label}
-            {item.count !== undefined && (
-              <span
-                className={cn(
-                  'rounded-full px-1.5 text-xs tabular-nums',
-                  active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {item.count}
-              </span>
-            )}
+            {item.count !== undefined && <span className={tabCountClass(active)}>{item.count}</span>}
           </button>
         )
       })}

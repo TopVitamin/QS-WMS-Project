@@ -3,7 +3,7 @@ import { PdaButton, PdaCard } from '@/components/pda/pda-card'
 import { PdaChoiceGroup } from '@/components/pda/pda-choice-group'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { QtyStepper } from '@/components/pda/qty-stepper'
-import { beep } from '@/components/pda/scan-input'
+import { beep } from '@/lib/scan-beep'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import {
   applyReceiveDraftChange,

@@ -1,3 +1,4 @@
+import { TableToolbarSlotContext } from '@/lib/table-toolbar-slot'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 /**
@@ -28,7 +29,10 @@ export function DetailSheet({
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8">{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">{children}</div>
+        {/* 抽屉是独立层，不继承页面上的表格工具栏插槽 */}
+        <TableToolbarSlotContext value={null}>
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">{children}</div>
+        </TableToolbarSlotContext>
       </SheetContent>
     </Sheet>
   )

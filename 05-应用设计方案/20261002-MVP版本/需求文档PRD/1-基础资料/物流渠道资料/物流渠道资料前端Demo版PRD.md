@@ -4,7 +4,7 @@
 > 布局真源：[《物流渠道资料页面骨架》](物流渠道资料页面骨架.md)。字段真源：[《物流渠道（详细稿）》](../../../字段清单合集/01-基础资料/物流渠道/物流渠道（详细稿）.tsv)。
 > 版本：WMS-V1.1｜日期：2026-10-11
 
-**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `inbound-list-page.tsx`（去掉 `StatusTabs`、`selectable`）；筛选项状态用 `useMasterListFilters`（见 03 文档 §3.1）。承运商主档弹窗命名与行为对齐 [《物流承运商资料前端Demo版PRD》](../物流承运商资料/物流承运商资料前端Demo版PRD.md) 的 **`CarrierFormDialog`**；本对象为 **`ChannelFormDialog`**。
+**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `inbound-list-page.tsx`（去掉 `StatusTabs`、`selectable`）；筛选项状态用 `useMasterListFilters`（见 03 文档 §3.1）。承运商主档弹窗命名与行为对齐 [《物流承运商资料前端Demo版PRD》](../物流承运商资料/物流承运商资料前端Demo版PRD.md) 的 **`CarrierFormDialog`**；本对象为 **`ChannelFormDialog`**。
 
 **验收**：主 PRD §6.1（AC01～AC07）。
 
@@ -36,7 +36,7 @@ PageContainer(title=menu.channels, actions=导出 Mock, 新增)
 
 ### 2.2 FilterBar（`columns={6}` + 展开）
 
-与 [《业务组件与主数据页面》](../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md) 一致：**主数据列表一律 `columns={6}`**（常显最多 5 项 + 第 6 列查询/重置/展开），**不得**沿用详情区 `Descriptions columns={4}` 或单独写 4 列宽。
+与 [《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md) 一致：**主数据列表一律 `columns={6}`**（常显最多 5 项 + 第 6 列查询/重置/展开），**不得**沿用详情区 `Descriptions columns={4}` 或单独写 4 列宽。
 
 `const { filters, draft, setDraft, applySearch, reset } = useListFilters(empty)`；查询写入 `filters` 并回第一页；重置清空两者。
 
@@ -65,7 +65,7 @@ PageContainer(title=menu.channels, actions=导出 Mock, 新增)
 
 | key | 中文示例 | 用途 |
 | --- | --- | --- |
-| `masterChannel.create` | 新增 | 列表页头主按钮文案（与仓库 `masterWarehouse.create` 同级约定） |
+| `masterChannel.create` | 新增 | 列表页头主按钮文案（与承运商列表新增按钮同级约定） |
 | `masterChannel.createTitle` | 新增物流渠道 | `ChannelFormDialog` **create** 模式标题 |
 | `masterChannel.editTitle` | 编辑物流渠道 | edit 模式标题 |
 | `masterChannel.viewTitle` | 物流渠道详情 | view 模式标题 |
@@ -99,12 +99,12 @@ Props：`mode: 'create' | 'edit' | 'view'`；可选 `defaultCarrierCode`、`chan
 | 渠道编码 | `Input` | create 可录；edit/view `readOnly` |
 | 渠道名称 | `Input` | 必填 |
 | 渠道类型 | `Select` | 快递｜卡派｜自提｜其他 |
-| 使用状态 | **不出现在 create/edit**；保存时新建 `ENABLED`、编辑沿用原值；**view** 只读 `StatusBadge`；启停仅列表/详情操作列 |
+| 使用状态 | **不出现在create/edit**；新建默认`ENABLED`、编辑沿用原值；view只读`StatusBadge` | 启停仅列表或查看入口 |
 | 渠道备注 | `Textarea` | 选填 |
 | 物流对接方式 | `Select` | 必填；Demo 默认「线下交接」 |
 | 外部服务产品代码 | `Input` | 选填；对接方式为 API 预留时展示 helper 文案 |
 
-**view** 模式：上述字段只读；维护信息用 `Descriptions` 或 `MasterAuditPanel`（创建人/时间、最后修改人/时间）。
+**view** 模式：上述字段只读；维护信息用 `Descriptions` 或 `MasterAuditPanel`（最后修改人／时间）。
 
 ### 3.3 校验与反馈
 
@@ -155,7 +155,7 @@ Props：`mode: 'create' | 'edit' | 'view'`；可选 `defaultCarrierCode`、`chan
 
 - [ ] 菜单 path `/wms/master/channels`；列表标题 `menu.channels`；页头按钮文案「新增」
 - [ ] create 弹窗标题「新增物流渠道」；组件名 `ChannelFormDialog`
-- [ ] 双 Panel + `FilterBar`（4 列 + 展开）；无 StatusTabs、无勾选、无导入
+- [ ] 双 Panel + `FilterBar`（6列栅格，5项常显＋操作列，溢出展开）；无 StatusTabs、无勾选、无导入
 - [ ] 编码点击为查看 Dialog；无独立详情路由
 - [ ] 所属承运商链进入承运商详情；承运商子表复用同一 Dialog
 - [ ] 批量启停/删除不出现

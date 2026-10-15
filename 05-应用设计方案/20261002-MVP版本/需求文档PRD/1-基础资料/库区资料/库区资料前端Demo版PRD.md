@@ -4,7 +4,7 @@
 > 布局真源：[《库区资料页面骨架》](库区资料页面骨架.md)。字段真源：[《库区（详细稿）》](../../../字段清单合集/01-基础资料/库区/库区（详细稿）.tsv)。
 > 版本：WMS-V1.1｜日期：2026-10-11
 
-**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `warehouse-list-page.tsx` / `location-list-page.tsx`（`FilterBar columns={6}`、无 `StatusTabs`、无 `selectable`）。
+**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `warehouse-list-page.tsx` / `location-list-page.tsx`（`FilterBar columns={6}`、无 `StatusTabs`、无 `selectable`）。
 
 **验收**：主 PRD §6.1（AC01～AC08）。
 
@@ -17,9 +17,9 @@
 | `/wms/master/zones/:code` | `zone-detail-page.tsx` | `Descriptions` 分组 |
 | `/wms/master/zones/:code/edit` | `zone-edit-page.tsx` | 同新增；编码只读 |
 
-`:code` 为**仓库内库区编码**；详情/编辑 URL 带 `?wh={warehouseCode}`，避免跨仓编码碰撞（与货位管理一致）。
+`:code` 为**仓库内库区编码**；详情/编辑 URL 带 `?wh={warehouseCode}`，避免跨仓编码碰撞（与库位管理一致）。
 
-菜单规划：**基础资料 → 库区管理**（`config/menu.ts` 增加 `menu.zones`，`milestone` 与仓库/货位同级）。列表 `title={t('menu.zones')}`。
+菜单规划：**基础资料 → 库区管理**（`config/menu.ts` 增加 `menu.zones`，`milestone` 与仓库/库位同级）。列表 `title={t('menu.zones')}`。
 
 顶栏「当前仓库」可预填列表筛选项「所属仓库」，列表数据仍为**授权内全部库区**。
 
@@ -27,7 +27,7 @@
 
 ### FilterBar（`columns={6}`，4 个筛选项 + 操作列）
 
-`draft` / `filters` 双状态；第 6 列：**查询**、**重置**。一期**不筛库区类型**（在列表「库区类型」列辨认即可）。
+`draft` / `filters` 双状态；操作列紧随第4个条件：**查询**、**重置**。一期**不筛库区类型**（在列表「库区类型」列辨认即可）。
 
 | 字段 | 控件 | 匹配 |
 | --- | --- | --- |
@@ -58,7 +58,7 @@
 | + 新增 | → `/new`；无授权启用仓时 `disabled` + `toast`；页签与页头为「新增库区」（`tabCreate` / `createTitle`，勿与列表按钮 key 混用） |
 | 导出 | `toast.info` 演示未接真实导出 |
 
-停用：R07 失败 → `toast.error`（附货位编码摘要，可链货位详情）；通过 → `useConfirm` → 写库。
+停用：R07 失败 → `toast.error`（附库位编码摘要，可链库位详情）；通过 → `useConfirm` → 写库。
 
 ## 三、新增/编辑页
 
@@ -74,7 +74,7 @@
 
 ## 四、详情页
 
-- `title`「查看库区详情」+ 编码 `BizCode` + `StatusBadge`（对齐仓库/货位）。
+- `title`「查看库区详情」+ 编码 `BizCode` + `StatusBadge`（对齐仓库/库位）。
 - 基础信息 `Descriptions columns={4}`；维护信息仅**最后修改人、最后修改时间**。
 - actions：返回列表、编辑、停用/启用。
 
@@ -87,7 +87,7 @@
 | US-WH-LA | Z-STAGE | 收货暂存 | 暂存 | 启用 | — |
 | US-WH-LA | Z-OFF | 已停用样例 | 存储 | 停用 | R08 |
 
-种子与现有 `zone-masters.ts`（货位 Demo）对齐；实现库区页时扩展 `mock/db.ts` 的 `zoneMasters` CRUD，与 `location-masters` 联动 R07。
+种子与现有 `zone-masters.ts`（库位 Demo）对齐；实现库区页时扩展 `mock/db.ts` 的 `zoneMasters` CRUD，与 `location-masters` 联动 R07。
 
 ## 六、代码索引
 

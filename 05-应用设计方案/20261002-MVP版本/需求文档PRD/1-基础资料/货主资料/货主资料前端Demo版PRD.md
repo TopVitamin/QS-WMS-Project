@@ -4,7 +4,7 @@
 > 布局真源：[《货主资料页面骨架》](货主资料页面骨架.md)。字段真源：[《货主（详细稿）》](../../../字段清单合集/01-基础资料/货主/货主（详细稿）.tsv)（编辑页使用状态以主 PRD F02/F03 为准，不在表单）。
 > 版本：WMS-V1.1｜日期：2026-10-11
 
-**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表对齐 `warehouse-list-page.tsx` / `location-list-page.tsx`：`FilterBar columns={6}`、无 `StatusTabs`、无 `selectable`。**一期无新增路由**，页头仅保留导出（无 `+ 新增`）。
+**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表对齐 `warehouse-list-page.tsx` / `location-list-page.tsx`：`FilterBar columns={6}`、无 `StatusTabs`、无 `selectable`。**一期无新增路由**，页头仅保留导出（无 `+ 新增`）。
 
 **跨模块复用**：
 
@@ -57,7 +57,7 @@ PageContainer(title=t('menu.customers'), actions=仅导出)
 | 常显 | 货主名称 | `Input` | 包含 |
 | 常显 | 货主类型 | `Select` 全部/自营/外部 | 精确 |
 | 常显 | 使用状态 | `Select` 全部/启用/停用 | 精确 |
-| advanced | 国家/地区 | `Select` 启用中的地区字典 | 精确 |
+| 常显 | 国家/地区 | `Select` 启用中的地区字典 | 精确 |
 | advanced | 上游货主标识 | `Input` | 包含 |
 
 第 6 列底对齐：**查询**（`submit`）、**重置**、**展开/收起**（有 advanced 时）。编码/名称/上游标识输入框回车触发查询。

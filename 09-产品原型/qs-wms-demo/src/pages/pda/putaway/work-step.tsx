@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { PdaButton, PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
-import { beep, ScanInput } from '@/components/pda/scan-input'
+import { ScanInput } from '@/components/pda/scan-input'
+import { beep } from '@/lib/scan-beep'
 import {
   findLocation,
   isFullyRecorded,

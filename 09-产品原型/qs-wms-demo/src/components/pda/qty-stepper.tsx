@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { interpretQtyInput } from '@/lib/pda-scan'
 import { cn } from '@/lib/utils'
-import { beep } from './scan-input'
+import { beep } from '@/lib/scan-beep'
 
 interface QtyStepperProps {
   label: string

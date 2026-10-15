@@ -2,27 +2,9 @@ import { ScanLine } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
+import { beep } from '@/lib/scan-beep'
 import { cn } from '@/lib/utils'
 
-let audioCtx: AudioContext | undefined
-
-/** 扫码反馈音：成功短高音，失败长低音 */
-export function beep(ok: boolean) {
-  try {
-    audioCtx ??= new AudioContext()
-    const osc = audioCtx.createOscillator()
-    const gain = audioCtx.createGain()
-    osc.frequency.value = ok ? 1320 : 220
-    osc.type = ok ? 'sine' : 'square'
-    gain.gain.value = 0.08
-    osc.connect(gain).connect(audioCtx.destination)
-    osc.start()
-    osc.stop(audioCtx.currentTime + (ok ? 0.08 : 0.3))
-  } catch {
-    // 浏览器不支持音频时静默
-  }
-  if (!ok) navigator.vibrate?.(200)
-}
 
 export interface ScanCandidate {
   value: string

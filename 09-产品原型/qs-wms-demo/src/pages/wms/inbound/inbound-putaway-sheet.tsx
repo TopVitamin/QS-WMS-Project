@@ -4,8 +4,8 @@ import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { BizCode, Num } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { DetailSheet } from '@/components/biz/detail-sheet'
+import { DetailTabs } from '@/components/biz/detail-tabs'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { putawayOrderStatusMeta, qualityMeta } from '@/config/status'
 import type { PutawayOrder } from '@/types/inbound'
 
@@ -68,32 +68,40 @@ export function InboundPutawaySheet({
               {order.containerNo ? <BizCode>{order.containerNo}</BizCode> : t('inbound.bulkPiece')}
             </DescriptionItem>
           </Descriptions>
-          <Tabs defaultValue="plan" className="gap-3">
-            <TabsList>
-              <TabsTrigger value="plan">{t('inbound.putawayPlanTab')}</TabsTrigger>
-              <TabsTrigger value="actual">{t('inbound.putawayActualTab')}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="plan">
-              <DataTable
-                data={order.planLines}
-                columns={planColumns}
-                getRowId={(line) => String(line.lineNo)}
-                selectable={false}
-                showColumnSettings={false}
-                paginate={false}
-              />
-            </TabsContent>
-            <TabsContent value="actual">
-              <DataTable
-                data={order.actualLines}
-                columns={actualColumns}
-                getRowId={(line) => `${line.locationCode}-${line.skuCode}-${line.qty}`}
-                selectable={false}
-                showColumnSettings={false}
-                paginate={false}
-              />
-            </TabsContent>
-          </Tabs>
+          <DetailTabs
+            items={[
+              {
+                value: 'plan',
+                label: t('inbound.putawayPlanTab'),
+                count: order.planLines.length,
+                content: (
+                  <DataTable
+                    data={order.planLines}
+                    columns={planColumns}
+                    getRowId={(line) => String(line.lineNo)}
+                    selectable={false}
+                    showColumnSettings={false}
+                    paginate={false}
+                  />
+                ),
+              },
+              {
+                value: 'actual',
+                label: t('inbound.putawayActualTab'),
+                count: order.actualLines.length,
+                content: (
+                  <DataTable
+                    data={order.actualLines}
+                    columns={actualColumns}
+                    getRowId={(line) => `${line.locationCode}-${line.skuCode}-${line.qty}`}
+                    selectable={false}
+                    showColumnSettings={false}
+                    paginate={false}
+                  />
+                ),
+              },
+            ]}
+          />
         </>
       )}
     </DetailSheet>

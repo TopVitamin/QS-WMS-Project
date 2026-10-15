@@ -17,7 +17,8 @@ import {
   type RowSelectionState,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, Settings2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TableToolbarSlotContext } from '@/lib/table-toolbar-slot'
 import { cn } from '@/lib/utils'
 
 export interface DataColumnMeta {
@@ -102,6 +104,7 @@ export function DataTable<TData extends RowData>({
   emptyText,
 }: DataTableProps<TData>) {
   const { t } = useTranslation()
+  const toolbarSlot = useContext(TableToolbarSlotContext)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
   const allColumns = useMemo(() => {
@@ -114,12 +117,18 @@ export function DataTable<TData extends RowData>({
       header: ({ table }) => (
         <Checkbox
           aria-label={t('common.selectAll')}
-          checked={table.getIsAllPageRowsSelected() ? true : table.getIsSomePageRowsSelected() ? 'indeterminate' : false}
+          checked={
+            table.getIsAllPageRowsSelected() ? true : table.getIsSomePageRowsSelected() ? 'indeterminate' : false
+          }
           onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
         />
       ),
       cell: ({ row }) => (
-        <Checkbox aria-label={t('common.selectRow')} checked={row.getIsSelected()} onCheckedChange={(v) => row.toggleSelected(!!v)} />
+        <Checkbox
+          aria-label={t('common.selectRow')}
+          checked={row.getIsSelected()}
+          onCheckedChange={(v) => row.toggleSelected(!!v)}
+        />
       ),
     })
     return [selectColumn, ...columns]
@@ -170,6 +179,33 @@ export function DataTable<TData extends RowData>({
 
   const showTableToolbar = Boolean(toolbar) || showColumnSettings
 
+  const columnSettings = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size={toolbarSlot ? 'icon-sm' : 'icon'} aria-label={t('common.columns')}>
+          <Settings2 />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuLabel>{t('common.columns')}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {table
+          .getAllLeafColumns()
+          .filter((c) => c.getCanHide())
+          .map((c) => (
+            <DropdownMenuCheckboxItem
+              key={c.id}
+              checked={c.getIsVisible()}
+              onCheckedChange={(v) => c.toggleVisibility(!!v)}
+              onSelect={(e) => e.preventDefault()}
+            >
+              {c.columnDef.meta?.label ?? (typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id)}
+            </DropdownMenuCheckboxItem>
+          ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   const pinClass = (meta: DataColumnMeta | undefined, isHeader: boolean) => {
     if (meta?.pin === 'right')
       return cn('sticky right-0 z-[1] shadow-[-6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader && 'z-20 bg-muted')
@@ -182,7 +218,7 @@ export function DataTable<TData extends RowData>({
 
   return (
     <div className={cn('flex min-h-0 flex-col', className)}>
-      {showTableToolbar && (
+      {showTableToolbar && !toolbarSlot && (
         <div className="flex h-12 shrink-0 items-center justify-between gap-2 px-4">
           <div className="flex items-center gap-2">
             {toolbar}
@@ -195,36 +231,25 @@ export function DataTable<TData extends RowData>({
               </span>
             )}
           </div>
-          {showColumnSettings && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label={t('common.columns')}>
-                  <Settings2 />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>{t('common.columns')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {table
-                  .getAllLeafColumns()
-                  .filter((c) => c.getCanHide())
-                  .map((c) => (
-                    <DropdownMenuCheckboxItem
-                      key={c.id}
-                      checked={c.getIsVisible()}
-                      onCheckedChange={(v) => c.toggleVisibility(!!v)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      {c.columnDef.meta?.label ?? (typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id)}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {showColumnSettings && columnSettings}
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-auto border-y">
+      {/* 在页签栏 / 分区标题行里时，工具挪到那一行右侧，表格紧贴上方 */}
+      {showTableToolbar &&
+        toolbarSlot &&
+        createPortal(
+          <div className="flex items-center gap-2">
+            {toolbar}
+            {selectable && selectedCount > 0 && (
+              <span className="text-xs text-muted-foreground">{t('common.selected', { count: selectedCount })}</span>
+            )}
+            {showColumnSettings && columnSettings}
+          </div>,
+          toolbarSlot,
+        )}
+
+      <div data-slot="data-table-scroll" className="min-h-0 flex-1 overflow-auto border-y">
         <table className="w-full caption-bottom text-sm">
           <TableHeader className="[&_tr]:border-b-0">
             {table.getHeaderGroups().map((group) => (
@@ -250,7 +275,10 @@ export function DataTable<TData extends RowData>({
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
-                          className={cn('inline-flex items-center gap-1 hover:text-foreground', meta?.align === 'right' && 'flex-row-reverse')}
+                          className={cn(
+                            'inline-flex items-center gap-1 hover:text-foreground',
+                            meta?.align === 'right' && 'flex-row-reverse',
+                          )}
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           <table.FlexRender header={header} />

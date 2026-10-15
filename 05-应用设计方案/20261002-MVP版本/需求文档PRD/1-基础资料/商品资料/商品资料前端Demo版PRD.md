@@ -4,7 +4,7 @@
 > 布局真源：[《商品资料页面骨架》](商品资料页面骨架.md)。字段真源：[《商品（详细稿）》](../../../字段清单合集/01-基础资料/商品/商品（详细稿）.tsv)、[《商品条码（详细稿）》](../../../字段清单合集/01-基础资料/商品/商品条码（详细稿）.tsv)。
 > 版本：WMS-V1.1｜日期：2026-10-11
 
-**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `warehouse-list-page.tsx` / `location-list-page.tsx`（`FilterBar columns={6}`、无 `StatusTabs`、无 `selectable`、**无列表「新增」**）。
+**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `warehouse-list-page.tsx` / `location-list-page.tsx`（`FilterBar columns={6}`、无 `StatusTabs`、无 `selectable`、**无列表「新增」**）。
 
 **验收**：主 PRD §6.1（AC01～AC14）。
 
@@ -18,7 +18,7 @@
 
 匹配键为货主编码 + 商品编码；`:ownerCode`、`:skuCode` 与 Mock 种子一致。路由注册顺序：`edit` 字面量段排在 `:ownerCode` 复合匹配之前（与仓库 `…/:code/edit` 一致）。
 
-菜单：**基础资料 → 商品管理**（`config/menu.ts` → `path: '/wms/master/skus'`，`titleKey: 'menu.skus'`）。列表 `PageContainer title={t('menu.skus')}`（中文「商品管理」，与仓库/货位等「…管理」一致；路由仍为 `/skus`），勿另起与菜单不一致的 listTitle。
+菜单：**基础资料 → 商品管理**（`config/menu.ts` → `path: '/wms/master/skus'`，`titleKey: 'menu.skus'`）。列表 `PageContainer title={t('menu.skus')}`（中文「商品管理」，与仓库/库位等「…管理」一致；路由仍为 `/skus`），勿另起与菜单不一致的 listTitle。
 
 顶栏「当前仓库」只影响**业务单据**默认过滤；商品列表展示**授权可见货主下全部 SKU**（与主 PRD 一致）。
 
@@ -50,7 +50,7 @@
 | 所属货主 | 编码 + 名称，`text-xs` 副标题 | — |
 | 商品编码 | `<DocNo>` 链详情 | `pin: 'left'` |
 | 商品名称 | 文本 | — |
-| 主条码 | `BizCode` 或 `font-mono text-xs`，空 `—` | — |
+| 主条码 | `BizCode`或sans字体＋`tabular-nums`，空 `—` | — |
 | 计量单位 | 文本 | — |
 | 商品形态 | 文本 | — |
 | 使用状态 | `<StatusBadge>` | — |
@@ -91,6 +91,7 @@
 
 - 页头：`取消`（outline）、`保存`（primary）；无「提交审核」。
 - **只读**：所属货主、商品编码、上游商品标识、主条码（摘要 Panel 提示「保存后于详情维护条码」）。
+- 尺重沿用字段清单：长宽高按cm、重量按kg存储；表单和详情按当前仓库单位换算并标明单位，新品维护回写同一仓内规格。
 - **可编辑**：名称、英文名、规格、单位、备注、形态、带电、追溯配置全套、尺重；使用状态与页头启停二选一，Demo 与详细稿「编辑页=可编辑」一致即可。
 - **不含**条码子表维护入口（AC：编辑后回详情维护条码）。
 

@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { BizCode } from '@/components/biz/display'
 import { StatusBadge } from '@/components/biz/status-badge'
 import type { StatusMeta } from '@/config/status'
+import { TableToolbarSlotContext } from '@/lib/table-toolbar-slot'
 import { cn } from '@/lib/utils'
 
 interface PageContainerProps {
@@ -62,9 +64,22 @@ export function Panel({ className, children }: { className?: string; children: R
 }
 
 /**
+ * 单据详情页顶部的双栏概览：左边字段卡（通常是 <Section> + <Descriptions columns={3}>），
+ * 右边固定 320px 的汇总卡（<SummaryCard>：进度、关键数量）。两栏等高；窄屏（< lg）上下堆叠。
+ */
+export function DetailOverview({ aside, children }: { aside: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {children}
+      {aside}
+    </div>
+  )
+}
+
+/**
  * 带标题的分区：详情字段组、表单分组、子表都用它。
  * - title：14px 中粗；extra：标题行右侧的操作（如「新增条码」）
- * - flush：内容区不留左右内边距，用于直接放 DataTable（表格自带 px-4 工具栏与分页）
+ * - flush：内容区不留左右内边距，用于直接放 DataTable；有标题时表格的列设置放到标题行右侧，不再单占一行
  */
 export function Section({
   title,
@@ -79,15 +94,20 @@ export function Section({
   className?: string
   children: React.ReactNode
 }) {
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null)
+  const hasHeader = Boolean(title || extra)
   return (
     <Panel className={cn('flex min-w-0 flex-col gap-3', flush ? 'pt-4' : 'p-4', className)}>
-      {(title || extra) && (
+      {hasHeader && (
         <div className={cn('flex min-h-6 items-center justify-between gap-3', flush && 'px-4')}>
           {title ? <h2 className="text-sm font-medium">{title}</h2> : <span />}
-          {extra && <div className="flex shrink-0 items-center gap-2">{extra}</div>}
+          <div className="flex shrink-0 items-center gap-2">
+            {extra}
+            {flush && <div ref={setToolbarSlot} className="contents" />}
+          </div>
         </div>
       )}
-      {children}
+      <TableToolbarSlotContext value={flush && hasHeader ? toolbarSlot : null}>{children}</TableToolbarSlotContext>
     </Panel>
   )
 }
