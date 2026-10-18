@@ -14,13 +14,23 @@ interface QtyStepperProps {
   tone?: 'default' | 'danger'
   /** 数量框收到扫码内容时调用；数量保持原值（规范 §4.2） */
   onScanText?: (code: string) => void
+  /** 放在底部操作区、紧挨主按钮时不显示左侧标签（标签仍作读屏名称） */
+  hideLabel?: boolean
 }
 
 /**
  * 大号数量步进器，适合手持设备。数字可直接改，回车或离开时生效；
  * 超上限拒绝、不截断；扫描头追加进来的条码不会写成数量。
  */
-export function QtyStepper({ label, value, onChange, max, tone = 'default', onScanText }: QtyStepperProps) {
+export function QtyStepper({
+  label,
+  value,
+  onChange,
+  max,
+  tone = 'default',
+  onScanText,
+  hideLabel,
+}: QtyStepperProps) {
   const { t } = useTranslation()
   const [draft, setDraft] = useState<string | null>(null)
   const [error, setError] = useState<string>()
@@ -61,7 +71,7 @@ export function QtyStepper({ label, value, onChange, max, tone = 'default', onSc
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between gap-3">
-        <span className={cn('text-base', tone === 'danger' && 'text-destructive')}>{label}</span>
+        {!hideLabel && <span className={cn('text-base', tone === 'danger' && 'text-destructive')}>{label}</span>}
         <div className="flex items-center overflow-hidden rounded-xl border bg-background">
           <button
             type="button"

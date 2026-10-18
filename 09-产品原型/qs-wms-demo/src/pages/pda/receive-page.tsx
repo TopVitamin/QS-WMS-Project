@@ -1,6 +1,7 @@
 import { ReceiveBoxStep } from './receive/box-step'
 import { ReceiveContainerStep } from './receive/container-step'
 import { ReceiveLineStep } from './receive/line-step'
+import { ReceiveNewSkuStep } from './receive/new-sku-measure-step'
 import { ReceiveOrderStep } from './receive/order-step'
 import { ReceiveSubmitStep } from './receive/submit-step'
 import { useReceiveFlow } from './receive/use-receive-flow'
@@ -18,6 +19,8 @@ export function PdaReceivePage() {
       return <ReceiveBoxStep flow={flow} />
     case 'line':
       return <ReceiveLineStep flow={flow} />
+    case 'measure':
+      return <ReceiveNewSkuStep flow={flow} />
     case 'submit':
       return <ReceiveSubmitStep flow={flow} />
     default:

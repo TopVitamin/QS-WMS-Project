@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import {
+  ArchiveRestore,
   ArrowRightLeft,
   ArrowUpFromLine,
   ClipboardCheck,
@@ -7,6 +8,7 @@ import {
   Monitor,
   PackageCheck,
   PackageOpen,
+  PackageSearch,
   ScanSearch,
   ShoppingCart,
   Truck,
@@ -43,6 +45,7 @@ const groups: { titleKey: string; tone: StatusTone; items: PdaFunction[] }[] = [
       { key: 'sign', titleKey: 'pda.sign', icon: Truck, to: '/pda/soon/sign', ready: false },
       { key: 'receive', titleKey: 'pda.receive', icon: PackageOpen, to: '/pda/receive', ready: true },
       { key: 'putaway', titleKey: 'pda.putaway', icon: ArrowUpFromLine, to: '/pda/putaway', ready: true },
+      { key: 'unclaimed', titleKey: 'menu.unclaimed', icon: PackageSearch, to: '/pda/unclaimed', ready: true },
     ],
   },
   {
@@ -58,9 +61,15 @@ const groups: { titleKey: string; tone: StatusTone; items: PdaFunction[] }[] = [
     titleKey: 'pda.outboundGroup',
     tone: 'purple',
     items: [
-      { key: 'pick', titleKey: 'pda.pick', icon: ShoppingCart, to: '/pda/soon/pick', ready: false },
-      { key: 'pack', titleKey: 'pda.pack', icon: PackageCheck, to: '/pda/soon/pack', ready: false },
-      { key: 'handover', titleKey: 'pda.handover', icon: Truck, to: '/pda/soon/handover', ready: false },
+      { key: 'pick', titleKey: 'outbound.pdaPick.title', icon: ShoppingCart, to: '/pda/pick', ready: true },
+      { key: 'verify', titleKey: 'outbound.pdaVerify.title', icon: PackageCheck, to: '/pda/verify', ready: true },
+      {
+        key: 'return-putaway',
+        titleKey: 'outbound.pdaReturn.title',
+        icon: ArchiveRestore,
+        to: '/pda/return-putaway',
+        ready: true,
+      },
     ],
   },
 ]

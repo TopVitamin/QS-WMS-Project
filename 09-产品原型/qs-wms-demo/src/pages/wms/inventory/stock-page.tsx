@@ -3,6 +3,10 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
+import { DetailTabs } from '@/components/biz/detail-tabs'
+import { allocationStatusMeta } from '@/config/status'
+import { outboundAvailable, skuKey } from '@/mock/outbound-actions'
+import type { GridRow } from '../outbound/shared'
 import { BizCode, CodeName, DateTime, Dimension, Empty, Money, Num, Weight } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
 import { OptionSelect } from '@/components/biz/option-select'
@@ -18,7 +22,7 @@ import { FILTER_ALL } from '@/lib/master-data'
 import { toneTextClass } from '@/lib/tone-styles'
 import { codeNameText } from '@/lib/typography'
 import { cn } from '@/lib/utils'
-import { useLookups } from '@/mock/db'
+import { useDb, useLookups } from '@/mock/db'
 import type { InventoryRecord, QualityType } from '@/types/wms'
 
 interface Filters {
@@ -34,6 +38,14 @@ export function StockPage() {
   const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
   const { rows, summary, locations, customers, warehouseCode } = useInventory(filters)
   const { customerCode, sku } = useLookups()
+  const db = useDb()
+  const skuRows = [...new Set(rows.map(r => skuKey(r.warehouseCode, r.customerId, r.skuCode)))].map(key => {
+    const sample = rows.find(r => skuKey(r.warehouseCode, r.customerId, r.skuCode) === key)!
+    const total = db.inventory.filter(r => skuKey(r.warehouseCode, r.customerId, r.skuCode) === key).reduce((n, r) => n + r.onHandQty, 0)
+    const reserved = db.outboundOrders.filter(o => o.warehouseCode === sample.warehouseCode && o.customerId === sample.customerId && !['SHIPPED', 'CANCELLED'].includes(o.status)).reduce((n, o) => n + o.items.filter(i => i.skuCode === sample.skuCode).reduce((m, i) => m + i.reservedQty, 0), 0)
+    const status = db.inventoryCounts.some(c => skuKey(c.warehouseCode, c.customerId, c.skuCode) === key && c.status === 'COUNTING') ? 'COUNTING' : db.skuAllocationControls.some(c => skuKey(c.warehouseCode, c.customerId, c.skuCode) === key) ? 'PENDING' : 'NORMAL'
+    return { id: key, sku: <BizCode>{sample.skuCode}</BizCode>, owner: customerCode(sample.customerId), actual: <Num value={total} />, reserved: <Num value={reserved} />, available: <Num value={outboundAvailable(db, sample.warehouseCode, sample.customerId, sample.skuCode)} />, allocationStatus: <TagLabel meta={allocationStatusMeta[status]} /> }
+  })
 
   const columns = useMemo(() => {
     const col = createDataColumns<InventoryRecord>()
@@ -83,9 +95,12 @@ export function StockPage() {
           <Num value={getValue()} className={getValue() ? toneTextClass.orange : toneTextClass.gray} />
         ),
       }),
-      col.accessor((r) => r.onHandQty - r.lockedQty, {
+      col.accessor((r) => r.allocatedQty ?? 0, {
+        id: 'allocated', header: t('outbound.allocated'), meta: { align: 'right' }, cell: ({ getValue }) => <Num value={getValue()} />,
+      }),
+      col.accessor((r) => ['STAGING', 'EXCEPTION'].includes(locType(r.locationCode) ?? '') ? 0 : r.onHandQty - (r.allocatedQty ?? 0), {
         id: 'available',
-        header: t('inventory.available'),
+        header: t('outbound.allocatable'),
         meta: { align: 'right' },
         cell: ({ getValue }) => <Num value={getValue()} className={cn('font-medium', toneTextClass.green)} />,
       }),
@@ -130,6 +145,27 @@ export function StockPage() {
       }),
     ])
   }, [t, sku, customerCode, locations, warehouseCode])
+
+  /** SKU 页签列：值仍是 skuRows 的汇总结果，表头改回库存口径（在库总量、订单占用） */
+  const skuColumns = useMemo(() => {
+    const col = createDataColumns<GridRow>()
+    const spec: [key: string, headerKey: string][] = [
+      ['sku', 'outbound.sku'],
+      ['owner', 'outbound.owner'],
+      ['actual', 'inventory.onHandTotal'],
+      ['reserved', 'inventory.orderReserved'],
+      ['available', 'outbound.available'],
+      ['allocationStatus', 'outbound.allocationStatus'],
+    ]
+    return spec.map(([key, headerKey], index) =>
+      col.accessor(key, {
+        header: t(headerKey),
+        enableSorting: false,
+        meta: { pin: index === 0 ? 'left' : undefined },
+        cell: (info) => info.getValue(),
+      }),
+    )
+  }, [t])
 
   return (
     <PageContainer
@@ -177,9 +213,10 @@ export function StockPage() {
         </FilterBar>
       </Panel>
 
-      <Panel className="flex min-h-105 flex-1 flex-col overflow-hidden">
-        <DataTable className="flex-1" data={rows} columns={columns} getRowId={(r) => r.id} />
-      </Panel>
+      <DetailTabs param="stockTab" items={[
+        { value: 'sku', label: t('outbound.sku'), count: skuRows.length, content: <DataTable data={skuRows} columns={skuColumns} getRowId={(r) => r.id} /> },
+        { value: 'location', label: t('outbound.location'), count: rows.length, content: <DataTable className="flex-1" data={rows} columns={columns} getRowId={(r) => r.id} /> },
+      ]} />
     </PageContainer>
   )
 }

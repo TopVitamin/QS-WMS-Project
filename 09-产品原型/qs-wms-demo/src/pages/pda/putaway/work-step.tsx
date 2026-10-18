@@ -35,7 +35,7 @@ export function PutawayWorkStep({ flow }: { flow: PutawayFlow }) {
 
   if (!order || order.status === 'COMPLETED') return null
   const ctx = flow.locationContext
-  const nextLine = order.planLines.find((l) => remainingQty(order, l.skuCode) > 0)
+  const nextLine = order.planLines.find((l) => remainingQty(order, l.lineNo) > 0)
   const suggested = suggestPutawayLocation(order, nextLine?.skuCode, ctx)
   const another = flow.locations.find((l) => l.code !== suggested && validatePutawayLocation(order, l.code, ctx) === null)
   const remaining = remainingQty(order)
@@ -56,7 +56,7 @@ export function PutawayWorkStep({ flow }: { flow: PutawayFlow }) {
     return true
   }
 
-  const undo = async (locationCode: string, skuCode: string, qty: number) => {
+  const undo = async (lineNo: number, locationCode: string, skuCode: string, qty: number) => {
     const ok = await flow.confirm({
       title: t('pdaPutaway.undoTitle'),
       description: t('pdaPutaway.undoDesc', { location: locationCode, sku: skuCode, qty }),
@@ -64,7 +64,12 @@ export function PutawayWorkStep({ flow }: { flow: PutawayFlow }) {
       variant: 'destructive',
     })
     if (!ok) return
-    const res = flow.removePutawayLine({ putawayNo: order.putawayNo, locationCode, skuCode, operator: flow.operator })
+    const res = flow.removePutawayLine({
+      putawayNo: order.putawayNo,
+      locationCode,
+      planLineNo: lineNo,
+      operator: flow.operator,
+    })
     if (!res.ok) void flow.notice(t('pdaPutaway.undo'), t(res.errorKey))
   }
 
@@ -113,15 +118,15 @@ export function PutawayWorkStep({ flow }: { flow: PutawayFlow }) {
 
         <PdaSection title={t('pdaPutaway.planTitle')}>
           {order.planLines.map((l) => {
-            const done = recordedQty(order, l.skuCode) === l.planQty
+            const done = recordedQty(order, l.lineNo) === l.planQty
             return (
-              <PdaCard key={l.skuCode} className="flex items-center gap-3">
+              <PdaCard key={l.lineNo} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="font-mono text-base font-semibold">{l.skuCode}</div>
+                  <div className="font-mono text-base font-semibold">{l.batchNo ? `${l.skuCode} · ${l.batchNo}` : l.skuCode}</div>
                   <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
                 </div>
                 <div className={cn('shrink-0 text-base font-semibold tabular-nums', done ? 'text-success-text' : 'text-primary')}>
-                  {t('pdaPutaway.recorded', { recorded: recordedQty(order, l.skuCode), plan: l.planQty })}
+                  {t('pdaPutaway.recorded', { recorded: recordedQty(order, l.lineNo), plan: l.planQty })}
                 </div>
               </PdaCard>
             )
@@ -131,14 +136,16 @@ export function PutawayWorkStep({ flow }: { flow: PutawayFlow }) {
         {pendingLines.length > 0 && (
           <PdaSection title={t('pdaPutaway.actualTitle')}>
             {pendingLines.map((a) => (
-              <PdaCard key={`${a.locationCode}|${a.skuCode}`} className="flex min-h-12 items-center gap-3 py-2">
+              <PdaCard key={a.lineNo} className="flex min-h-12 items-center gap-3 py-2">
                 <span className="font-mono text-base font-bold">{a.locationCode}</span>
-                <span className="min-w-0 flex-1 truncate font-mono text-sm text-muted-foreground">{a.skuCode}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-sm text-muted-foreground">
+                  {t('pdaPutaway.actualLineLabel', { sku: a.skuCode, line: a.planLineNo })}
+                </span>
                 <span className="text-base font-semibold tabular-nums">{a.qty}</span>
                 <button
                   type="button"
                   className="min-h-8 px-1 text-sm text-destructive"
-                  onClick={() => undo(a.locationCode, a.skuCode, a.qty)}
+                  onClick={() => undo(a.planLineNo, a.locationCode, a.skuCode, a.qty)}
                 >
                   {t('pdaPutaway.undo')}
                 </button>

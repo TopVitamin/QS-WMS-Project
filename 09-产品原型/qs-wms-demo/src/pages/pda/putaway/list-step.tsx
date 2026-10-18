@@ -76,7 +76,7 @@ export function PutawayListStep({ flow }: { flow: PutawayFlow }) {
               <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
                 <span className={p.containerNo ? 'font-mono text-foreground' : undefined}>{flow.containerLabel(p)}</span>
                 <span>·</span>
-                <DocNoTail value={p.inboundNo} tail={4} className="text-sm" />
+                <DocNoTail value={p.sourceNo} tail={4} className="text-sm" />
                 <span className="ml-auto text-base font-semibold text-primary tabular-nums">
                   {t('pdaPutaway.recorded', { recorded: recordedQty(p), plan: planQty(p) })}
                 </span>

@@ -1,0 +1,20 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-FBA-001",
+  "messageType": "CREATE_OUTBOUND",
+  "businessType": "FBA",
+  "upstreamNo": "DEMO-FBA-001",
+  "expectedVersion": 0,
+  "payload": {
+    "warehouseCode": "US-LA-01",
+    "ownerCode": "ANKR",
+    "recipient": "Demo consignee",
+    "address": "Demo destination",
+    "items": [
+      {
+        "skuCode": "LOT-DEMO-01",
+        "qty": 12
+      }
+    ]
+  }
+}

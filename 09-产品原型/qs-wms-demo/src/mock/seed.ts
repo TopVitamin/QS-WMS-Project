@@ -1,4 +1,6 @@
 import { createCarrierMasters } from './carrier-masters'
+import { createOutboundSeed, playOutboundSeedFlows } from './outbound-seed'
+import type { OutboundData } from '@/types/outbound'
 import { createChannelMasters } from './channel-masters'
 import { createCustomerMasters, customerMastersToLegacy } from './customer-masters'
 import type {
@@ -23,11 +25,13 @@ import type {
   WarehouseMaster,
 } from '@/types/wms'
 import { createInboundDemoBundle } from './inbound-seed'
+import { createNewSkuSeed, createUnclaimedSeed } from './inbound-extra-seed'
 import { createLocationMasters } from './location-masters'
 import { createSkuMasters } from './sku-masters'
 import { createWarehouseMasters } from './warehouse-masters'
 import { createZoneMasters } from './zone-masters'
 import { stagingLocationCode } from '@/lib/inbound-derive'
+import type { NewSkuRecord, UnclaimedRecord } from '@/types/inbound'
 
 /** 固定种子的伪随机数，保证每次重置后演示数据一致 */
 function createRandom(seed: number) {
@@ -51,8 +55,7 @@ export const warehouses: Warehouse[] = [
   { code: 'US-LA-01', nameKey: 'warehouse.US-LA-01', countryCode: 'US', timezone: 'America/Los_Angeles', currency: 'USD', unitSystem: 'imperial' },
   { code: 'US-NJ-01', nameKey: 'warehouse.US-NJ-01', countryCode: 'US', timezone: 'America/New_York', currency: 'USD', unitSystem: 'imperial' },
   { code: 'DE-FRA-01', nameKey: 'warehouse.DE-FRA-01', countryCode: 'DE', timezone: 'Europe/Berlin', currency: 'EUR', unitSystem: 'metric' },
-  { code: 'UK-LON-01', nameKey: 'warehouse.UK-LON-01', countryCode: 'GB', timezone: 'Europe/London', currency: 'GBP', unitSystem: 'metric' },
-  { code: 'JP-TYO-01', nameKey: 'warehouse.JP-TYO-01', countryCode: 'JP', timezone: 'Asia/Tokyo', currency: 'JPY', unitSystem: 'metric' },
+  { code: 'HK-WH-01', nameKey: 'warehouse.HK-WH-01', countryCode: 'HK', timezone: 'Asia/Hong_Kong', currency: 'HKD', unitSystem: 'metric' },
 ]
 
 export const customerMasters = createCustomerMasters()
@@ -111,6 +114,9 @@ function buildLocations(): Location[] {
   warehouses.forEach((w) => {
     list.push({ code: 'STAGE-IN-01', warehouseCode: w.code, zone: 'STAGE', type: 'STAGING' })
     list.push({ code: 'DEFECT-01', warehouseCode: w.code, zone: 'DEFECT', type: 'DEFECT' })
+    /** 异常处理库位：无主货、超收等没有入账的实物统一放这里（不参与库存，也不作上架目标） */
+    list.push({ code: 'EX-01-01', warehouseCode: w.code, zone: 'EXCEPTION', type: 'EXCEPTION' })
+    list.push({ code: 'EX-01-02', warehouseCode: w.code, zone: 'EXCEPTION', type: 'EXCEPTION' })
     ;['A', 'B', 'C'].forEach((zone) => {
       for (let row = 1; row <= 4; row++) {
         for (let level = 1; level <= 3; level++) {
@@ -127,7 +133,7 @@ function buildLocations(): Location[] {
   return list
 }
 
-export interface SeedData {
+export interface SeedData extends OutboundData {
   warehouses: Warehouse[]
   warehouseMasters: WarehouseMaster[]
   zoneMasters: ZoneMaster[]
@@ -144,6 +150,8 @@ export interface SeedData {
   receiptRecords: import('@/types/inbound').ReceiptRecord[]
   putawayOrders: import('@/types/inbound').PutawayOrder[]
   inboundExceptions: import('@/types/inbound').InboundException[]
+  newSkuRecords: NewSkuRecord[]
+  unclaimedRecords: UnclaimedRecord[]
   inventory: InventoryRecord[]
   inventoryLogs: InventoryLog[]
   packages: OutboundPackage[]
@@ -164,6 +172,8 @@ export function createSeedData(now = Date.now()): SeedData {
   const receiptRecords = [...inboundBundle.receiptRecords]
   const putawayOrders = [...inboundBundle.putawayOrders]
   const inboundExceptions = [...inboundBundle.inboundExceptions]
+  const newSkuRecords = createNewSkuSeed()
+  const unclaimedRecords = createUnclaimedSeed()
   const packages: OutboundPackage[] = []
   const auditLogs: AuditLog[] = []
 
@@ -178,6 +188,8 @@ export function createSeedData(now = Date.now()): SeedData {
     qty: number
     lockedQty: number
     at: string
+    /** SN 商品随落位带上序列号，出库按件拣货时才对得上实物 */
+    serialNos?: string[]
   }) => {
     if (row.qty <= 0) return
     const key = `${row.warehouseCode}::${row.locationCode}::${row.customerId}::${row.skuCode}::${row.qualityType}`
@@ -188,6 +200,7 @@ export function createSeedData(now = Date.now()): SeedData {
         ...prev,
         onHandQty: prev.onHandQty + row.qty,
         lockedQty: prev.lockedQty + row.lockedQty,
+        ...(row.serialNos?.length ? { serialNos: [...(prev.serialNos ?? []), ...row.serialNos] } : {}),
       }
       return
     }
@@ -202,6 +215,7 @@ export function createSeedData(now = Date.now()): SeedData {
       onHandQty: row.qty,
       lockedQty: row.lockedQty,
       firstInboundAt: row.at,
+      ...(row.serialNos?.length ? { serialNos: [...row.serialNos] } : {}),
     })
   }
 
@@ -220,6 +234,7 @@ export function createSeedData(now = Date.now()): SeedData {
             qty: a.qty,
             lockedQty: p.qualityType === 'DEFECTIVE' ? a.qty : 0,
             at: p.submittedAt ?? p.createdAt,
+            serialNos: a.serialNos,
           })
         })
     })
@@ -229,7 +244,7 @@ export function createSeedData(now = Date.now()): SeedData {
     .forEach((o) => {
       const submittedByQuality = new Map<string, number>()
       putawayOrders
-        .filter((p) => p.inboundNo === o.inboundNo && p.status === 'COMPLETED')
+        .filter((p) => p.sourceType === 'INBOUND' && p.sourceNo === o.inboundNo && p.status === 'COMPLETED')
         .forEach((p) => {
           p.actualLines
             .filter((a) => a.submitted)
@@ -308,7 +323,8 @@ export function createSeedData(now = Date.now()): SeedData {
       )
     })
 
-  return {
+  return playOutboundSeedFlows({
+    ...createOutboundSeed(inventory, locations, skuMasters, warehouses.map(w => w.code)),
     warehouses,
     warehouseMasters: createWarehouseMasters(),
     zoneMasters: createZoneMasters(),
@@ -325,9 +341,11 @@ export function createSeedData(now = Date.now()): SeedData {
     receiptRecords,
     putawayOrders,
     inboundExceptions,
+    newSkuRecords,
+    unclaimedRecords,
     inventory,
     inventoryLogs,
     packages,
     auditLogs,
-  }
+  })
 }

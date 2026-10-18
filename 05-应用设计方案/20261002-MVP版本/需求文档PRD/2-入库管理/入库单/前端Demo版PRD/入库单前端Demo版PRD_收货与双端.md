@@ -7,7 +7,7 @@
 
 关联：[详情页分册 §2](入库单前端Demo版PRD_详情页.md)、[公共分册 §3.4](入库单前端Demo版PRD_公共与技术约定.md)、[《入库单页面骨架》](../入库单页面骨架.md)、[《PDA作业端设计规范》](../../../7-PDA作业端/PDA作业端设计规范.md)。
 
-**布局与占位须符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 第四节**。Web 收货作业台属于**独立路由作业台**，交互与普通列表/表单模板不同（主PRD F07）。
+**布局与占位须符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 「布局硬规则」一节**。Web 收货作业台属于**独立路由作业台**，交互与普通列表/表单模板不同（主PRD F07）。
 
 **实现参照**：`inbound-order-receive-page.tsx`（Web 作业台）、`inbound-receive-line-form.tsx`、`pages/pda/receive-page.tsx`（PDA）、`lib/inbound-receive.ts`、`mock/inbound-receive-actions.ts`。
 

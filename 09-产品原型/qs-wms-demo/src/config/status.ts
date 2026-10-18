@@ -1,5 +1,41 @@
 import type { InboundBizType, InboundOrderStatus, PackageStatus, QualityType, UsageStatus } from '@/types/wms'
-import type { PutawayOrderStatus } from '@/types/inbound'
+import type { PutawayOrderStatus, UnclaimedStatus } from '@/types/inbound'
+import type { OrderComposition } from '@/lib/outbound-derive'
+import type { OutboundPickTask, OutboundPutback, OutboundStatus, OutboundType, PickStatus, WaveStatus } from '@/types/outbound'
+
+export const outboundStatusMeta: Record<OutboundStatus, StatusMeta> = {
+  PENDING_HANDLE: { tone: 'gray', labelKey: 'outbound.status.PENDING_HANDLE' },
+  PENDING_PICK: { tone: 'orange', labelKey: 'outbound.status.PENDING_PICK' },
+  PENDING_VERIFY: { tone: 'purple', labelKey: 'outbound.status.PENDING_VERIFY' },
+  PENDING_SHIPMENT: { tone: 'cyan', labelKey: 'outbound.status.PENDING_SHIPMENT' },
+  SHIPPED: { tone: 'green', labelKey: 'outbound.status.SHIPPED' },
+  CANCELLED: { tone: 'gray', labelKey: 'outbound.status.CANCELLED' },
+}
+export const outboundPickStatusMeta: Record<PickStatus, StatusMeta> = {
+  PENDING_PICK: { tone: 'orange', labelKey: 'outbound.status.PENDING_PICK' },
+  PICKING: { tone: 'blue', labelKey: 'outbound.status.PICKING' },
+  COMPLETED: { tone: 'green', labelKey: 'outbound.status.COMPLETED' },
+  CLOSED: { tone: 'gray', labelKey: 'outbound.status.CLOSED' },
+}
+export const outboundPutbackStatusMeta = putbackMeta()
+function putbackMeta(): Record<'PENDING' | 'PUTAWAYING' | 'COMPLETED', StatusMeta> {
+  return { PENDING: { tone: 'orange', labelKey: 'outbound.status.PENDING' }, PUTAWAYING: { tone: 'blue', labelKey: 'outbound.status.PUTAWAYING' }, COMPLETED: { tone: 'green', labelKey: 'outbound.status.COMPLETED' } }
+}
+export const outboundWaveStatusMeta: Record<WaveStatus, StatusMeta> = {
+  ALLOCATED: { tone: 'orange', labelKey: 'status.wave.ALLOCATED' },
+  RELEASED: { tone: 'blue', labelKey: 'status.wave.RELEASED' },
+  COMPLETED: { tone: 'green', labelKey: 'status.wave.COMPLETED' },
+  CANCELLED: { tone: 'gray', labelKey: 'status.wave.CANCELLED' },
+}
+export const outboundMessageStatusMeta: Record<'ACCEPTED' | 'REJECTED', StatusMeta> = {
+  ACCEPTED: { tone: 'green', labelKey: 'status.outboundMessage.ACCEPTED' },
+  REJECTED: { tone: 'red', labelKey: 'status.outboundMessage.REJECTED' },
+}
+export const outboundResultStatusMeta: Record<'SENT' | 'FAILED', StatusMeta> = {
+  SENT: { tone: 'green', labelKey: 'status.outboundResult.SENT' },
+  FAILED: { tone: 'red', labelKey: 'status.outboundResult.FAILED' },
+}
+export const allocationStatusMeta = { NORMAL: { tone: 'green', labelKey: 'outbound.normal' }, PENDING: { tone: 'red', labelKey: 'outbound.pending' }, COUNTING: { tone: 'blue', labelKey: 'outbound.counting' } } satisfies Record<string, StatusMeta>
 
 /**
  * 全站统一的状态色调。新增状态时只能从这里选色调，不要在页面里自定义颜色。
@@ -35,6 +71,11 @@ export const putawayOrderStatusMeta: Record<PutawayOrderStatus, StatusMeta> = {
   COMPLETED: { tone: 'green', labelKey: 'status.putawayOrder.COMPLETED' },
 }
 
+/** 无主货登记：一期只有「暂存中」；后续 CONVERTED / DISPOSED 待 OMS 认领上线 */
+export const unclaimedStatusMeta: Record<UnclaimedStatus, StatusMeta> = {
+  HOLDING: { tone: 'orange', labelKey: 'status.unclaimed.HOLDING' },
+}
+
 export const usageStatusMeta: Record<UsageStatus, StatusMeta> = {
   ENABLED: { tone: 'green', labelKey: 'status.usage.ENABLED' },
   DISABLED: { tone: 'gray', labelKey: 'status.usage.DISABLED' },
@@ -59,4 +100,33 @@ export const qualityMeta: Record<QualityType, StatusMeta> = {
 export const inboundBizTypeMeta: Record<InboundBizType, StatusMeta> = {
   NORMAL: { tone: 'gray', labelKey: 'enum.inboundBizType.NORMAL' },
   TRANSFER: { tone: 'cyan', labelKey: 'enum.inboundBizType.TRANSFER' },
+}
+
+/** 出库业务类型、任务来源、退拣原因：枚举标签（TagLabel meta） */
+export const outboundCompositionMeta: Record<OrderComposition, StatusMeta> = {
+  SINGLE_SINGLE: { tone: 'gray', labelKey: 'outbound.composition.SINGLE_SINGLE' },
+  SINGLE_MULTI: { tone: 'blue', labelKey: 'outbound.composition.SINGLE_MULTI' },
+  MULTI_MIX: { tone: 'purple', labelKey: 'outbound.composition.MULTI_MIX' },
+}
+export const outboundTypeMeta: Record<OutboundType, StatusMeta> = {
+  B2C: { tone: 'blue', labelKey: 'outbound.type.B2C' },
+  FBA: { tone: 'purple', labelKey: 'outbound.type.FBA' },
+  WHOLESALE: { tone: 'cyan', labelKey: 'outbound.type.WHOLESALE' },
+  TRANSFER: { tone: 'gray', labelKey: 'outbound.type.TRANSFER' },
+  PURCHASE_RETURN: { tone: 'orange', labelKey: 'outbound.type.PURCHASE_RETURN' },
+  OTHER: { tone: 'red', labelKey: 'outbound.type.OTHER' },
+}
+export const pickSourceMeta: Record<OutboundPickTask['source'], StatusMeta> = {
+  ORDER: { tone: 'gray', labelKey: 'outbound.sources.ORDER' },
+  WAVE: { tone: 'purple', labelKey: 'outbound.sources.WAVE' },
+  SUPPLEMENT: { tone: 'orange', labelKey: 'outbound.sources.SUPPLEMENT' },
+}
+export const unpickReasonMeta: Record<OutboundPutback['reason'], StatusMeta> = {
+  CANCEL: { tone: 'gray', labelKey: 'outbound.unpickReasons.CANCEL' },
+  MISSING: { tone: 'orange', labelKey: 'outbound.unpickReasons.MISSING' },
+  DAMAGED: { tone: 'red', labelKey: 'outbound.unpickReasons.DAMAGED' },
+}
+export const waveMemberStatusMeta: Record<'ACTIVE' | 'CANCELLED', StatusMeta> = {
+  ACTIVE: { tone: 'blue', labelKey: 'outbound.ui.memberActive' },
+  CANCELLED: { tone: 'gray', labelKey: 'outbound.ui.memberCancelled' },
 }

@@ -49,3 +49,13 @@ export function formatDimension(l: number, w: number, h: number, unit: UnitSyste
   }
   return `${l}×${w}×${h} cm`
 }
+
+/** `datetime-local` 输入值：把 UTC ISO 按时区转成 `YYYY-MM-DDTHH:mm` */
+export function toLocalInput(iso: string, tz: string): string {
+  return dayjs(iso).tz(tz).format('YYYY-MM-DDTHH:mm')
+}
+
+/** `datetime-local` 输入值按指定时区解释，转成 UTC ISO 存储 */
+export function localInputToUtc(local: string, tz: string): string {
+  return dayjs.tz(local, tz).toISOString()
+}

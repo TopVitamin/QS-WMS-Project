@@ -31,6 +31,7 @@ const actionColStart: Record<number, string> = {
 /**
  * 列表筛选区：所有管理端列表统一 6 列栅格（xl），常显最多 5 个筛选项，
  * 第 6 列底对齐放查询 / 重置（有 advanced 时再加展开 / 收起）。
+ * md 以下及 md～xl 之间操作区独占一行，避免与末列筛选项横向挤叠。
  */
 export function FilterBar({ children, advanced, onSearch, onReset }: FilterBarProps) {
   const { t } = useTranslation()
@@ -48,7 +49,13 @@ export function FilterBar({ children, advanced, onSearch, onReset }: FilterBarPr
     >
       {children}
       {showExpand && expanded && advanced}
-      <div className={cn('flex items-end justify-end gap-2', actionCol)}>
+      <div
+        className={cn(
+          'flex min-w-0 max-w-full flex-wrap items-end justify-end gap-2',
+          'col-span-full md:col-span-3 xl:col-span-1',
+          actionCol,
+        )}
+      >
         <Button type="submit">
           <Search data-icon="inline-start" />
           {t('common.search')}

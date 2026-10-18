@@ -38,9 +38,9 @@ export const wmsMenu: MenuGroup[] = [
     icon: PackageOpen,
     children: [
       { path: '/wms/inbound/orders', titleKey: 'menu.inboundOrders', milestone: 'M0' },
-      { path: '/wms/inbound/receipts', titleKey: 'menu.receipts', milestone: 'M1' },
       { path: '/wms/inbound/putaway', titleKey: 'menu.putawayTasks', milestone: 'M1' },
-      { path: '/wms/inbound/unclaimed', titleKey: 'menu.unclaimed', milestone: 'M4' },
+      { path: '/wms/inbound/new-sku', titleKey: 'menu.newSku', milestone: 'M1' },
+      { path: '/wms/inbound/unclaimed', titleKey: 'menu.unclaimed', milestone: 'M1' },
     ],
   },
   {
@@ -59,9 +59,11 @@ export const wmsMenu: MenuGroup[] = [
     titleKey: 'menu.outbound',
     icon: PackageCheck,
     children: [
-      { path: '/wms/outbound/packages', titleKey: 'menu.packages', milestone: 'M3' },
-      { path: '/wms/outbound/waves', titleKey: 'menu.waves', milestone: 'M3' },
-      { path: '/wms/outbound/handover', titleKey: 'menu.handover', milestone: 'M3' },
+      { path: '/wms/outbound/orders', titleKey: 'menu.outboundOrders', milestone: 'M3' },
+      { path: '/wms/outbound/waves', titleKey: 'menu.outboundWaves', milestone: 'M3' },
+      { path: '/wms/outbound/pick-tasks', titleKey: 'menu.pickTasks', milestone: 'M3' },
+      { path: '/wms/outbound/verify-station', titleKey: 'menu.verifyStation', milestone: 'M3' },
+      { path: '/wms/outbound/return-putaway', titleKey: 'menu.outboundPutbacks', milestone: 'M3' },
     ],
   },
   {

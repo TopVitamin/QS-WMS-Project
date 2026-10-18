@@ -1,9 +1,9 @@
 /**
  * Demo 单号规则（主 PRD Q04 已确认口径）：
- * `RK/RC/PA/EX-yyyyMMdd-四位流水`，按自然日（UTC）流水。
+ * `RK/RC/PA/EX/NS/UG-yyyyMMdd-四位流水`，按自然日（UTC）流水，四仓共用序列。
  * 正式全局编码规则另行确认后替换。
  */
-export type DocPrefix = 'RK' | 'RC' | 'PA' | 'EX'
+export type DocPrefix = 'RK' | 'RC' | 'PA' | 'EX' | 'NS' | 'UG' | 'OB' | 'WV' | 'PK' | 'VR' | 'PB' | 'HO' | 'ST'
 
 export function docNoDate(at: Date | string = new Date()): string {
   const d = typeof at === 'string' ? new Date(at) : at

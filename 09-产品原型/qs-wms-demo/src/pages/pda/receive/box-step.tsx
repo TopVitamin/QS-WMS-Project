@@ -4,12 +4,13 @@ import { PdaButton, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { ScanInput } from '@/components/pda/scan-input'
 import { lineUnreceivedQty } from '@/lib/inbound-derive'
+import { beep } from '@/lib/scan-beep'
 import { QtyTriple, ReceiveContext } from './receive-shared'
 import type { ReceiveFlow } from './use-receive-flow'
 
 /** 容器作业（PDA 收货 PRD §3、§5）：在当前容器里逐个扫商品；新增容器、提交收货 */
 export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
-  const { t, nav, session, order, orderReceivable } = flow
+  const { t, nav, session, order, orderReceivable, isNewSkuInOrder } = flow
   const boxKey = nav.param('box')
   const box = session.boxes.find((b) => b.key === boxKey)
 
@@ -23,7 +24,15 @@ export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
   const openItems = order.items.filter((i) => lineUnreceivedQty(i) > 0)
   const hasSessionLines = flow.lineCount > 0
 
-  const openLine = (skuCode: string, entry: 'scan' | 'pick') => nav.go('line', { box: box.key, sku: skuCode, entry })
+  /** 新品先阻断并自动进入量方屏（PDA 新品量方 PRD §3），量方完成回到容器作业 */
+  const openLine = (skuCode: string, entry: 'scan' | 'pick') => {
+    if (isNewSkuInOrder(skuCode)) {
+      beep(false)
+      nav.go('measure', { box: box.key, sku: skuCode })
+      return
+    }
+    nav.go('line', { box: box.key, sku: skuCode, entry })
+  }
 
   const onScan = (code: string) => {
     const skuCode = flow.resolveSku(code)

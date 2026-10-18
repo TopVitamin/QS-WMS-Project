@@ -1,3 +1,20 @@
 {
-  "_comment": "占位样例；完整表单字段对齐出库单初稿与新建出库指令映射表。"
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-B2C-001",
+  "messageType": "CREATE_OUTBOUND",
+  "businessType": "B2C",
+  "upstreamNo": "DEMO-B2C-001",
+  "expectedVersion": 0,
+  "payload": {
+    "warehouseCode": "US-LA-01",
+    "ownerCode": "ANKR",
+    "recipient": "Demo consignee",
+    "address": "Demo destination",
+    "items": [
+      {
+        "skuCode": "CABLE-01",
+        "qty": 3
+      }
+    ]
+  }
 }

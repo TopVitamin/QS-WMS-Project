@@ -7,6 +7,7 @@ import { DetailTabs } from '@/components/biz/detail-tabs'
 import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { DetailOverview, DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
+import { ActionLink } from '@/components/biz/row-actions'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { SummaryCard, SummaryMetrics, SummaryProgress } from '@/components/biz/summary-card'
 import { Button } from '@/components/ui/button'
@@ -22,12 +23,14 @@ import {
   sumLines,
 } from '@/lib/inbound-derive'
 import { receiptContainerLabel } from '@/lib/inbound-receipt-container'
+import { submittedQty } from '@/lib/putaway'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { InboundException, PutawayOrder, ReceiptRecord } from '@/types/inbound'
-import type { AuditLog, InboundOrderLine } from '@/types/wms'
+import type { InboundOrderLine } from '@/types/wms'
 import { InboundPutawaySheet } from './inbound-putaway-sheet'
 import { InboundReceiptSheet } from './inbound-receipt-sheet'
+import { auditLogColumns } from './audit-log-columns'
 import { ReceiptCloseDialog } from './receipt-close-dialog'
 
 type Translate = (k: string, opts?: Record<string, unknown>) => string
@@ -127,9 +130,13 @@ export function InboundOrderDetailPage() {
 
   const warehouseName = warehouseMasters.find((w) => w.code === order.warehouseCode)?.name
   const receipts = receiptRecords.filter((r) => r.inboundNo === inboundNo)
-  const putaways = putawayOrders.filter((p) => p.inboundNo === inboundNo)
+  const putaways = putawayOrders.filter((p) => p.sourceType === 'INBOUND' && p.sourceNo === inboundNo)
   const exceptions = inboundExceptions.filter((e) => e.inboundNo === inboundNo)
-  const logs = auditLogs.filter((l) => l.refType === 'INBOUND' && l.refNo === inboundNo)
+  /** 本单日志 + 本单各上架单的保存、撤销与提交 */
+  const putawayNos = new Set(putaways.map((p) => p.putawayNo))
+  const logs = auditLogs.filter(
+    (l) => (l.refType === 'INBOUND' && l.refNo === inboundNo) || (l.refType === 'PUTAWAY' && putawayNos.has(l.refNo)),
+  )
 
   const showReceiptClose = canConfirmReceiptClose(order)
   const showReceive = canReceiveInbound(order)
@@ -266,7 +273,9 @@ export function InboundOrderDetailPage() {
             content: (
               <DataTable
                 data={putaways}
-                columns={putawayTabColumns(t, setPutaway)}
+                columns={putawayTabColumns(t, setPutaway, (no) =>
+                  navigate(`/wms/inbound/putaway/${no}`, { state: { from: location.pathname } }),
+                )}
                 getRowId={(p) => p.putawayNo}
                 selectable={false}
                 emptyText={t('inbound.tabs.empty.putaway')}
@@ -294,7 +303,7 @@ export function InboundOrderDetailPage() {
             content: (
               <DataTable
                 data={logs}
-                columns={logTabColumns(t)}
+                columns={auditLogColumns(t, { withPutawayNo: true })}
                 getRowId={(l) => l.id}
                 selectable={false}
                 emptyText={t('inbound.tabs.empty.logs')}
@@ -363,14 +372,14 @@ function receiptTabColumns(t: Translate, onView: (r: ReceiptRecord) => void) {
   ])
 }
 
-/** 上架单：点上架单号打开右侧抽屉 */
-function putawayTabColumns(t: Translate, onView: (p: PutawayOrder) => void) {
+/** 上架单：单号跳上架单独立详情；行内「查看」开右侧抽屉做快览 */
+function putawayTabColumns(t: Translate, onView: (p: PutawayOrder) => void, onOpen: (putawayNo: string) => void) {
   const col = createDataColumns<PutawayOrder>()
   return col.columns([
     col.accessor('putawayNo', {
       header: t('inbound.putawayNo'),
       meta: { pin: 'left' },
-      cell: ({ row }) => <DocNo onClick={() => onView(row.original)}>{row.original.putawayNo}</DocNo>,
+      cell: ({ row }) => <DocNo onClick={() => onOpen(row.original.putawayNo)}>{row.original.putawayNo}</DocNo>,
     }),
     col.accessor('containerNo', {
       header: t('inbound.workContainerNo'),
@@ -393,11 +402,17 @@ function putawayTabColumns(t: Translate, onView: (p: PutawayOrder) => void) {
       meta: { align: 'right' },
       cell: ({ getValue }) => <Num value={getValue()} />,
     }),
-    col.accessor((p) => p.actualLines.filter((a) => a.submitted).reduce((s, a) => s + a.qty, 0), {
+    col.accessor((p) => submittedQty(p), {
       id: 'submittedQty',
       header: t('inbound.putawayQty'),
       meta: { align: 'right' },
       cell: ({ getValue }) => <Num value={getValue()} />,
+    }),
+    col.display({
+      id: 'actions',
+      header: t('common.actions'),
+      meta: { pin: 'right' },
+      cell: ({ row }) => <ActionLink onClick={() => onView(row.original)}>{t('common.view')}</ActionLink>,
     }),
   ])
 }
@@ -420,19 +435,5 @@ function exceptionTabColumns(t: Translate, skuName: (code: string) => string) {
       header: t('inbound.exceptionTime'),
       cell: ({ getValue }) => <DateTime value={getValue()} />,
     }),
-  ])
-}
-
-/** 操作日志：按时间倒序（库里新记录在前） */
-function logTabColumns(t: Translate) {
-  const col = createDataColumns<AuditLog>()
-  return col.columns([
-    col.accessor('createdAt', {
-      header: t('inbound.tabs.logTime'),
-      cell: ({ getValue }) => <DateTime value={getValue()} />,
-    }),
-    col.accessor('action', { header: t('inbound.tabs.logAction'), cell: ({ getValue }) => t(`audit.action.${getValue()}`) }),
-    col.accessor('operator', { header: t('common.operator') }),
-    col.accessor('detail', { header: t('inbound.tabs.logDetail'), cell: ({ getValue }) => getValue() ?? <Empty /> }),
   ])
 }

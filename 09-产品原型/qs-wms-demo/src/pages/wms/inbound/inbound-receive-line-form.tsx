@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { RotateCcw } from 'lucide-react'
 import { BizCode, Num } from '@/components/biz/display'
+import { TagLabel } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,7 +14,7 @@ import {
   type InboundReceiveDraft,
   type ReceiveQtyField,
 } from '@/lib/inbound-receive'
-import { EMPTY_TEXT } from '@/lib/typography'
+import { EMPTY_TEXT, textLink } from '@/lib/typography'
 import { cn } from '@/lib/utils'
 import type { InboundOrderLine } from '@/types/wms'
 
@@ -24,8 +25,6 @@ interface InboundReceiveLineFormProps {
   edits: Record<string, InboundReceiveDraft>
   /** 本容器可收：未收 − 本次其他容器已录的同 SKU 数量 */
   limits: Record<string, number>
-  /** 本次其他容器已录的同 SKU 数量，> 0 时在可收下方提示 */
-  otherQty: Record<string, number>
   activeSku?: string
   containerReady: boolean
   onSelectSku: (skuCode: string) => void
@@ -36,6 +35,9 @@ interface InboundReceiveLineFormProps {
   onEnterDone?: () => void
   skuName: (code: string) => string | undefined
   skuBarcode: (code: string) => string | undefined
+  /** 新品判断：无 NS 记录的 SKU 行内提示并可就地量方（新品维护 Demo PRD 第三节） */
+  isNewSku?: (skuCode: string) => boolean
+  onGoMeasure?: (skuCode: string) => void
 }
 
 type ReceiveEditContextValue = {
@@ -64,7 +66,6 @@ export function InboundReceiveLineForm({
   lines,
   edits,
   limits,
-  otherQty,
   activeSku,
   containerReady,
   onSelectSku,
@@ -74,6 +75,8 @@ export function InboundReceiveLineForm({
   onEnterDone,
   skuName,
   skuBarcode,
+  isNewSku,
+  onGoMeasure,
 }: InboundReceiveLineFormProps) {
   const ctx: ReceiveEditContextValue = {
     edits,
@@ -90,7 +93,7 @@ export function InboundReceiveLineForm({
   const { t } = useTranslation()
 
   const th =
-    'h-10 border-b border-r border-border bg-muted px-3 align-middle text-sm font-medium text-muted-foreground last:border-r-0'
+    'h-10 border-b border-r border-border bg-muted px-3 align-middle text-sm font-medium text-muted-foreground'
   const thCenter = cn(th, 'text-center')
   const thRight = cn(th, 'text-right')
   const td =
@@ -123,10 +126,10 @@ export function InboundReceiveLineForm({
               <TableHead rowSpan={2} className={cn(thRight, 'whitespace-normal leading-snug')}>
                 {t('inbound.receive.boxRemain')}
               </TableHead>
-              <TableHead colSpan={3} className={cn(thCenter, 'border-b border-border')}>
+              <TableHead colSpan={3} className={cn(thCenter, 'border-b border-r border-border')}>
                 {t('inbound.receive.thisReceiveGroup')}
               </TableHead>
-              <TableHead rowSpan={2} className={cn(thCenter, 'whitespace-normal leading-snug')}>
+              <TableHead rowSpan={2} className={cn(thCenter, 'border-l border-border whitespace-normal leading-snug')}>
                 {t('inbound.receive.rejectReasonLabel')}
               </TableHead>
               <TableHead rowSpan={2} className={cn(th, 'sticky right-0 z-10 border-r-0 px-0')}>
@@ -145,7 +148,6 @@ export function InboundReceiveLineForm({
             {lines.map((line) => {
               const active = activeSku === line.skuCode
               const limit = limits[line.skuCode] ?? 0
-              const other = otherQty[line.skuCode] ?? 0
               const barcode = skuBarcode(line.skuCode)
               return (
                 <TableRow
@@ -168,6 +170,21 @@ export function InboundReceiveLineForm({
                         {skuName(line.skuCode) ?? EMPTY_TEXT}
                         {barcode && ` · ${barcode}`}
                       </span>
+                      {isNewSku?.(line.skuCode) && (
+                        <span className="mt-0.5 flex items-center gap-2">
+                          <TagLabel tone="orange">{t('newSku.pendingTag')}</TagLabel>
+                          <button
+                            type="button"
+                            className={textLink}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onGoMeasure?.(line.skuCode)
+                            }}
+                          >
+                            {t('newSku.goMeasure')}
+                          </button>
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className={cn(td, 'text-right tabular-nums')}>
@@ -177,15 +194,8 @@ export function InboundReceiveLineForm({
                       <Num value={line.plannedQty} />
                     </span>
                   </TableCell>
-                  <TableCell className={td}>
-                    <div className="flex flex-col items-end justify-center tabular-nums">
-                      <Num value={limit} className="text-lg font-semibold" />
-                      {other > 0 && (
-                        <span className="text-sm whitespace-nowrap text-muted-foreground">
-                          {t('inbound.receive.otherBoxQty', { count: other })}
-                        </span>
-                      )}
-                    </div>
+                  <TableCell className={cn(td, 'text-right tabular-nums')}>
+                    <Num value={limit} className="text-lg font-semibold" />
                   </TableCell>
                   <TableCell className={tdQty}>
                     <ReceiveQtyCell line={line} field="goodQty" />

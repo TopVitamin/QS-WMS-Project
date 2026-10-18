@@ -15,8 +15,8 @@ export const textCode = `${textSm} tabular-nums tracking-tight`
 /** 业务编码链接 = 编码样式 + 链颜色 */
 export const textCodeLink = `${textCode} text-primary hover:underline`
 
-/** 全站唯一的空值占位符；组件里用 <Empty />，只能放字符串的地方（如 Input value）用它 */
-export const EMPTY_TEXT = '—'
+/** 全站唯一的空值占位符（ASCII `-`，不用中文破折号 `—`）；组件用 <Empty />，只能放字符串的地方（如 Input value）用它 */
+export const EMPTY_TEXT = '-'
 
 /** 下拉选项、只读框等纯文本场景的「编码 · 名称」；表格和详情里用 <CodeName /> */
 export function codeNameText(code: string, name?: string): string {

@@ -21,7 +21,7 @@ export interface DetailTabItem {
  * 详情页下半部分的多页签面板：一块白底卡片，顶部页签（带数量），下面切换子表或说明。
  * - 页签外观与列表页 StatusTabs 一致
  * - 传 param 时把当前页签写进 URL（如 ?tab=receipts），刷新、返回后仍停在原页签
- * - 页签栏右侧可放 extra（如「导出」）；当前页签里 DataTable 的列设置也自动放到这里，表格紧贴页签栏
+ * - 页签栏右侧可放 extra（如「导出」）；当前页签里 DataTable 的列设置也自动放到这里；表格与页签栏保留间距
  */
 export function DetailTabs({
   items,
@@ -86,10 +86,9 @@ export function DetailTabs({
         <TabsPrimitive.Content
           key={item.value}
           value={item.value}
-          // 表格的上边框与页签栏底边重合，去掉一条
           className={cn(
             'min-w-0 text-sm outline-none',
-            item.padded ? 'p-4' : '[&_[data-slot=data-table-scroll]]:border-t-0',
+            item.padded ? 'p-4' : 'flex min-h-0 flex-col pt-3',
           )}
         >
           <TableToolbarSlotContext value={toolbarSlot}>{item.content}</TableToolbarSlotContext>

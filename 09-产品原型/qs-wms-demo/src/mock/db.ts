@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
+import { applyOutboundAction, outboundAuditRef } from './outbound-actions'
+import type { OutboundCommand, OutboundRole } from '@/types/outbound'
 import { persist } from 'zustand/middleware'
 import { carrierHasEnabledChannels } from '@/lib/carrier-master'
 import { channelHasOpenReferences } from '@/lib/channel-master'
@@ -30,15 +32,19 @@ import type {
   WarehouseMaster,
   ZoneMaster,
 } from '@/types/wms'
-import type { ContainerReceiptLineInput, ReceiptContainerInput } from '@/types/inbound'
+import type { ContainerReceiptLineInput, NewSkuRecord, ReceiptContainerInput, UnclaimedRecord } from '@/types/inbound'
 import { applyContainerReceipt, applyReceipt } from './inbound-receive-actions'
 import { applyRemovePutawayLine, applySavePutawayLine, applySubmitPutawayOrder } from './putaway-actions'
+import { applySubmitNewSkuMeasure, type SubmitNewSkuMeasureInput } from './new-sku-actions'
+import { applyRegisterUnclaimed, type RegisterUnclaimedInput } from './unclaimed-actions'
 import { createSeedData, type SeedData } from './seed'
 import { nextDocNo } from '@/lib/doc-no'
 
 // SeedData includes receiptRecords / putawayOrders / inboundExceptions
 
-type ActionResult = { ok: true } | { ok: false; errorKey: string }
+type ActionResult =
+  | { ok: true }
+  | { ok: false; errorKey: string; params?: Record<string, string | number> }
 
 export interface MockPushInboundInput {
   customerId: string
@@ -54,6 +60,8 @@ export interface MockPushInboundInput {
 }
 
 interface DbActions {
+  outboundAction: (command: OutboundCommand, operator: string) => { ok: true; no?: string } | { ok: false; errorKey: string; params?: Record<string, string | number> }
+  setOutboundRole: (role: OutboundRole) => void
   resetDemo: () => void
   confirmReceiptClose: (inboundNo: string, operator: string) => ActionResult
   mockPushInboundInstruction: (input: MockPushInboundInput) => ActionResult & { inboundNo?: string }
@@ -67,17 +75,29 @@ interface DbActions {
     lines: ContainerReceiptLineInput[]
     operator: string
   }) => ActionResult
-  /** PDA 上架：保存落位，只记进度不动库存（主 PRD R10） */
+  /** PDA 上架：保存落位，只记进度不动库存（上架单主PRD 第三节）；按应上架行号定位 */
   savePutawayLine: (input: {
     putawayNo: string
     locationCode: string
-    skuCode: string
+    planLineNo: number
     qty: number
+    serialNos?: string[]
     operator: string
   }) => ActionResult
-  removePutawayLine: (input: { putawayNo: string; locationCode: string; skuCode: string; operator: string }) => ActionResult
+  removePutawayLine: (input: {
+    putawayNo: string
+    locationCode: string
+    planLineNo: number
+    operator: string
+  }) => ActionResult
   /** PDA 上架：提交上架单，暂存库位库存移到目标货位 */
   submitPutawayOrder: (input: { putawayNo: string; operator: string }) => ActionResult
+  /** 新品量方提交（管理端量方弹窗与 PDA 量方屏共用） */
+  submitNewSkuMeasure: (input: SubmitNewSkuMeasureInput) => ActionResult & {
+    record?: NewSkuRecord
+  }
+  /** 无主货登记（管理端登记弹窗与 PDA 登记屏共用）；只写 unclaimedRecords */
+  registerUnclaimed: (input: RegisterUnclaimedInput) => ActionResult & { record?: UnclaimedRecord }
   updateWarehouseMaster: (
     code: string,
     patch: Omit<WarehouseMaster, 'code' | 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy'>,
@@ -173,6 +193,18 @@ export const useDb = create<DbState>()(
 
       return {
         ...createSeedData(),
+        setOutboundRole: (outboundRole) => set({ outboundRole }),
+        outboundAction: (command, operator) => {
+          const result = applyOutboundAction(get(), command, operator)
+          if (result.patch)
+            set({
+              ...result.patch,
+              auditLogs: result.ok
+                ? appendAudit({ ...outboundAuditRef(get(), command, result.no), action: 'OUTBOUND_ACTION', operator })
+                : get().auditLogs,
+            })
+          return result.ok ? { ok: true, no: result.no } : { ok: false, errorKey: result.errorKey, params: result.params }
+        },
 
         resetDemo: () => {
           const seed = createSeedData()
@@ -307,33 +339,33 @@ export const useDb = create<DbState>()(
           return { ok: true }
         },
 
-        savePutawayLine: ({ putawayNo, locationCode, skuCode, qty, operator }) => {
-          const result = applySavePutawayLine(get(), { putawayNo, locationCode, skuCode, qty })
+        savePutawayLine: ({ putawayNo, locationCode, planLineNo, qty, serialNos, operator }) => {
+          const result = applySavePutawayLine(get(), { putawayNo, locationCode, planLineNo, qty, serialNos })
           if (!result.ok) return result
           set({
             ...result.patch,
             auditLogs: appendAudit({
-              refType: 'INBOUND',
-              refNo: result.order!.inboundNo,
+              refType: 'PUTAWAY',
+              refNo: putawayNo,
               action: 'PUTAWAY_SAVE',
               operator,
-              detail: `${putawayNo} · ${skuCode} ×${qty} → ${locationCode.toUpperCase()}`,
+              detail: `#${planLineNo} ×${qty} → ${locationCode.toUpperCase()}`,
             }),
           })
           return { ok: true }
         },
 
-        removePutawayLine: ({ putawayNo, locationCode, skuCode, operator }) => {
-          const result = applyRemovePutawayLine(get(), { putawayNo, locationCode, skuCode })
+        removePutawayLine: ({ putawayNo, locationCode, planLineNo, operator }) => {
+          const result = applyRemovePutawayLine(get(), { putawayNo, locationCode, planLineNo })
           if (!result.ok) return result
           set({
             ...result.patch,
             auditLogs: appendAudit({
-              refType: 'INBOUND',
-              refNo: result.order!.inboundNo,
-              action: 'PUTAWAY_SAVE',
+              refType: 'PUTAWAY',
+              refNo: putawayNo,
+              action: 'PUTAWAY_REMOVE',
               operator,
-              detail: `${putawayNo} · ${skuCode} @ ${locationCode} removed`,
+              detail: `#${planLineNo} @ ${locationCode}`,
             }),
           })
           return { ok: true }
@@ -345,14 +377,46 @@ export const useDb = create<DbState>()(
           set({
             ...result.patch,
             auditLogs: appendAudit({
-              refType: 'INBOUND',
-              refNo: result.order!.inboundNo,
+              refType: 'PUTAWAY',
+              refNo: putawayNo,
               action: 'PUTAWAY',
               operator,
-              detail: `${putawayNo} · ${result.order!.actualLines.length} lines`,
+              detail: `${result.order!.actualLines.length} lines`,
             }),
           })
           return { ok: true }
+        },
+
+        submitNewSkuMeasure: (input) => {
+          const result = applySubmitNewSkuMeasure(get(), input)
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: result.record.recordNo,
+              action: 'NEW_SKU_MEASURE',
+              operator: input.operator,
+              detail: `${result.record.skuCode} · ${result.record.lengthCm}×${result.record.widthCm}×${result.record.heightCm} cm · ${result.record.grossWeightKg} kg`,
+            }),
+          })
+          return { ok: true, record: result.record }
+        },
+
+        registerUnclaimed: (input) => {
+          const result = applyRegisterUnclaimed(get(), input)
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: result.record.registerNo,
+              action: 'UNCLAIMED_REGISTER',
+              operator: input.operator,
+              detail: `${result.record.cartonQty} cartons · ${result.record.trackingNos.length + result.record.cartonMarks.length} clues`,
+            }),
+          })
+          return { ok: true, record: result.record }
         },
 
         updateWarehouseMaster: (code, patch) => {
@@ -694,7 +758,8 @@ export const useDb = create<DbState>()(
             const putawayOrders = get().putawayOrders
             if (
               hasSkuStock(inv, prev.customerId, prev.code) ||
-              hasOpenSkuWork(inbounds, putawayOrders, prev.customerId, prev.code)
+              hasOpenSkuWork(inbounds, putawayOrders, prev.customerId, prev.code) ||
+              get().outboundOrders.some(o => o.customerId === prev.customerId && !['SHIPPED', 'CANCELLED'].includes(o.status) && o.items.some(i => i.skuCode === prev.code))
             ) {
               return { ok: false, errorKey: 'masterSku.error.disableBlocked' }
             }
@@ -893,7 +958,7 @@ export const useDb = create<DbState>()(
           const idx = get().channelMasters.findIndex((ch) => ch.code === code)
           if (idx < 0) return { ok: false, errorKey: 'masterChannel.notFound' }
           const prev = get().channelMasters[idx]
-          const locked = channelHasOpenReferences(code, get().packages)
+          const locked = channelHasOpenReferences(code, get().packages) || get().outboundOrders.some(o => o.channelCode === code && !['SHIPPED', 'CANCELLED'].includes(o.status))
           let nextCarrier = prev.carrierCode
           if (patch.carrierCode && patch.carrierCode !== prev.carrierCode) {
             if (locked) return { ok: false, errorKey: 'masterChannel.error.carrierLocked' }
@@ -922,7 +987,7 @@ export const useDb = create<DbState>()(
           if (idx < 0) return { ok: false, errorKey: 'masterChannel.notFound' }
           const prev = get().channelMasters[idx]
           if (prev.status === status) return { ok: true }
-          if (status === 'DISABLED' && channelHasOpenReferences(code, get().packages)) {
+          if (status === 'DISABLED' && (channelHasOpenReferences(code, get().packages) || get().outboundOrders.some(o => o.channelCode === code && !['SHIPPED', 'CANCELLED'].includes(o.status)))) {
             return { ok: false, errorKey: 'masterChannel.error.disableReferenced' }
           }
           const next: ChannelMaster = {
@@ -941,9 +1006,9 @@ export const useDb = create<DbState>()(
     {
       name: 'qs-wms-demo-db',
       // 修改 seed.ts 或数据结构后把版本号 +1，浏览器里的旧演示数据会被替换为新种子
-      version: 18,
+      version: 27,
       migrate: (_persisted: unknown, fromVersion: number) => {
-        if (fromVersion < 17) return createSeedData() as unknown as typeof _persisted
+        if (fromVersion < 27) return createSeedData() as unknown as typeof _persisted
         return _persisted
       },
       merge: (persisted, current) => {
@@ -964,6 +1029,10 @@ export const useDb = create<DbState>()(
         return next
       },
       partialize: (s) => ({
+        outboundOrders: s.outboundOrders, outboundWaves: s.outboundWaves, outboundPickTasks: s.outboundPickTasks,
+        outboundVerifications: s.outboundVerifications, outboundPutbacks: s.outboundPutbacks, outboundHandovers: s.outboundHandovers,
+        skuAllocationControls: s.skuAllocationControls, outboundMessages: s.outboundMessages, outboundResults: s.outboundResults,
+        inventoryCounts: s.inventoryCounts, outboundRole: s.outboundRole,
         warehouses: s.warehouses,
         warehouseMasters: s.warehouseMasters,
         zoneMasters: s.zoneMasters,
@@ -980,6 +1049,8 @@ export const useDb = create<DbState>()(
         receiptRecords: s.receiptRecords,
         putawayOrders: s.putawayOrders,
         inboundExceptions: s.inboundExceptions,
+        newSkuRecords: s.newSkuRecords,
+        unclaimedRecords: s.unclaimedRecords,
         inventory: s.inventory,
         inventoryLogs: s.inventoryLogs,
         packages: s.packages,

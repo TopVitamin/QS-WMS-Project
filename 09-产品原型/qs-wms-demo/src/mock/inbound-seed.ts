@@ -172,28 +172,33 @@ export function createInboundDemoBundle(): InboundDemoBundle {
   putawayOrders.push(
     {
       putawayNo: 'PA-20261004-0001',
-      inboundNo: o0003.inboundNo,
+      sourceType: 'INBOUND',
+      sourceNo: o0003.inboundNo,
+      stagingLocationCode: 'STAGE-IN-01',
       warehouseCode: WH,
       customerId: ANKR,
       receiptNo: 'RC-20261004-0001',
       containerNo: 'C-A01',
       qualityType: 'GOOD',
       status: 'COMPLETED',
-      planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 590 }],
-      actualLines: [{ locationCode: 'A-01-01', skuCode: 'CABLE-01', qty: 590, submitted: true }],
+      planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 590 }],
+      actualLines: [{ lineNo: 1, planLineNo: 1, locationCode: 'A-01-01', skuCode: 'CABLE-01', qty: 590, submitted: true }],
       createdAt: '2026-10-04T10:00:00.000Z',
       submittedAt: '2026-10-04T10:30:00.000Z',
+      submittedBy: 'pda.user',
     },
     {
       putawayNo: 'PA-20261004-0002',
-      inboundNo: o0003.inboundNo,
+      sourceType: 'INBOUND',
+      sourceNo: o0003.inboundNo,
+      stagingLocationCode: 'STAGE-IN-01',
       warehouseCode: WH,
       customerId: ANKR,
       receiptNo: 'RC-20261004-0001',
       containerNo: 'C-A01',
       qualityType: 'DEFECTIVE',
       status: 'PENDING',
-      planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 10 }],
+      planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 10 }],
       actualLines: [],
       createdAt: '2026-10-04T10:00:00.000Z',
     },
@@ -224,19 +229,48 @@ export function createInboundDemoBundle(): InboundDemoBundle {
     stagingLocationCode: 'STAGE-IN-01',
     operator: 'pda.user',
     receivedAt: '2026-10-05T10:00:00.000Z',
-    lines: [{ lineNo: 1, skuCode: 'CABLE-01', containerNo: 'C-B02', receivedQty: 800, rejectedQty: 0, goodQty: 800, defectQty: 0 }],
+    /** 同容器同SKU两个批次，按批次拆行；应上架行不按SKU合并（上架单主PRD 第一节） */
+    lines: [
+      {
+        lineNo: 1,
+        skuCode: 'CABLE-01',
+        containerNo: 'C-B02',
+        receivedQty: 500,
+        rejectedQty: 0,
+        goodQty: 500,
+        defectQty: 0,
+        batchNo: 'BATCH-2026-A',
+      },
+      {
+        lineNo: 2,
+        skuCode: 'CABLE-01',
+        containerNo: 'C-B02',
+        receivedQty: 300,
+        rejectedQty: 0,
+        goodQty: 300,
+        defectQty: 0,
+        batchNo: 'BATCH-2026-B',
+      },
+    ],
   })
   putawayOrders.push({
     putawayNo: 'PA-20261005-0001',
-    inboundNo: o0004.inboundNo,
+    sourceType: 'INBOUND',
+    sourceNo: o0004.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
     warehouseCode: WH,
     customerId: ANKR,
     receiptNo: 'RC-20261005-0001',
     containerNo: 'C-B02',
     qualityType: 'GOOD',
     status: 'PUTAWAYING',
-    planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 800 }],
-    actualLines: [{ locationCode: 'A-02-01', skuCode: 'CABLE-01', qty: 300, submitted: false }],
+    planLines: [
+      { lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 500, batchNo: 'BATCH-2026-A' },
+      { lineNo: 2, receiptLineNo: 2, skuCode: 'CABLE-01', planQty: 300, batchNo: 'BATCH-2026-B' },
+    ],
+    actualLines: [
+      { lineNo: 1, planLineNo: 1, locationCode: 'A-02-01', skuCode: 'CABLE-01', qty: 300, submitted: false },
+    ],
     createdAt: '2026-10-05T13:00:00.000Z',
   })
 
@@ -299,31 +333,37 @@ export function createInboundDemoBundle(): InboundDemoBundle {
   putawayOrders.push(
     {
       putawayNo: 'PA-20261006-0001',
-      inboundNo: o0005.inboundNo,
+      sourceType: 'INBOUND',
+      sourceNo: o0005.inboundNo,
+      stagingLocationCode: 'STAGE-IN-01',
       warehouseCode: WH,
       customerId: ANKR,
       receiptNo: 'RC-20261006-0001',
       containerNo: 'C-C05',
       qualityType: 'GOOD',
       status: 'COMPLETED',
-      planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 92 }],
-      actualLines: [{ locationCode: 'A-01-01', skuCode: 'CABLE-01', qty: 92, submitted: true }],
+      planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 92 }],
+      actualLines: [{ lineNo: 1, planLineNo: 1, locationCode: 'A-01-01', skuCode: 'CABLE-01', qty: 92, submitted: true }],
       createdAt: '2026-10-06T10:00:00.000Z',
       submittedAt: '2026-10-06T14:00:00.000Z',
+      submittedBy: 'pda.user',
     },
     {
       putawayNo: 'PA-20261006-0002',
-      inboundNo: o0005.inboundNo,
+      sourceType: 'INBOUND',
+      sourceNo: o0005.inboundNo,
+      stagingLocationCode: 'STAGE-IN-01',
       warehouseCode: WH,
       customerId: ANKR,
       receiptNo: 'RC-20261006-0001',
       containerNo: 'C-C05',
       qualityType: 'DEFECTIVE',
       status: 'COMPLETED',
-      planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 2 }],
-      actualLines: [{ locationCode: 'DEFECT-01', skuCode: 'CABLE-01', qty: 2, submitted: true }],
+      planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 2 }],
+      actualLines: [{ lineNo: 1, planLineNo: 1, locationCode: 'DEFECT-01', skuCode: 'CABLE-01', qty: 2, submitted: true }],
       createdAt: '2026-10-06T10:00:00.000Z',
       submittedAt: '2026-10-06T14:10:00.000Z',
+      submittedBy: 'pda.user',
     },
   )
 
@@ -373,16 +413,19 @@ export function createInboundDemoBundle(): InboundDemoBundle {
   })
   putawayOrders.push({
     putawayNo: 'PA-20261007-0001',
-    inboundNo: o0006.inboundNo,
+    sourceType: 'INBOUND',
+    sourceNo: o0006.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
     warehouseCode: WH,
     customerId: ANKR,
     receiptNo: 'RC-20261007-0001',
     qualityType: 'GOOD',
     status: 'COMPLETED',
-    planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 120 }],
-    actualLines: [{ locationCode: 'A-02-01', skuCode: 'CABLE-01', qty: 120, submitted: true }],
+    planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 120 }],
+    actualLines: [{ lineNo: 1, planLineNo: 1, locationCode: 'A-02-01', skuCode: 'CABLE-01', qty: 120, submitted: true }],
     createdAt: '2026-10-07T11:00:00.000Z',
     submittedAt: '2026-10-07T15:00:00.000Z',
+    submittedBy: 'pda.user',
   })
 
   const o0007 = order(
@@ -431,17 +474,20 @@ export function createInboundDemoBundle(): InboundDemoBundle {
   })
   putawayOrders.push({
     putawayNo: 'PA-20261008-0001',
-    inboundNo: o0007.inboundNo,
+    sourceType: 'INBOUND',
+    sourceNo: o0007.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
     warehouseCode: WH,
     customerId: ANKR,
     receiptNo: 'RC-20261008-0001',
     containerNo: 'C-B07',
     qualityType: 'GOOD',
     status: 'COMPLETED',
-    planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 20 }],
-    actualLines: [{ locationCode: 'B-01-01', skuCode: 'CABLE-01', qty: 20, submitted: true }],
+    planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 20 }],
+    actualLines: [{ lineNo: 1, planLineNo: 1, locationCode: 'B-01-01', skuCode: 'CABLE-01', qty: 20, submitted: true }],
     createdAt: '2026-10-08T12:00:00.000Z',
     submittedAt: '2026-10-08T13:00:00.000Z',
+    submittedBy: 'pda.user',
   })
 
   const o0008 = order(
@@ -473,13 +519,15 @@ export function createInboundDemoBundle(): InboundDemoBundle {
   })
   putawayOrders.push({
     putawayNo: 'PA-20261009-0001',
-    inboundNo: o0008.inboundNo,
+    sourceType: 'INBOUND',
+    sourceNo: o0008.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
     warehouseCode: WH,
     customerId: ANKR,
     receiptNo: 'RC-20261009-0001',
     qualityType: 'GOOD',
     status: 'PENDING',
-    planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 60 }],
+    planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 60 }],
     actualLines: [],
     createdAt: '2026-10-09T09:30:00.000Z',
   })
@@ -512,7 +560,7 @@ export function createInboundDemoBundle(): InboundDemoBundle {
     trackingNos: 'JD20261009001',
     firstArrivalAt: '2026-10-09T16:00:00.000Z',
     updatedAt: '2026-10-09T16:30:00.000Z',
-    remark: '演示：调拨入库、分批收货中',
+    remark: '演示：调拨入库、分批收货中；SN-DEMO-01 未维护，收货提交被阻断并可去量方',
   })
   receiptRecords.push({
     receiptNo: 'RC-20261009-0002',
@@ -526,31 +574,111 @@ export function createInboundDemoBundle(): InboundDemoBundle {
   })
   putawayOrders.push({
     putawayNo: 'PA-20261009-0002',
-    inboundNo: o0009.inboundNo,
+    sourceType: 'INBOUND',
+    sourceNo: o0009.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
     warehouseCode: WH,
     customerId: ANKR,
     receiptNo: 'RC-20261009-0002',
     qualityType: 'GOOD',
     status: 'PENDING',
-    planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 28 }],
+    planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 28 }],
     actualLines: [],
     createdAt: '2026-10-09T16:35:00.000Z',
   })
   // 同一次收货的不良品 2 件：按「收货记录 × 品质」另成一张上架单（主 PRD §7.6）
   putawayOrders.push({
     putawayNo: 'PA-20261009-0003',
-    inboundNo: o0009.inboundNo,
+    sourceType: 'INBOUND',
+    sourceNo: o0009.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
     warehouseCode: WH,
     customerId: ANKR,
     receiptNo: 'RC-20261009-0002',
     qualityType: 'DEFECTIVE',
     status: 'PENDING',
-    planLines: [{ lineNo: 1, skuCode: 'CABLE-01', planQty: 2 }],
+    planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'CABLE-01', planQty: 2 }],
     actualLines: [],
     createdAt: '2026-10-09T16:35:00.000Z',
   })
 
-  const core = [o0001, o0002, o0003, o0004, o0005, o0006, o0007, o0008, o0009].map((o) =>
+  /** SN 商品：逐件采集、逐件落位（上架单 Demo PRD 第七节「SN商品两件分到两个库位」） */
+  const o0010 = order(
+    '0010',
+    'OMS-IN-SEED-0010',
+    [
+      line({
+        lineNo: 1,
+        skuCode: 'SN-DEMO-01',
+        plannedQty: 2,
+        receivedQty: 2,
+        rejectedQty: 0,
+        goodQty: 2,
+        defectQty: 0,
+        putawayQty: 2,
+      }),
+    ],
+    {
+      receiptCloseFlag: 'CONFIRMED',
+      receiptClosedBy: 'admin',
+      receiptClosedAt: '2026-10-10T09:00:00.000Z',
+      completedAt: '2026-10-10T10:00:00.000Z',
+      firstArrivalAt: '2026-10-10T08:30:00.000Z',
+      updatedAt: '2026-10-10T10:00:00.000Z',
+      remark: '演示：SN商品逐件采集并逐件落位',
+    },
+  )
+  receiptRecords.push({
+    receiptNo: 'RC-20261010-0002',
+    inboundNo: o0010.inboundNo,
+    warehouseCode: WH,
+    customerId: ANKR,
+    containerNo: 'C-SN01',
+    stagingLocationCode: 'STAGE-IN-01',
+    operator: 'pda.user',
+    receivedAt: '2026-10-10T08:40:00.000Z',
+    lines: [
+      { lineNo: 1, skuCode: 'SN-DEMO-01', containerNo: 'C-SN01', receivedQty: 2, rejectedQty: 0, goodQty: 2, defectQty: 0 },
+    ],
+  })
+  putawayOrders.push({
+    putawayNo: 'PA-20261010-0001',
+    sourceType: 'INBOUND',
+    sourceNo: o0010.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
+    warehouseCode: WH,
+    customerId: ANKR,
+    receiptNo: 'RC-20261010-0002',
+    containerNo: 'C-SN01',
+    qualityType: 'GOOD',
+    status: 'COMPLETED',
+    planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'SN-DEMO-01', planQty: 2 }],
+    actualLines: [
+      {
+        lineNo: 1,
+        planLineNo: 1,
+        locationCode: 'A-01-02',
+        skuCode: 'SN-DEMO-01',
+        qty: 1,
+        serialNos: ['SN00000001'],
+        submitted: true,
+      },
+      {
+        lineNo: 2,
+        planLineNo: 1,
+        locationCode: 'A-01-03',
+        skuCode: 'SN-DEMO-01',
+        qty: 1,
+        serialNos: ['SN00000002'],
+        submitted: true,
+      },
+    ],
+    createdAt: '2026-10-10T09:30:00.000Z',
+    submittedAt: '2026-10-10T10:00:00.000Z',
+    submittedBy: 'pda.user',
+  })
+
+  const core = [o0001, o0002, o0003, o0004, o0005, o0006, o0007, o0008, o0009, o0010].map((o) =>
     recomputeInboundOrder(o),
   )
   const filler = createFillerInboundsForOtherWarehouses()

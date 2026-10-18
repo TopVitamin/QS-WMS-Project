@@ -1,0 +1,16 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-CANCEL-001",
+  "messageType": "CANCEL_OUTBOUND",
+  "businessType": "B2C",
+  "upstreamNo": "DEMO-B2C-001",
+  "expectedVersion": 1,
+  "payload": {
+    "reason": "Demo cancellation after 3 units picked"
+  },
+  "expectedOutcome": {
+    "orderStatus": "CANCELLED",
+    "reservationReleased": 3,
+    "putbackExpectedQty": 3
+  }
+}

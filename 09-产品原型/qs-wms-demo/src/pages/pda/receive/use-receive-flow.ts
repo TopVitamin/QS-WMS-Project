@@ -7,6 +7,7 @@ import { useInbound, useReceivableInbounds } from '@/hooks/use-inbound'
 import { usePdaStep } from '@/hooks/use-pda-step'
 import { canReceiveInbound, lineUnreceivedQty } from '@/lib/inbound-derive'
 import { resolveInboundSkuScan, validateInboundReceiveDraft } from '@/lib/inbound-receive'
+import { isNewSku } from '@/lib/new-sku'
 import { useDb, useLookups } from '@/mock/db'
 import { useCurrentWarehouse, useSettings } from '@/stores/settings'
 import {
@@ -16,7 +17,7 @@ import {
   type ReceiveSessionLine,
 } from '@/stores/pda-receive-session'
 
-export const RECEIVE_STEPS = ['order', 'container', 'box', 'line', 'submit'] as const
+export const RECEIVE_STEPS = ['order', 'container', 'box', 'line', 'measure', 'submit'] as const
 export type ReceiveStep = (typeof RECEIVE_STEPS)[number]
 
 /** 扫到的码不是容器号时的类型（PDA 收货 PRD §3） */
@@ -46,6 +47,7 @@ export function useReceiveFlow() {
   const locations = useDb((s) => s.locations)
   const skus = useDb((s) => s.skus)
   const skuMasters = useDb((s) => s.skuMasters)
+  const newSkuRecords = useDb((s) => s.newSkuRecords)
   const { confirm } = useConfirm()
 
   const order = session.inboundNo ? getOrder(session.inboundNo) : undefined
@@ -86,7 +88,13 @@ export function useReceiveFlow() {
     [order, ownerCode, sku, skuBarcodes],
   )
 
-  /** 扫到的不是容器号：入库单号、柜号、商品条码、货位码 */
+  /** 本单该商品是否新品：无 NS 记录即新品，扫到先进入量方屏（PDA 新品量方 PRD §3） */
+  const isNewSkuInOrder = useCallback(
+    (skuCode: string) => (order ? isNewSku(newSkuRecords, order.customerId, skuCode) : false),
+    [newSkuRecords, order],
+  )
+
+
   const productCodes = useMemo(() => {
     const set = new Set<string>()
     skus.forEach((s) => [s.code, s.barcode].forEach((c) => c && set.add(c.toUpperCase())))
@@ -168,6 +176,7 @@ export function useReceiveFlow() {
     receipts,
     thisRemain,
     resolveSku,
+    isNewSkuInOrder,
     classifyNonContainer,
     notice,
     failScan,

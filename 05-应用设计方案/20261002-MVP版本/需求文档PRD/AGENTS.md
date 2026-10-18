@@ -33,10 +33,12 @@
 - **使用状态**：新建默认启用；**不在**新增/编辑表单或维护 Dialog 里改状态（无 Switch/Select 状态）。启停仅 **列表操作列**、**详情页头**（及渠道类 **查看 Dialog** 只读 `StatusBadge`）。
 - 共享 `*-form-fields.tsx` 或 `*FormDialog`，`mode: 'create' | 'edit'`。
 
-### 3. 查看（详情）页：展示 **4 列**
+### 3. 查看（详情）页：主数据 **4 列**，业务单据 **概览卡 + 多页签**
 
-- 分组 `Panel` + `Descriptions columns={4}`；长字段 `multiline` 或 `col-span-*`。
-- 维护信息：`MasterAuditPanel` 或等价，只读 **最后修改人、最后修改时间**（不要堆创建人除非主 PRD 要求）。
+- **主数据**：分组 `Panel` + `Descriptions columns={4}`；长字段 `multiline` 或 `col-span-*`。维护信息：`MasterAuditPanel` 或等价，只读 **最后修改人、最后修改时间**（不要堆创建人除非主 PRD 要求）。
+- **业务单据**（有进度或多类子记录，如入库单、上架单）：标题 `DetailTitle`「固定文案 · 单号 [状态]」；上方 `DetailOverview` 两栏——左「基本信息」`Section` + `Descriptions columns={3}`（单号、状态不重复），右 320px `SummaryCard`（进度条 + 数量清单）；下方 `DetailTabs param="tab"`，明细放第一个页签，子记录与操作日志各一个页签，页签带条数。不要再上下堆多个分区 Panel 和子表。样板 `inbound-order-detail-page.tsx`、`putaway-detail-page.tsx`。
+- **只读记录抽屉**（新品维护、无主货登记等列表直接点开的记录）：`DetailSheet` 标题同样用 `DetailTitle`（有状态带状态）；字段按业务分组，每组一个 `Section` + `Descriptions`（880px 抽屉内 3～4 列）；不放业务按钮。样板 `new-sku-detail-sheet.tsx`、`unclaimed-detail-sheet.tsx`。
+- **管理端补录页**（如上架单「Web 端上架」）：与业务单据详情同一骨架，左侧多一张录入表单 `Section`，右侧汇总卡底部放写明数量的提交按钮，下方页签放待录明细与已录记录；管理端密度，不做扫码作业台。样板 `putaway-entry-page.tsx`。
 - 弹窗「查看」模式：字段只读；状态仅展示，不可编辑。
 
 ### 4. Placeholder（占位提示）
@@ -64,7 +66,7 @@ Demo 版 PRD 的 FilterBar 表须写清：每个筛选项控件类型及是否�
 
 1. FilterBar 是否 `columns={6}`？常显是否 ≤5？>5 项是否仅溢出进 `advanced`？
 2. 新增/编辑/Dialog 是否 4 列（或骨架约定）？是否未维护使用状态？
-3. 详情是否 `Descriptions columns={4}`？
+3. 主数据详情是否 `Descriptions columns={4}`？业务单据详情是否「概览卡 + 多页签」、只读抽屉是否用 `DetailTitle` + 分组 `Section`？
 4. 筛选与表单的可编辑控件是否写明 placeholder？
 5. 是否指向 `03-业务组件` 中的样板页（如 `warehouse-list-page`、`warehouse-form-fields`）？
 6. 是否与 [《WMS基础资料PRD转换说明》](1-基础资料/WMS基础资料PRD转换说明.md) 路由、三件制一致？
@@ -77,6 +79,7 @@ Demo 版 PRD 的 FilterBar 表须写清：每个筛选项控件类型及是否�
 | 列表 5+1 常显 + advanced | `customer-list-page.tsx`、`channel-list-page.tsx`、`sku-list-page.tsx` |
 | 新增/编辑 4 列 | `warehouse-form-fields.tsx` |
 | 详情 4 列 | `warehouse-detail-page.tsx` |
+| 业务单据详情（概览卡 + 多页签） | `inbound-order-detail-page.tsx`、`putaway-detail-page.tsx` |
 | Dialog 维护、无表单状态 | `carrier-form-dialog.tsx`、`channel-form-dialog.tsx` |
 
-改写任一对象 Demo 版 PRD 时，在文首「样式与组件」段增加一句：**布局与占位须符合 [需求文档 PRD / AGENTS.md](../AGENTS.md) 第四节**。
+改写任一对象 Demo 版 PRD 时，在文首「样式与组件」段增加一句：**布局与占位须符合 [需求文档 PRD / AGENTS.md](../AGENTS.md) 「布局硬规则」一节**。

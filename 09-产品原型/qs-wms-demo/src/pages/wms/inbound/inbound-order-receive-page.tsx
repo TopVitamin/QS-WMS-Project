@@ -23,6 +23,7 @@ import {
   type ReceiveQtyField,
 } from '@/lib/inbound-receive'
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
+import { isNewSku } from '@/lib/new-sku'
 import { cn } from '@/lib/utils'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
@@ -35,6 +36,7 @@ import {
 } from '@/stores/web-receive-session'
 import type { ReceiptContainerInput } from '@/types/inbound'
 import { InboundReceiveLineForm } from './inbound-receive-line-form'
+import { NewSkuMeasureDialog } from './new-sku-measure-dialog'
 
 /** 容器里有录入数量的 SKU */
 const activeEdits = (box: WebReceiveBox) =>
@@ -64,6 +66,7 @@ export function InboundOrderReceivePage() {
   const receiptRecords = useDb((s) => s.receiptRecords ?? [])
   const { customerCode, customerName, sku } = useLookups()
   const skuBarcodes = useDb((s) => s.skuBarcodes)
+  const newSkuRecords = useDb((s) => s.newSkuRecords)
   const session = useWebReceiveSession((s) => s.sessions[inboundNo] ?? EMPTY_WEB_RECEIVE_SESSION)
   const updateSession = useWebReceiveSession((s) => s.update)
   const clearSession = useWebReceiveSession((s) => s.clear)
@@ -72,11 +75,11 @@ export function InboundOrderReceivePage() {
   const ownerCode = order ? customerCode(order.customerId) : ''
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
   const backToList = listSearch ? `/wms/inbound/orders?${listSearch}` : '/wms/inbound/orders'
-  const backToDetail = `/wms/inbound/orders/${inboundNo}`
 
   const scanRef = useRef<HTMLInputElement>(null)
   const [scanValue, setScanValue] = useState('')
   const [activeSku, setActiveSku] = useState<string>()
+  const [measureSku, setMeasureSku] = useState<string>()
   const [flash, setFlash] = useState<ScanFlash>()
   /** 最近一次操作的结果；为空时显示当前步骤的默认提示 */
   const [feedback, setFeedback] = useState<WorkbenchPromptState>()
@@ -365,7 +368,7 @@ export function InboundOrderReceivePage() {
     if (!res.ok) {
       void block(
         t('inbound.receive.prompt.submitFailTitle'),
-        t('inbound.receive.prompt.submitFailDetail', { reason: t(res.errorKey) }),
+        t('inbound.receive.prompt.submitFailDetail', { reason: t(res.errorKey, res.params) }),
       )
       return
     }
@@ -388,7 +391,7 @@ export function InboundOrderReceivePage() {
 
   if (!inboundNo || !order) return <Navigate to="/wms/inbound/orders" replace />
   if (order.warehouseCode !== warehouseCode) return <Navigate to={backToList} replace />
-  if (!canReceiveInbound(order)) return <Navigate to={backToDetail} replace />
+  if (!canReceiveInbound(order)) return <Navigate to={backToList} replace />
 
   const hasBulkBox = session.boxes.some((b) => b.bulkPiece)
   const remainTotal = openLines.reduce((s, l) => s + lineUnreceivedQty(l), 0)
@@ -404,16 +407,9 @@ export function InboundOrderReceivePage() {
         />
       }
       actions={
-        <>
-          <Button variant="outline" asChild>
-            <Link to={backToDetail} state={location.state}>
-              {t('inbound.backToDetail')}
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to={backToList}>{t('inbound.backToList')}</Link>
-          </Button>
-        </>
+        <Button variant="outline" asChild>
+          <Link to={backToList}>{t('inbound.backToList')}</Link>
+        </Button>
       }
     >
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -491,7 +487,6 @@ export function InboundOrderReceivePage() {
             lines={openLines}
             edits={activeBox?.edits ?? {}}
             limits={limits}
-            otherQty={otherQty}
             activeSku={activeSku}
             containerReady={containerReady}
             onSelectSku={selectSku}
@@ -505,6 +500,17 @@ export function InboundOrderReceivePage() {
             onEnterDone={refocusScan}
             skuName={(code) => sku(code)?.name}
             skuBarcode={(code) => sku(code)?.barcode}
+            isNewSku={(code) => isNewSku(newSkuRecords, order?.customerId ?? '', code)}
+            onGoMeasure={(code) => setMeasureSku(code)}
+          />
+
+          <NewSkuMeasureDialog
+            open={!!measureSku}
+            mode='receive'
+            customerId={order?.customerId}
+            skuCode={measureSku}
+            sourceInboundNo={inboundNo}
+            onClose={() => setMeasureSku(undefined)}
           />
         </Panel>
 

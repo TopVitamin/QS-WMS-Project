@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { suggestPutawayLocation } from '@/lib/putaway'
+import { recordedQty as recordedOfPlanLine, suggestPutawayLocation } from '@/lib/putaway'
+import { cmToLength, kgToWeight } from '@/lib/unit'
 import type { PutawayOrder } from '@/types/inbound'
 import { useDb } from './db'
 
@@ -207,11 +208,13 @@ describe('useDb actions', () => {
       const stagingBefore = onHandAt(order.warehouseCode, 'STAGE-IN-01', skuCode, 'GOOD')
       const targetBefore = onHandAt(order.warehouseCode, target, skuCode, 'GOOD')
 
-      const save = useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, skuCode, qty: 10, operator: 'test' })
+      const save = useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: 10, operator: 'test' })
       expect(save).toEqual({ ok: true })
       const saved = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
       expect(saved.status).toBe('PUTAWAYING')
-      expect(saved.actualLines).toEqual([{ locationCode: target, skuCode, qty: 10, submitted: false }])
+      expect(saved.actualLines).toEqual([
+        { lineNo: 1, planLineNo: po.planLines[0].lineNo, locationCode: target, skuCode, qty: 10, submitted: false },
+      ])
       expect(onHandAt(order.warehouseCode, 'STAGE-IN-01', skuCode, 'GOOD')).toBe(stagingBefore)
       expect(getInbound(order.inboundNo)!.items[0].putawayQty).toBe(0)
 
@@ -245,18 +248,18 @@ describe('useDb actions', () => {
       const defect = orders.find((p) => p.qualityType === 'DEFECTIVE')!
 
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: defect.putawayNo, locationCode: 'A-01-01', skuCode: item.skuCode, qty: 10, operator: 'test' }),
+        useDb.getState().savePutawayLine({ putawayNo: defect.putawayNo, locationCode: 'A-01-01', planLineNo: defect.planLines[0].lineNo, qty: 10, operator: 'test' }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.defectOnly' })
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: 'DEFECT-01', skuCode: item.skuCode, qty: 1, operator: 'test' }),
+        useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: 'DEFECT-01', planLineNo: good.planLines[0].lineNo, qty: 1, operator: 'test' }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.goodToDefect' })
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: 'STAGE-IN-01', skuCode: item.skuCode, qty: 1, operator: 'test' }),
+        useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: 'STAGE-IN-01', planLineNo: good.planLines[0].lineNo, qty: 1, operator: 'test' }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.staging' })
 
       const goodTarget = suggestPutawayLocation(good, item.skuCode, useDb.getState())!
-      useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: goodTarget, skuCode: item.skuCode, qty: item.plannedQty - 10, operator: 'test' })
-      useDb.getState().savePutawayLine({ putawayNo: defect.putawayNo, locationCode: 'DEFECT-01', skuCode: item.skuCode, qty: 10, operator: 'test' })
+      useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: goodTarget, planLineNo: good.planLines[0].lineNo, qty: item.plannedQty - 10, operator: 'test' })
+      useDb.getState().savePutawayLine({ putawayNo: defect.putawayNo, locationCode: 'DEFECT-01', planLineNo: defect.planLines[0].lineNo, qty: 10, operator: 'test' })
       expect(useDb.getState().submitPutawayOrder({ putawayNo: good.putawayNo, operator: 'test' })).toEqual({ ok: true })
       expect(getInbound(order.inboundNo)!.status).toBe('PUTAWAYING')
       expect(useDb.getState().submitPutawayOrder({ putawayNo: defect.putawayNo, operator: 'test' })).toEqual({ ok: true })
@@ -267,16 +270,16 @@ describe('useDb actions', () => {
       const po = useDb.getState().putawayOrders.find((p) => p.putawayNo === 'PA-20261009-0001')!
       const skuCode = po.planLines[0].skuCode
       const target = suggestPutawayLocation(po, skuCode, useDb.getState())!
-      useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, skuCode, qty: 10, operator: 'test' })
+      useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: 10, operator: 'test' })
       expect(useDb.getState().submitPutawayOrder({ putawayNo: po.putawayNo, operator: 'test' })).toEqual({
         ok: false,
         errorKey: 'pdaPutaway.error.planMismatch',
       })
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, skuCode, qty: po.planLines[0].planQty, operator: 'test' }),
+        useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: po.planLines[0].planQty, operator: 'test' }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.overRemain' })
 
-      expect(useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, locationCode: target, skuCode, operator: 'test' })).toEqual({ ok: true })
+      expect(useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, operator: 'test' })).toEqual({ ok: true })
       expect(useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.status).toBe('PENDING')
     })
 
@@ -299,7 +302,7 @@ describe('useDb actions', () => {
         ],
       }))
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: 'C-04-03', skuCode: po.planLines[0].skuCode, qty: 1, operator: 'test' }),
+        useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: 'C-04-03', planLineNo: po.planLines[0].lineNo, qty: 1, operator: 'test' }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.otherOwner' })
     })
   })
@@ -322,7 +325,7 @@ describe('useDb actions', () => {
       expect(completed.length).toBeGreaterThan(0)
       completed.forEach((o) => {
         expect(state.receiptRecords.some((r) => r.inboundNo === o.inboundNo)).toBe(true)
-        expect(state.putawayOrders.some((p) => p.inboundNo === o.inboundNo)).toBe(true)
+        expect(state.putawayOrders.some((p) => p.sourceType === 'INBOUND' && p.sourceNo === o.inboundNo)).toBe(true)
       })
       // 入库异常必须指回真实存在的收货记录
       state.inboundExceptions.forEach((e) => {
@@ -337,7 +340,7 @@ describe('useDb actions', () => {
         .forEach((o) => {
           const planned = (quality: 'GOOD' | 'DEFECTIVE') =>
             state.putawayOrders
-              .filter((p) => p.inboundNo === o.inboundNo && p.qualityType === quality)
+              .filter((p) => p.sourceType === 'INBOUND' && p.sourceNo === o.inboundNo && p.qualityType === quality)
               .flatMap((p) => p.planLines)
               .reduce((s, l) => s + l.planQty, 0)
           const received = (pick: (line: (typeof o.items)[number]) => number) => o.items.reduce((s, i) => s + pick(i), 0)
@@ -345,5 +348,254 @@ describe('useDb actions', () => {
           expect({ no: o.inboundNo, defect: planned('DEFECTIVE') }).toEqual({ no: o.inboundNo, defect: received((i) => i.defectQty) })
         })
     })
+  })
+})
+
+describe('上架单按应上架行落位（上架单主PRD 第三节）', () => {
+  beforeEach(() => {
+    resetDb()
+  })
+
+  it('同SKU两个批次各占一行，保存与撤销按行定位，不按SKU合并', () => {
+    const po = useDb.getState().putawayOrders.find((p) => p.putawayNo === 'PA-20261005-0001')!
+    expect(po.planLines).toHaveLength(2)
+    expect(po.planLines[0].skuCode).toBe(po.planLines[1].skuCode)
+    const [first, second] = po.planLines
+
+    expect(
+      useDb.getState().savePutawayLine({
+        putawayNo: po.putawayNo,
+        locationCode: 'B-01-01',
+        planLineNo: second.lineNo,
+        qty: 10,
+        operator: 'test',
+      }),
+    ).toEqual({ ok: true })
+    const saved = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
+    const secondLine = saved.actualLines.find((a) => a.planLineNo === second.lineNo)!
+    expect(secondLine.qty).toBe(10)
+    expect(secondLine.skuCode).toBe(second.skuCode)
+
+    /** 第二批的落位不动第一批已录（种子第一批已录 300）；按 SKU 合并会串账 */
+    expect(recordedOfPlanLine(saved, first.lineNo)).toBe(300)
+
+    expect(
+      useDb.getState().savePutawayLine({
+        putawayNo: po.putawayNo,
+        locationCode: 'B-01-01',
+        planLineNo: first.lineNo,
+        qty: 20,
+        operator: 'test',
+      }),
+    ).toEqual({ ok: true })
+    const afterFirst = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
+    expect(recordedOfPlanLine(afterFirst, first.lineNo)).toBe(320)
+    expect(recordedOfPlanLine(afterFirst, second.lineNo)).toBe(10)
+
+    expect(
+      useDb.getState().removePutawayLine({
+        putawayNo: po.putawayNo,
+        locationCode: 'B-01-01',
+        planLineNo: second.lineNo,
+        operator: 'test',
+      }),
+    ).toEqual({ ok: true })
+    const afterRemove = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
+    expect(recordedOfPlanLine(afterRemove, second.lineNo)).toBe(0)
+    expect(recordedOfPlanLine(afterRemove, first.lineNo)).toBe(320)
+    /** 删光落位仍保持上架中（上架单主PRD 第二节） */
+    useDb.getState().removePutawayLine({
+      putawayNo: po.putawayNo,
+      locationCode: 'B-01-01',
+      planLineNo: first.lineNo,
+      operator: 'test',
+    })
+    useDb.getState().removePutawayLine({
+      putawayNo: po.putawayNo,
+      locationCode: 'A-02-01',
+      planLineNo: first.lineNo,
+      operator: 'test',
+    })
+    const emptied = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
+    expect(emptied.actualLines).toHaveLength(0)
+    expect(emptied.status).toBe('PENDING')
+  })
+
+  it('SN商品两件分别落到两个库位，提交后序列号随行保留', () => {
+    const po = useDb.getState().putawayOrders.find((p) => p.putawayNo === 'PA-20261010-0001')!
+    expect(po.status).toBe('COMPLETED')
+    expect(po.actualLines.map((a) => a.serialNos)).toEqual([['SN00000001'], ['SN00000002']])
+    expect(new Set(po.actualLines.map((a) => a.locationCode)).size).toBe(2)
+  })
+})
+
+describe('新品维护量方（新品维护主PRD 第二～四节）', () => {
+  beforeEach(() => {
+    resetDb()
+  })
+
+  it('同一次提交重复到达返回原记录，不新建第二条', () => {
+    const input = {
+      customerId: 'C10028',
+      skuCode: 'SN-DEMO-01',
+      warehouseCode: 'US-LA-01',
+      length: 12.5,
+      width: 8,
+      height: 3,
+      grossWeight: 0.75,
+      requestId: 'test-ns-1',
+      operator: 'test',
+    }
+    const first = useDb.getState().submitNewSkuMeasure(input)
+    expect(first.ok).toBe(true)
+    const second = useDb.getState().submitNewSkuMeasure(input)
+    expect(second.ok).toBe(true)
+    expect(second.record?.recordNo).toBe(first.record?.recordNo)
+    expect(useDb.getState().newSkuRecords.filter((r) => r.requestId === 'test-ns-1')).toHaveLength(1)
+  })
+
+  it('写入仓内规格并把 cm、kg 存到商品资料，展示按仓库单位换算', () => {
+    const before = useDb.getState().skuMasters.find((m) => m.customerId === 'C10028' && m.code === 'SN-DEMO-01')!
+    const res = useDb.getState().submitNewSkuMeasure({
+      customerId: 'C10028',
+      skuCode: 'SN-DEMO-01',
+      warehouseCode: 'DE-FRA-01',
+      length: 30,
+      width: 20,
+      height: 10,
+      grossWeight: 1.25,
+      requestId: 'test-ns-2',
+      operator: 'test',
+    })
+    expect(res.ok).toBe(true)
+    expect(res.record?.lengthCm).toBe(30)
+    expect(res.record?.grossWeightKg).toBe(1.25)
+    const after = useDb.getState().skuMasters.find((m) => m.customerId === 'C10028' && m.code === 'SN-DEMO-01')!
+    expect(after.lengthCm).toBe(30)
+    expect(after.grossWeightKg).toBe(1.25)
+    expect(before.updatedAt).not.toBe(after.updatedAt)
+    expect(cmToLength(after.lengthCm!, 'imperial')).toBe(11.81)
+    expect(kgToWeight(after.grossWeightKg!, 'imperial')).toBe(2.756)
+  })
+
+  it('已有同货主SKU记录时阻断并返回已有记录', () => {
+    const res = useDb.getState().submitNewSkuMeasure({
+      customerId: 'C10028',
+      skuCode: 'CABLE-01',
+      warehouseCode: 'US-NJ-01',
+      length: 10,
+      width: 10,
+      height: 10,
+      grossWeight: 1,
+      requestId: 'test-ns-3',
+      operator: 'test',
+    })
+    if (res.ok) throw new Error('expected block')
+    expect(res.errorKey).toBe('newSku.error.exists')
+    expect(res.record?.recordNo).toBe('NS-20261004-0001')
+  })
+
+  it('未维护的新品收货整次提交被阻断，量方后同一提交可通过', () => {
+    const order = getInbound('RK-20261002-0009')!
+    const blocked = useDb.getState().submitContainerReceipt({
+      inboundNo: order.inboundNo,
+      containerNo: 'BOX-NEW-01',
+      lines: [{ skuCode: 'SN-DEMO-01', goodQty: 1, defectQty: 0 }],
+      operator: 'test',
+    })
+    expect(blocked).toEqual({
+      ok: false,
+      errorKey: 'inbound.receive.newSkuBlocked',
+      params: { skuCode: 'SN-DEMO-01' },
+    })
+    expect(useDb.getState().receiptRecords.filter((r) => r.inboundNo === order.inboundNo)).toHaveLength(1)
+
+    expect(
+      useDb.getState().submitNewSkuMeasure({
+        customerId: order.customerId,
+        skuCode: 'SN-DEMO-01',
+        warehouseCode: order.warehouseCode,
+        sourceInboundNo: order.inboundNo,
+        length: 12,
+        width: 8,
+        height: 3,
+        grossWeight: 0.8,
+        requestId: 'test-ns-4',
+        operator: 'test',
+      }).ok,
+    ).toBe(true)
+
+    const passed = useDb.getState().submitContainerReceipt({
+      inboundNo: order.inboundNo,
+      containerNo: 'BOX-NEW-01',
+      lines: [{ skuCode: 'SN-DEMO-01', goodQty: 1, defectQty: 0 }],
+      operator: 'test',
+    })
+    expect(passed).toEqual({ ok: true })
+  })
+})
+
+describe('无主货登记（无主货登记主PRD 第二～三节）', () => {
+  beforeEach(() => {
+    resetDb()
+  })
+
+  it('只写 unclaimedRecords，不动入库、收货、上架、异常与库存', () => {
+    const before = useDb.getState()
+    const snapshot = {
+      inbounds: before.inbounds,
+      receiptRecords: before.receiptRecords,
+      putawayOrders: before.putawayOrders,
+      inboundExceptions: before.inboundExceptions,
+      inventory: before.inventory,
+      inventoryLogs: before.inventoryLogs,
+    }
+    const res = useDb.getState().registerUnclaimed({
+      warehouseCode: 'US-LA-01',
+      trackingNos: ['1Z999AA10000000001'],
+      cartonMarks: [],
+      cartonQty: 2,
+      requestId: 'test-ug-1',
+      operator: 'test',
+    })
+    expect(res.ok).toBe(true)
+    expect(res.record?.status).toBe('HOLDING')
+    const after = useDb.getState()
+    expect(after.inbounds).toEqual(snapshot.inbounds)
+    expect(after.receiptRecords).toEqual(snapshot.receiptRecords)
+    expect(after.putawayOrders).toEqual(snapshot.putawayOrders)
+    expect(after.inboundExceptions).toEqual(snapshot.inboundExceptions)
+    expect(after.inventory).toEqual(snapshot.inventory)
+    expect(after.inventoryLogs).toEqual(snapshot.inventoryLogs)
+    expect(after.unclaimedRecords.filter((r) => r.requestId === 'test-ug-1')).toHaveLength(1)
+  })
+
+  it('同一次提交重复到达返回原UG号；线索全空与箱数不合法均阻断', () => {
+    const input = {
+      warehouseCode: 'US-LA-01',
+      trackingNos: ['1Z999AA10000000002'],
+      cartonMarks: [],
+      cartonQty: 1,
+      requestId: 'test-ug-2',
+      operator: 'test',
+    }
+    const first = useDb.getState().registerUnclaimed(input)
+    expect(first.ok).toBe(true)
+    const again = useDb.getState().registerUnclaimed(input)
+    expect(again.ok).toBe(true)
+    expect(again.record?.registerNo).toBe(first.record?.registerNo)
+
+    expect(
+      useDb.getState().registerUnclaimed({ ...input, requestId: 'test-ug-3', trackingNos: [] }),
+    ).toEqual({ ok: false, errorKey: 'unclaimed.error.clueRequired' })
+    expect(
+      useDb.getState().registerUnclaimed({ ...input, requestId: 'test-ug-4', cartonQty: 0 }),
+    ).toEqual({ ok: false, errorKey: 'error.qtyInvalid' })
+    /** 只有箱唛、没有运单号也算有线索（登记不选库位，实物统一放无主货暂存区域） */
+    expect(
+      useDb
+        .getState()
+        .registerUnclaimed({ ...input, requestId: 'test-ug-5', trackingNos: [], cartonMarks: ['FBA15XYZ0009'] }).ok,
+    ).toBe(true)
   })
 })

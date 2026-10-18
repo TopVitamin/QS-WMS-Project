@@ -86,6 +86,10 @@ export type ContainerReceiptLineInput = {
   defectQty: number
   rejectedQty?: number
   rejectReason?: string
+  /** 启用批次/效期商品按配置采集；同SKU不同批次按行拆开 */
+  batchNo?: string
+  productionDate?: string
+  expiryDate?: string
 }
 
 /** 一次收货提交中的一个容器（或一组无容器收货） */
@@ -97,32 +101,50 @@ export type ReceiptContainerInput = {
 
 export type PutawayOrderStatus = 'PENDING' | 'PUTAWAYING' | 'COMPLETED'
 
+/** 上架单来源业务：入库单或退货单（一期 Demo 只有入库来源） */
+export type PutawaySourceType = 'INBOUND' | 'RETURN'
+
 export interface PutawayPlanLine {
   lineNo: number
+  /** 对应收货明细行号；同SKU不同批次靠收货行与批次区分 */
+  receiptLineNo: number
   skuCode: string
   planQty: number
   batchNo?: string
+  productionDate?: string
   expiryDate?: string
 }
 
 export interface PutawayActualLine {
+  /** 本单内唯一；落位保存与撤销按它定位 */
+  lineNo: number
+  /** 关联应上架行；同SKU两个批次不能只靠 skuCode 区分 */
+  planLineNo: number
   locationCode: string
   skuCode: string
   qty: number
+  /** SN商品落位的序列号，条数等于 qty；保存不改SN库位，整单提交才更新 */
+  serialNos?: string[]
+  /** Demo 内部标记（未提交/已提交）；「已上架」一律按单头 status 推导 */
   submitted: boolean
 }
 
 export interface PutawayOrder {
   putawayNo: string
-  inboundNo: string
+  /** 来源业务；单号取自对应来源单 */
+  sourceType: PutawaySourceType
+  sourceNo: string
   warehouseCode: string
   customerId: string
-  receiptNo?: string
+  receiptNo: string
+  /** 来源暂存库位，取自收货记录，生成后不变 */
+  stagingLocationCode: string
   containerNo?: string
   qualityType: QualityType
   status: PutawayOrderStatus
   planLines: PutawayPlanLine[]
   actualLines: PutawayActualLine[]
+  remark?: string
   createdAt: string
   submittedAt?: string
   submittedBy?: string
@@ -139,4 +161,49 @@ export interface InboundException {
   reason?: string
   receiptNo: string
   createdAt: string
+}
+
+/**
+ * 新品维护记录 NS（主 PRD：同一货主＋SKU 一条，四仓共用）。
+ * 提交成功即写入商品仓内规格，记录只读。
+ */
+export interface NewSkuRecord {
+  recordNo: string
+  customerId: string
+  skuCode: string
+  /** 维护仓库（执行量方的仓），决定录入单位 */
+  warehouseCode: string
+  /** 从收货环节发起时带入；独立维护为空 */
+  sourceInboundNo?: string
+  /** 统一按 cm 存储，展示按查看仓库单位换算 */
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  /** 统一按 kg 存储 */
+  grossWeightKg: number
+  photos: string[]
+  remark?: string
+  maintainedBy: string
+  maintainedAt: string
+  /** 幂等键 */
+  requestId: string
+}
+
+/** 无主货登记状态；后续 CONVERTED / DISPOSED 待 OMS 认领上线 */
+export type UnclaimedStatus = 'HOLDING'
+
+export interface UnclaimedRecord {
+  registerNo: string
+  status: UnclaimedStatus
+  warehouseCode: string
+  trackingNos: string[]
+  cartonMarks: string[]
+  containerNo?: string
+  cartonQty: number
+  description?: string
+  photos: string[]
+  registeredBy: string
+  registeredAt: string
+  /** 幂等键 */
+  requestId: string
 }

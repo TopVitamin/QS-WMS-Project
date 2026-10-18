@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 import { useDisplayTimezone, useSettings, useUnitSystem } from '@/stores/settings'
 import type { Money as MoneyValue } from '@/types/wms'
 
-/** 空值占位：全站统一「—」，不要再手写 '-' */
+/** 空值占位：全站统一 `-`（`EMPTY_TEXT`），不要手写占位符、不要用 `—` */
 export function Empty({ className }: { className?: string }) {
   return <span className={cn('text-muted-foreground', className)}>{EMPTY_TEXT}</span>
 }

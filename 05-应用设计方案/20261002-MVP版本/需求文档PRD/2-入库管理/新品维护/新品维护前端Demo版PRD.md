@@ -2,9 +2,9 @@
 
 > 用途：在 `qs-wms-demo` 实现[《新品维护主PRD》](新品维护主PRD.md)的管理端列表、详情、量方弹窗，以及收货提交的新品阻断；说明路由、类型、Mock 动作与走查。不重复业务规则与验收表。
 > 布局真源：[《新品维护页面骨架》](新品维护页面骨架.md)。字段真源：[《新品维护（详细稿）》](../../../字段清单合集/02-入库管理/新品维护/新品维护（详细稿）.tsv)。收货作业台见[收货与双端分册](../入库单/前端Demo版PRD/入库单前端Demo版PRD_收货与双端.md)，PDA收货见[《PDA收货前端Demo版PRD》](../../7-PDA作业端/收货作业/PDA收货前端Demo版PRD.md)。
-> 版本：WMS-V0.1｜日期：2026-10-15｜状态：初稿，演示未验收
+> 版本：WMS-V0.3｜日期：2026-10-15｜状态：演示已走查（2026-10-15）。V0.2 走查修订：阻断返回带参数、组件名与现状对齐、错误形状按现有 `ActionResult` 扩展。V0.3：详情 Sheet 标题与分组卡片对齐入库单详情写法；列表空值统一 `<Empty />`。
 
-**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)。**布局与占位须符合[需求文档 PRD / AGENTS.md](../../AGENTS.md)第四节**。列表参照 `warehouse-list-page.tsx`（FilterBar 6 列，去掉 StatusTabs）；弹窗参照 `carrier-form-dialog.tsx`；详情 Sheet 参照 `inbound-putaway-sheet.tsx` 的 `DetailSheet`。
+**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)。**布局与占位须符合[需求文档 PRD / AGENTS.md](../../AGENTS.md)「布局硬规则」一节**。列表参照 `warehouse-list-page.tsx`（FilterBar 6 列，去掉 StatusTabs）；弹窗参照 `carrier-form-dialog.tsx`；详情 Sheet 按[需求文档 PRD / AGENTS.md](../../AGENTS.md)「布局硬规则」第 3 条「只读记录抽屉」写（`DetailTitle` + 分组 `Section`）。
 
 ## 一、页面与路由
 
@@ -67,7 +67,8 @@ export function isNewSku(records, customerId, skuCode): boolean   // 无记录�
 | 位置 | 改动 |
 | --- | --- |
 | `mock/inbound-receive-actions.ts` 收货提交校验 | 逐行检查 `isNewSku(order.customerId, line.skuCode)`，命中返回 `{ ok: false, errorKey: 'inbound.receive.newSkuBlocked', params: { skuCode } }`；整次提交不生效 |
-| 收货作业台行内 | 选中新品SKU时行尾显示 `TagLabel tone="orange"`「新品待量方」+ `textLink`「去量方」，打开量方 Dialog（带 `customerId`、`skuCode`、`sourceInboundNo`）；提交成功后标签消失 |
+| `services/types.ts` / `inbound-receive-actions.ts` 的 `ActionResult` | 失败分支扩为 `{ ok: false; errorKey: string; params?: Record<string, string \| number> }`，现有消费点 `t(errorKey, params)` 一并支持插值 |
+| 收货作业台行内 | 选中新品SKU时行尾显示 `TagLabel`（`tone="orange"`，文案 `newSku.pendingTag`）+ `textLink`「去量方」，打开量方 Dialog（带 `customerId`、`skuCode`、`sourceInboundNo`）；提交成功后标签消失 |
 | PDA 收货 | 容器作业扫到或点选新品时阻断并自动进入 PDA 量方屏，提交后回到收货；PDA 无独立量方入口。见[《PDA新品量方前端Demo版PRD》](../../7-PDA作业端/新品量方作业/PDA新品量方前端Demo版PRD.md) §3 |
 
 ## 四、列表页
@@ -103,13 +104,21 @@ export function isNewSku(records, customerId, skuCode): boolean   // 无记录�
 | 长×宽×高 | 按顶栏仓库单位换算，`11.81×7.87×3.94`；列头带单位 | `align: 'right'` |
 | 毛重 | 同上，3 位小数 | `align: 'right'` |
 | 维护仓库 | 仓库编码 | — |
-| 来源入库单号 | `<DocNo>` → 入库单详情；空为 `—` | — |
+| 来源入库单号 | `<DocNo>` → 入库单详情；空为 `<Empty />`（`-`） | — |
 | 维护人 | 文本 | 默认隐藏 |
 | 维护时间 | `<DateTime>` | 可排序 |
 
 ## 五、详情 Sheet
 
-`DetailSheet` 标题 `新品维护 · {recordNo}`；三组 `Descriptions columns={2}`：基本信息（记录号、货主、商品编码、条码、名称、维护仓库、来源入库单号）、实测规格（按顶栏仓库单位）、留底信息（照片缩略图、维护人、维护时间、备注）。无编辑入口。
+`DetailSheet` 标题用 `<DetailTitle title="新品维护" code={recordNo} />`（「新品维护 · NS-…」，记录号不在正文重复）。正文三张 `Section` 卡：
+
+| 卡片 | 栅格 | 字段 |
+| --- | --- | --- |
+| 基本信息 | `Descriptions columns={3}` | 货主（`CodeName`）、SKU（`CodeName` 编码 + 名称）、条码、维护仓库（`CodeName`）、来源入库单号（`<DocNo>` 跳入库单详情，空为 `<Empty />`） |
+| 实测规格 · {长度单位} / {重量单位} | `columns={4}` | 长、宽、高、毛重，按顶栏仓库单位换算，`tabular-nums` |
+| 留底信息 | `columns={3}` | 维护人、维护时间、备注；照片（`col-span-3`，`MockPhotoList` 列文件名，空为 `-`） |
+
+无编辑入口，不放业务按钮。
 
 ## 六、量方 Dialog
 
@@ -118,8 +127,8 @@ Props：`mode: 'standalone' | 'receive'`、`customerId?`、`skuCode?`、`sourceI
 | 字段 | 控件 | 规则 |
 | --- | --- | --- |
 | 维护仓库 | 只读文本 + 单位 | 顶栏当前仓库 |
-| 货主 | `Select` | `receive` 模式只读；`standalone` 只列启用货主 |
-| 商品 | `Select` 可搜索 | `receive` 模式只读；`standalone` 只列该货主启用且 `isNewSku` 为真的SKU；空列表时提示「该货主暂无待量方商品」 |
+| 货主 | `OptionSelect` | `receive` 模式只读；`standalone` 只列启用货主 |
+| 商品 | `OptionSelect` | `receive` 模式只读；`standalone` 只列该货主启用且 `isNewSku` 为真的SKU；空列表时提示「该货主暂无待量方商品」 |
 | 预报规格 | 只读 | 取 `skuMasters` 中该商品当前 `lengthCm` 等字段换算展示；无值显示 `—` |
 | 长、宽、高 | `Input type="number"` | 必填，>0，≤2 位小数；placeholder `common.inputPlaceholder` |
 | 毛重 | `Input type="number"` | 必填，>0，≤3 位小数 |
@@ -156,16 +165,16 @@ en-US 同步维护。
 
 ## 九、Mock 种子与走查
 
-种子：已有 2 条 NS 记录（一条公制仓维护、一条英制仓独立维护）；准备一张待收货入库单，含一个已维护SKU和一个新品SKU；另一货主下放一个同编码SKU且无记录。
+种子：已有 2 条 NS 记录（`NS-20261004-0001` ANKR CABLE-01，美西仓维护；`NS-20261005-0001` HOMY HOMY-003，法兰克福仓独立维护）；种子入库单 `RK-20261002-0009` 同等品含已维护的 CABLE-01 与未维护的 SN-DEMO-01（新品），收货作业台行内显示「新品待量方」并可就地量方；HOMY 的 CABLE-01 同编码但无记录，用于独立量方的候选。
 
 | 步骤 | 操作 | 预期 |
 | --- | --- | --- |
 | 1 | 顶栏切到英制仓，打开新品维护列表 | 列头为 inch、lb；公制仓维护的记录按英制换算展示 |
-| 2 | 进入种子入库单收货作业台，录新品SKU后提交 | 整次提交被阻断，提示新品；只录已维护SKU则可提交 |
+| 2 | 进入 `RK-20261002-0009` 收货作业台（或 PDA 收货同单），录新品SKU后提交 | 整次提交被阻断，提示「{{skuCode}} 为新品，请先完成新品维护再收货」；只录 CABLE-01 则可提交 |
 | 3 | 新品行点「去量方」，录数提交 | 生成 NS 记录，来源入库单号为该单；标签消失，可以收货；入库数量与库存不因量方变化 |
 | 4 | 列表页头「新品量方」，选另一货主同编码SKU | 该SKU在候选内，可独立量方，来源入库单号为空 |
 | 5 | 切到另一仓，对步骤3的货主SKU发起独立量方 | 商品候选里不再出现；该仓收货不再阻断 |
 | 5a | 单元测试（`mock/db.test.ts`）：以不同 `requestId` 连续两次提交同货主SKU | 第二次返回 `newSku.error.exists` 及已有记录；浏览器内跨标签页不作为并发验证手段 |
 | 6 | 快速双击「提交量方」 | 只有一条记录 |
 
-以上为演示走查要求，页面尚未实现和验证。
+以上走查已于 2026-10-15 在 qs-wms-demo 执行通过（列表按英寸/磅换算、收货作业台阻断与「去量方」、PDA 扫码自动进入量方屏、独立量方与幂等）。

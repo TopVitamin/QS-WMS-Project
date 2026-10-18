@@ -11,7 +11,7 @@
 
 - [《QS-WMS 前端设计与开发规范》](../../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)
 - [《业务组件与主数据页面》](../../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)（§6 单据列表 vs 主数据）
-- [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 第四节
+- [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 「布局硬规则」一节
 
 **验收**：主PRD第12.1节（AC01～AC26及补充验收）。
 
@@ -123,7 +123,7 @@ PageContainer fill
 
 ### 5.2 详情布局
 
-独立路由 + 多 `Panel` + `Descriptions columns={4}` + 明细 `DataTable` + `Tabs`；子对象查看用 **Sheet 880px**。
+独立路由 + `DetailOverview`（左「基本信息」`Section` + `Descriptions columns={3}`，右 320px `SummaryCard` 进度与数量）+ `DetailTabs param="tab"`（明细与各类子记录、操作日志，带条数）；子对象查看用 **Sheet 880px**。细则见[详情页分册](入库单前端Demo版PRD_详情页.md)。
 
 ### 5.3 组件表
 

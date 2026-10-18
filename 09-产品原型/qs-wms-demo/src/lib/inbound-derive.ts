@@ -88,7 +88,7 @@ export function canConfirmReceiptClose(order: InboundOrder): boolean {
 export function submittedPutawayQtyBySku(putawayOrders: PutawayOrder[], inboundNo: string): Map<string, number> {
   const map = new Map<string, number>()
   putawayOrders
-    .filter((p) => p.inboundNo === inboundNo && p.status === 'COMPLETED')
+    .filter((p) => p.sourceType === 'INBOUND' && p.sourceNo === inboundNo && p.status === 'COMPLETED')
     .forEach((po) => {
       po.actualLines
         .filter((a) => a.submitted)

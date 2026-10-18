@@ -16,23 +16,42 @@ export function listOpenPutawayOrders(orders: PutawayOrder[], warehouseCode: str
     })
 }
 
+/** 应上架数量：不传行号时汇总全单，传 `skuCode` 时按商品汇总 */
 export function planQty(order: PutawayOrder, skuCode?: string): number {
   return order.planLines.filter((l) => !skuCode || l.skuCode === skuCode).reduce((s, l) => s + l.planQty, 0)
 }
 
-/** 已录（保存 + 已提交）的实际上架数量 */
-export function recordedQty(order: PutawayOrder, skuCode?: string): number {
-  return order.actualLines.filter((a) => !skuCode || a.skuCode === skuCode).reduce((s, a) => s + a.qty, 0)
+/**
+ * 已录数量＝已保存的实际明细合计（含已提交；已完成单等于应上架）。
+ * 传 `planLineNo` 时只算该应上架行（同SKU多批次必须按行算，不能按 `skuCode` 合并）。
+ */
+export function recordedQty(order: PutawayOrder, planLineNo?: number): number {
+  return order.actualLines
+    .filter((a) => planLineNo === undefined || a.planLineNo === planLineNo)
+    .reduce((s, a) => s + a.qty, 0)
 }
 
-/** 还没落位的数量（应上架 − 已录） */
-export function remainingQty(order: PutawayOrder, skuCode?: string): number {
-  return Math.max(0, planQty(order, skuCode) - recordedQty(order, skuCode))
+/** 还没落位的数量：全单（或某应上架行）的应上架 − 已录 */
+export function remainingQty(order: PutawayOrder, planLineNo?: number): number {
+  if (planLineNo === undefined) return Math.max(0, planQty(order) - recordedQty(order))
+  const planLine = order.planLines.find((l) => l.lineNo === planLineNo)
+  if (!planLine) return 0
+  return Math.max(0, planLine.planQty - recordedQty(order, planLineNo))
 }
 
-/** 每个应上架行已录＝应上架，才能提交（入库业务设计 §6.3） */
+/** 每个应上架行已录＝应上架，才能提交（主 PRD 第三节第 4 条） */
 export function isFullyRecorded(order: PutawayOrder): boolean {
-  return order.planLines.every((l) => recordedQty(order, l.skuCode) === l.planQty)
+  return order.planLines.every((l) => recordedQty(order, l.lineNo) === l.planQty)
+}
+
+/** 已上架数量：只统计已提交的整张上架单，不能用已录代替（上架单主PRD 第二节） */
+export function submittedQty(order: PutawayOrder): number {
+  return order.status === 'COMPLETED' ? planQty(order) : 0
+}
+
+/** 上架单去重商品数（列表 SKU 数列） */
+export function skuKindCount(order: PutawayOrder): number {
+  return new Set(order.planLines.map((l) => l.skuCode)).size
 }
 
 /** 未提交上架单还在暂存库位的件数（工作台、首页「待上架」） */
@@ -46,7 +65,10 @@ export function findLocation(locations: Location[], warehouseCode: string, code:
 }
 
 function fitsQuality(order: PutawayOrder, location: Location): boolean {
-  return order.qualityType === 'DEFECTIVE' ? location.type === 'DEFECT' : location.type === 'STORAGE' || location.type === 'PICK'
+  if (order.qualityType === 'DEFECTIVE') return location.type === 'DEFECT'
+  /** 退货来源良品只放存储库位；入库来源良品放存储或拣货 */
+  if (order.sourceType === 'RETURN') return location.type === 'STORAGE'
+  return location.type === 'STORAGE' || location.type === 'PICK'
 }
 
 /** 一货位一货主：已有其他货主库存，或其他货主未提交的落位 */
@@ -81,7 +103,7 @@ export interface PutawayLocationContext {
   putawayOrders: PutawayOrder[]
 }
 
-/** 目标货位校验；通过返回 null，否则返回文案 key（PDA 上架 PRD §4） */
+/** 目标货位校验；通过返回 null，否则返回文案 key（上架单主PRD 第三节、PDA 上架 PRD §4） */
 export function validatePutawayLocation(
   order: PutawayOrder,
   code: string,
@@ -89,9 +111,15 @@ export function validatePutawayLocation(
 ): string | null {
   const location = findLocation(ctx.locations, order.warehouseCode, code)
   if (!location) return 'pdaPutaway.error.locationNotFound'
+  if (location.status === 'DISABLED') return 'pdaPutaway.error.locationDisabled'
   if (location.type === 'STAGING') return 'pdaPutaway.error.staging'
+  if (location.type === 'EXCEPTION') return 'pdaPutaway.error.exception'
   if (!fitsQuality(order, location)) {
-    return order.qualityType === 'DEFECTIVE' ? 'pdaPutaway.error.defectOnly' : 'pdaPutaway.error.goodToDefect'
+    return order.qualityType === 'DEFECTIVE'
+      ? 'pdaPutaway.error.defectOnly'
+      : order.sourceType === 'RETURN'
+        ? 'pdaPutaway.error.returnStorageOnly'
+        : 'pdaPutaway.error.goodToDefect'
   }
   if (occupiedByOtherOwner(order, location.code, ctx.inventory, ctx.putawayOrders)) return 'pdaPutaway.error.otherOwner'
   return null

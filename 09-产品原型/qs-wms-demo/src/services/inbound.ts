@@ -33,7 +33,9 @@ export function listReceivableInbounds(warehouseCode: string, db: Pick<DbState, 
   )
 }
 
-type ActionResult = { ok: true } | { ok: false; errorKey: string }
+type ActionResult =
+  | { ok: true }
+  | { ok: false; errorKey: string; params?: Record<string, string | number> }
 
 export function confirmReceiptClose(inboundNo: string, operator = 'admin'): ActionResult {
   return useDb.getState().confirmReceiptClose(inboundNo, operator)

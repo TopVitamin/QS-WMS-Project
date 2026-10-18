@@ -54,6 +54,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'qs-wms-demo-settings',
       onRehydrateStorage: () => (state) => {
+        if (state && !warehouses.some(w => w.code === state.warehouseCode)) state.warehouseCode = warehouses[0].code
         if (state && !state.currencyManuallySet && state.displayCurrency !== languageDefaultCurrency[state.language]) {
           state.displayCurrency = languageDefaultCurrency[state.language]
         }

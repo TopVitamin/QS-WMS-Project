@@ -51,8 +51,11 @@ const rules = [
   },
   {
     id: 'empty-placeholder',
-    message: '空值用 <Empty />（字符串场景用 EMPTY_TEXT），不要手写 \'-\' / \'—\'',
-    test: (code) => /(\|\||\?\?|\?|:)\s*['"](-|—)['"]/.test(code) || />\s*(-|—)\s*</.test(code),
+    message: '空值用 <Empty /> / EMPTY_TEXT（ASCII `-`），不要手写占位符；不要用中文破折号 `—`',
+    test: (code) =>
+      /(\|\||\?\?|\?|:)\s*['"](-|—)['"]/.test(code) ||
+      />\s*(-|—)\s*</.test(code) ||
+      /['"]—['"]/.test(code),
   },
   {
     id: 'link-button',

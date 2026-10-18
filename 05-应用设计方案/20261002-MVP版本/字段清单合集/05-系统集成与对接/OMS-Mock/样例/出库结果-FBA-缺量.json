@@ -1,0 +1,18 @@
+{
+  "source": "WMS",
+  "messageType": "OUTBOUND_RESULT",
+  "upstreamNo": "DEMO-FBA-001",
+  "businessType": "FBA",
+  "resultSequence": 1,
+  "payload": {
+    "orderStatus": "SHIPPED",
+    "items": [
+      {
+        "skuCode": "LOT-DEMO-01",
+        "demandQty": 12,
+        "shippedQty": 8,
+        "unshippedQty": 4
+      }
+    ]
+  }
+}

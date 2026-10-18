@@ -135,13 +135,16 @@ export interface Sku {
   asin?: string
 }
 
-export type LocationType = 'PICK' | 'STORAGE' | 'STAGING' | 'DEFECT'
+/** 库位类型；EXCEPTION 为异常处理库位（无主货、超收等没有入账的实物，不作上架目标） */
+export type LocationType = 'PICK' | 'STORAGE' | 'STAGING' | 'DEFECT' | 'EXCEPTION'
 
 export interface Location {
   code: string
   warehouseCode: string
   zone: string
   type: LocationType
+  /** 未设置视为启用；停用库位不能作为收货、上架、无主货暂存等业务的目标位 */
+  status?: UsageStatus
 }
 
 /** 库区类型（与库区资料枚举一致；货位只读随库区） */
@@ -256,6 +259,9 @@ export type {
 } from './inbound'
 
 export interface InventoryRecord {
+  /** 库位分配与SN实物位置；SKU订单占用从出库单明细汇总。 */
+  allocatedQty?: number
+  serialNos?: string[]
   id: string
   warehouseCode: string
   locationCode: string
@@ -273,9 +279,12 @@ export interface InventoryRecord {
   firstInboundAt: string
 }
 
-export type InventoryLogType = 'RECEIVE' | 'PUTAWAY' | 'PICK' | 'MOVE' | 'ADJUST'
+export type InventoryLogType = 'RECEIVE' | 'PUTAWAY' | 'PICK' | 'MOVE' | 'ADJUST' | 'SHIP' | 'RETURN' | 'RESERVE' | 'ALLOCATE'
 
 export interface InventoryLog {
+  level?: 'SKU' | 'DETAIL'
+  reservedChange?: number
+  allocatedChange?: number
   id: string
   warehouseCode: string
   type: InventoryLogType
@@ -341,14 +350,19 @@ export interface PickTask {
   completedAt?: string
 }
 
-export type AuditRefType = 'INBOUND' | 'SYSTEM'
+/** PUTAWAY：上架单自身的保存、撤销与提交；入库单详情按来源单一并列出 */
+export type AuditRefType = 'INBOUND' | 'PUTAWAY' | 'SYSTEM' | 'OUTBOUND' | 'WAVE' | 'PICK_TASK' | 'PUTBACK'
 
 export type AuditAction =
+  | 'OUTBOUND_ACTION'
   | 'INBOUND_RECEIPT_CLOSE'
   | 'INBOUND_MOCK_PUSH'
   | 'INBOUND_RECEIVE'
   | 'PUTAWAY_SAVE'
+  | 'PUTAWAY_REMOVE'
   | 'PUTAWAY'
+  | 'NEW_SKU_MEASURE'
+  | 'UNCLAIMED_REGISTER'
   | 'DEMO_RESET'
 
 export interface AuditLog {
@@ -356,6 +370,8 @@ export interface AuditLog {
   refType: AuditRefType
   refNo: string
   action: AuditAction
+  /** 出库动作的命令类型（action 为 OUTBOUND_ACTION 时） */
+  command?: string
   operator: string
   detail?: string
   createdAt: string

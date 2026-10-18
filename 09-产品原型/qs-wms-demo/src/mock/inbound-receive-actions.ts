@@ -1,5 +1,6 @@
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { lineUnreceivedQty, recomputeInboundOrder, stagingLocationCode } from '@/lib/inbound-derive'
+import { isNewSku } from '@/lib/new-sku'
 import { nextDocNo } from '@/lib/doc-no'
 import type {
   ContainerReceiptLineInput,
@@ -12,7 +13,9 @@ import type {
 import type { InboundOrder, InventoryLog } from '@/types/wms'
 import type { SeedData } from './seed'
 
-type ActionResult = { ok: true } | { ok: false; errorKey: string }
+type ActionResult =
+  | { ok: true }
+  | { ok: false; errorKey: string; params?: Record<string, string | number> }
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -22,6 +25,9 @@ function log(entry: Omit<InventoryLog, 'id' | 'createdAt'>): InventoryLog {
   return { id: uid('IL'), createdAt: new Date().toISOString(), ...entry }
 }
 
+const sum = (lines: ReceiptRecordLine[], pick: (l: ReceiptRecordLine) => number) =>
+  lines.reduce((total, l) => total + pick(l), 0)
+
 function appendPutawayPlan(
   orders: PutawayOrder[],
   input: {
@@ -29,10 +35,15 @@ function appendPutawayPlan(
     warehouseCode: string
     customerId: string
     receiptNo: string
+    stagingLocationCode: string
     containerNo?: string
     qualityType: 'GOOD' | 'DEFECTIVE'
     skuCode: string
     qty: number
+    receiptLineNo: number
+    batchNo?: string
+    productionDate?: string
+    expiryDate?: string
     ts: string
   },
 ): PutawayOrder[] {
@@ -40,20 +51,32 @@ function appendPutawayPlan(
   /** 按「容器 × 品质」拆单；无容器收货按「本次收货记录 × 品质」合并（宏观架构 2.1.1） */
   const idx = orders.findIndex(
     (p) =>
-      p.inboundNo === input.inboundNo &&
+      p.sourceType === 'INBOUND' &&
+      p.sourceNo === input.inboundNo &&
       p.qualityType === input.qualityType &&
       (p.containerNo ?? '') === (input.containerNo ?? '') &&
       p.receiptNo === input.receiptNo &&
       p.status !== 'COMPLETED',
   )
+  const planLine = {
+    skuCode: input.skuCode,
+    planQty: input.qty,
+    receiptLineNo: input.receiptLineNo,
+    batchNo: input.batchNo,
+    productionDate: input.productionDate,
+    expiryDate: input.expiryDate,
+  }
   if (idx >= 0) {
     const po = orders[idx]
     const planLines = [...po.planLines]
-    const lineIdx = planLines.findIndex((l) => l.skuCode === input.skuCode)
+    /** 同SKU不同批次各占一行，不能按商品合并 */
+    const lineIdx = planLines.findIndex(
+      (l) => l.skuCode === input.skuCode && (l.batchNo ?? '') === (input.batchNo ?? ''),
+    )
     if (lineIdx >= 0) {
       planLines[lineIdx] = { ...planLines[lineIdx], planQty: planLines[lineIdx].planQty + input.qty }
     } else {
-      planLines.push({ lineNo: planLines.length + 1, skuCode: input.skuCode, planQty: input.qty })
+      planLines.push({ lineNo: planLines.length + 1, ...planLine })
     }
     const next = [...orders]
     next[idx] = { ...po, planLines, receiptNo: input.receiptNo }
@@ -63,22 +86,21 @@ function appendPutawayPlan(
     ...orders,
     {
       putawayNo: nextDocNo('PA', orders.map((o) => o.putawayNo), input.ts),
-      inboundNo: input.inboundNo,
+      sourceType: 'INBOUND',
+      sourceNo: input.inboundNo,
       warehouseCode: input.warehouseCode,
       customerId: input.customerId,
       receiptNo: input.receiptNo,
+      stagingLocationCode: input.stagingLocationCode,
       containerNo: input.containerNo,
       qualityType: input.qualityType,
       status: 'PENDING',
-      planLines: [{ lineNo: 1, skuCode: input.skuCode, planQty: input.qty }],
+      planLines: [{ lineNo: 1, ...planLine }],
       actualLines: [],
       createdAt: input.ts,
     },
   ]
 }
-
-const sum = (lines: ReceiptRecordLine[], pick: (l: ReceiptRecordLine) => number) =>
-  lines.reduce((total, l) => total + pick(l), 0)
 
 /**
  * 收货提交（两端共用，主 PRD R03/R04/R15/R16）：一次提交可含 1～N 个容器（无容器收货至多一组），
@@ -115,11 +137,15 @@ export function applyReceipt(
     }
   }
 
-  /** R04：同一 SKU 历史实收＋拒收，加本次各容器合计，不得超过预计 */
+  /** R04：同一 SKU 历史实收＋拒收，加本次各容器合计，不得超过预计；新品未维护阻断整次提交 */
   const activityBySku = new Map<string, number>()
   for (const c of containers) {
     for (const line of c.lines) {
+      if (state.inventoryCounts.some(p => p.status === 'COUNTING' && p.warehouseCode === order.warehouseCode && p.customerId === order.customerId && p.skuCode === line.skuCode)) return { ok: false, errorKey: 'outbound.error.countFrozen' }
       if (!order.items.some((i) => i.skuCode === line.skuCode)) return { ok: false, errorKey: 'error.skuNotInOrder' }
+      if (isNewSku(state.newSkuRecords ?? [], order.customerId, line.skuCode)) {
+        return { ok: false, errorKey: 'inbound.receive.newSkuBlocked', params: { skuCode: line.skuCode } }
+      }
       const rejectedQty = line.rejectedQty ?? 0
       if ([line.goodQty, line.defectQty, rejectedQty].some((n) => !Number.isInteger(n) || n < 0)) {
         return { ok: false, errorKey: 'error.qtyInvalid' }
@@ -151,6 +177,9 @@ export function applyReceipt(
         goodQty: line.goodQty,
         defectQty: line.defectQty,
         rejectReason: rejectedQty > 0 ? line.rejectReason : undefined,
+        batchNo: line.batchNo,
+        productionDate: line.productionDate,
+        expiryDate: line.expiryDate,
       }
     })
 
@@ -209,7 +238,7 @@ export function applyReceipt(
   const inventory = [...state.inventory]
   const inventoryLogs: InventoryLog[] = [...state.inventoryLogs]
 
-  const upsertStagingStock = (skuCode: string, qualityType: 'GOOD' | 'DEFECTIVE', qty: number) => {
+  const upsertStagingStock = (skuCode: string, qualityType: 'GOOD' | 'DEFECTIVE', qty: number, batchNo?: string, expiryDate?: string) => {
     if (qty <= 0) return
     const locked = qualityType === 'DEFECTIVE' ? qty : 0
     const idx = inventory.findIndex(
@@ -218,7 +247,7 @@ export function applyReceipt(
         r.locationCode === stagingCode &&
         r.skuCode === skuCode &&
         r.customerId === order.customerId &&
-        r.qualityType === qualityType,
+        r.qualityType === qualityType && r.batchNo === batchNo && r.expiryDate === expiryDate,
     )
     if (idx >= 0) {
       inventory[idx] = {
@@ -234,6 +263,8 @@ export function applyReceipt(
         customerId: order.customerId,
         skuCode,
         qualityType,
+        batchNo,
+        expiryDate,
         onHandQty: qty,
         lockedQty: locked,
         firstInboundAt: ts,
@@ -243,16 +274,21 @@ export function applyReceipt(
 
   for (const line of receiptLines) {
     /** 收货确认即按实收、按品质进入收货暂存库位库存（不良品品质锁定） */
-    upsertStagingStock(line.skuCode, 'GOOD', line.goodQty)
-    upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty)
+    upsertStagingStock(line.skuCode, 'GOOD', line.goodQty, line.batchNo, line.expiryDate)
+    upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty, line.batchNo, line.expiryDate)
 
     const plan = {
       inboundNo,
       warehouseCode: order.warehouseCode,
       customerId: order.customerId,
       receiptNo,
+      stagingLocationCode: stagingCode,
       containerNo: line.containerNo,
       skuCode: line.skuCode,
+      receiptLineNo: line.lineNo ?? 0,
+      batchNo: line.batchNo,
+      productionDate: line.productionDate,
+      expiryDate: line.expiryDate,
       ts,
     }
     putawayOrders = appendPutawayPlan(putawayOrders, { ...plan, qualityType: 'GOOD', qty: line.goodQty })

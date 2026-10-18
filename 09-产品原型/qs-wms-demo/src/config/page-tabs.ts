@@ -6,6 +6,14 @@ import type { PageTab } from '@/stores/tabs'
  * 菜单叶子只对应列表等「入口」路径；详情/编辑等子路由单独占一个 tab（path 为完整 pathname）。
  */
 export function resolvePageTab(pathname: string): PageTab | undefined {
+  const outboundEntry = pathname.match(/^\/wms\/outbound\/(pick-tasks|return-putaway)\/[^/]+\/entry$/)
+  if (outboundEntry)
+    return {
+      path: pathname,
+      titleKey: outboundEntry[1] === 'pick-tasks' ? 'outbound.entry.pickTitle' : 'outbound.entry.returnTitle',
+    }
+  const outbound = pathname.match(/^\/wms\/outbound\/(orders|waves|pick-tasks|return-putaway)\/[^/]+$/)
+  if (outbound) return { path: pathname, titleKey: `outbound.ui.${({ orders: 'order', waves: 'wave', 'pick-tasks': 'task', 'return-putaway': 'putback' } as const)[outbound[1] as 'orders']}Title` }
   if (pathname === '/wms/master/warehouses/new') {
     return { path: pathname, titleKey: 'masterWarehouse.tabCreate' }
   }
@@ -66,6 +74,16 @@ export function resolvePageTab(pathname: string): PageTab | undefined {
   const skuDetail = pathname.match(/^\/wms\/master\/skus\/([^/]+)\/([^/]+)$/)
   if (skuDetail) {
     return { path: pathname, titleKey: 'masterSku.tabDetail' }
+  }
+
+  const putawayEntry = pathname.match(/^\/wms\/inbound\/putaway\/([^/]+)\/entry$/)
+  if (putawayEntry) {
+    return { path: pathname, titleKey: 'putaway.tabEntry' }
+  }
+
+  const putawayDetail = pathname.match(/^\/wms\/inbound\/putaway\/([^/]+)$/)
+  if (putawayDetail) {
+    return { path: pathname, titleKey: 'putaway.tabDetail' }
   }
 
   const inboundReceive = pathname.match(/^\/wms\/inbound\/orders\/([^/]+)\/receive$/)

@@ -7,7 +7,7 @@
 
 关联：[《入库单页面骨架》](../入库单页面骨架.md) 列表区、[《02-设计规范》](../../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md) §4.1。
 
-**布局与占位须符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 第四节**（`FilterBar columns={6}`）。
+**布局与占位须符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 「布局硬规则」一节**（`FilterBar columns={6}`）。
 
 **实现参照**：`warehouse-list-page.tsx`（FilterBar 6 列、draft/filters）；`inbound-list-page.tsx` 仅借鉴 **StatusTabs + 双 Panel** 结构，删除 M0 的签收/取消/新增/勾选。
 
@@ -57,7 +57,7 @@
 | 完成时间 | advanced | `DateRangePickerField` | 范围 | `inbound.filters.completedRangePlaceholder` |
 | （第 6 列） | — | 查询 submit、重置（有溢出时含展开/收起） | — | — |
 
-筛选项共 9 个：**5 常显 + 4 进 advanced**，出现「展开/收起」；符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 第四节（>5 项必须展开）。
+筛选项共 9 个：**5 常显 + 4 进 advanced**，出现「展开/收起」；符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 「布局硬规则」一节（>5 项必须展开）。
 
 ---
 

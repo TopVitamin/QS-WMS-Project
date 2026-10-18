@@ -60,7 +60,7 @@ export function ReceiveSubmitStep({ flow }: { flow: ReceiveFlow }) {
       })),
     })
     if (!res.ok) {
-      void flow.notice(t('pdaReceive.submitBlocked'), t(res.errorKey))
+      void flow.notice(t('pdaReceive.submitBlocked'), t(res.errorKey, res.params))
       return
     }
     doneRef.current = true

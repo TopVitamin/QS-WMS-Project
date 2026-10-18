@@ -79,12 +79,12 @@ export function WmsTopbar() {
                 <span className="hidden sm:inline opacity-40">/</span>
               </>
             )}
-            {leaf && <span className="font-medium text-foreground whitespace-nowrap">{t(leaf.titleKey)}</span>}
+            {leaf && <span className="truncate font-medium text-foreground">{t(leaf.titleKey)}</span>}
           </nav>
         </div>
 
         {/* 右侧：三大归一化实体（业务环境胶囊 + 统一图标工具栏 + 用户中心） */}
-        <div className="ml-auto flex items-center gap-2.5">
+        <div className="ml-auto flex shrink-0 items-center gap-2.5">
           {/* 实体一：仓库与当地时间业务胶囊 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

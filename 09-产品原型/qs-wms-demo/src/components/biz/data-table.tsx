@@ -62,7 +62,8 @@ export type DataTableFeatures = typeof dataTableFeatures
 /** 页面里定义列：const col = createDataColumns<InboundOrder>() */
 export const createDataColumns = <TData extends RowData>() => createColumnHelper<DataTableFeatures, TData>()
 
-const SELECT_WIDTH = 40
+/** 与勾选列 th/td 的 width 一致；须覆盖 TableHead/TableCell 默认 px-3，避免与 pin:left 偏移错位 */
+const SELECT_WIDTH = 44
 
 interface DataTableProps<TData extends RowData> {
   data: TData[]
@@ -71,6 +72,8 @@ interface DataTableProps<TData extends RowData> {
   getRowId: (row: TData) => string
   selectable?: boolean
   onSelectionChange?: (rows: TData[]) => void
+  /** 行能否勾选；不传则全部可勾。不可勾的行复选框禁用，表头全选也跳过 */
+  canSelectRow?: (row: TData) => boolean
   /** 表格上方工具栏左侧（批量操作按钮等） */
   toolbar?: React.ReactNode
   pageSize?: number
@@ -93,6 +96,7 @@ export function DataTable<TData extends RowData>({
   getRowId,
   selectable,
   onSelectionChange,
+  canSelectRow,
   toolbar,
   pageSize = 20,
   className,
@@ -117,22 +121,30 @@ export function DataTable<TData extends RowData>({
       header: ({ table }) => (
         <Checkbox
           aria-label={t('common.selectAll')}
-          checked={
-            table.getIsAllPageRowsSelected() ? true : table.getIsSomePageRowsSelected() ? 'indeterminate' : false
+          checked={(() => {
+            const rows = table.getRowModel().rows.filter((r) => !canSelectRow || canSelectRow(r.original))
+            if (rows.length > 0 && rows.every((r) => r.getIsSelected())) return true
+            return rows.some((r) => r.getIsSelected()) ? 'indeterminate' : false
+          })()}
+          onCheckedChange={(v) =>
+            table
+              .getRowModel()
+              .rows.filter((r) => !canSelectRow || canSelectRow(r.original))
+              .forEach((r) => r.toggleSelected(!!v))
           }
-          onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           aria-label={t('common.selectRow')}
           checked={row.getIsSelected()}
+          disabled={canSelectRow ? !canSelectRow(row.original) : false}
           onCheckedChange={(v) => row.toggleSelected(!!v)}
         />
       ),
     })
     return [selectColumn, ...columns]
-  }, [columns, selectable, t])
+  }, [columns, selectable, canSelectRow, t])
 
   const table = useTable({
     features: dataTableFeatures,
@@ -213,8 +225,12 @@ export function DataTable<TData extends RowData>({
       return cn('sticky z-[1] shadow-[6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader && 'z-20 bg-muted')
     return ''
   }
-  const pinStyle = (meta: DataColumnMeta | undefined) =>
-    meta?.pin === 'left' ? { left: selectable ? SELECT_WIDTH : 0 } : undefined
+  const selectPinStyle = selectable ? { left: 0, width: SELECT_WIDTH, minWidth: SELECT_WIDTH, maxWidth: SELECT_WIDTH } : undefined
+  const pinStyle = (columnId: string, meta: DataColumnMeta | undefined) => {
+    if (columnId === '__select') return selectPinStyle
+    if (meta?.pin === 'left') return { left: selectable ? SELECT_WIDTH : 0 }
+    return undefined
+  }
 
   return (
     <div className={cn('flex min-h-0 flex-col', className)}>
@@ -235,7 +251,7 @@ export function DataTable<TData extends RowData>({
         </div>
       )}
 
-      {/* 在页签栏 / 分区标题行里时，工具挪到那一行右侧，表格紧贴上方 */}
+      {/* 在页签栏 / 分区标题行里时，工具挪到那一行右侧 */}
       {showTableToolbar &&
         toolbarSlot &&
         createPortal(
@@ -251,6 +267,11 @@ export function DataTable<TData extends RowData>({
 
       <div data-slot="data-table-scroll" className="min-h-0 flex-1 overflow-auto border-y">
         <table className="w-full caption-bottom text-sm">
+          {selectable && (
+            <colgroup>
+              <col style={{ width: SELECT_WIDTH }} />
+            </colgroup>
+          )}
           <TableHeader className="[&_tr]:border-b-0">
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id} className="hover:bg-transparent">
@@ -263,10 +284,10 @@ export function DataTable<TData extends RowData>({
                       key={header.id}
                       colSpan={header.colSpan}
                       rowSpan={header.rowSpan}
-                      style={{ width: header.column.id === '__select' ? SELECT_WIDTH : undefined, ...pinStyle(meta) }}
+                      style={pinStyle(header.column.id, meta)}
                       className={cn(
                         'sticky top-0 z-10',
-                        header.column.id === '__select' && 'left-0 z-20',
+                        header.column.id === '__select' && 'sticky left-0 z-20 bg-muted px-2',
                         meta?.align === 'right' && 'text-right',
                         meta?.align === 'center' && 'text-center',
                         pinClass(meta, true),
@@ -319,10 +340,10 @@ export function DataTable<TData extends RowData>({
                   return (
                     <TableCell
                       key={cell.id}
-                      style={pinStyle(meta)}
+                      style={pinStyle(cell.column.id, meta)}
                       className={cn(
                         'bg-card',
-                        cell.column.id === '__select' && 'sticky left-0 z-[1]',
+                        cell.column.id === '__select' && 'sticky left-0 z-[1] px-2',
                         meta?.align === 'right' && 'text-right',
                         meta?.align === 'center' && 'text-center',
                         pinClass(meta, false),

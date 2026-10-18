@@ -1,1 +1,17 @@
 Mock字段路径	WMS对象	WMS字段名称	Mock必填	说明
+source	上游消息记录	消息来源	是	固定OMS_MOCK；与业务类型、上游指令号组成业务键
+messageId	上游消息记录	消息标识	是	同标识同内容重发返回原结论；改内容拒收
+messageType	上游消息记录	消息类别	是	CREATE_OUTBOUND／CHANGE_OUTBOUND／CANCEL_OUTBOUND
+businessType	出库单	业务类型	是	B2C／FBA／WHOLESALE／TRANSFER／PURCHASE_RETURN／OTHER
+upstreamNo	出库单	上游指令号	是	同来源、类型、指令号只生成一张单
+expectedVersion	上游消息记录	预期对象版本	是	首次0；变更／取消使用当前版本；接受后推进。前端展开为version字段
+payload.warehouseCode	出库单	所属仓库	是	解析演示仓库资料
+payload.ownerCode	出库单	货主	是	按货主编码解析customerId
+payload.recipient	出库单	收货人姓名	是	演示收件方
+payload.address	出库单	收货地址	是	一期汇总地址文本
+payload.channelCode	出库单	物流渠道	否	启用渠道；由其带出承运商
+payload.originalInboundNo	出库单	引用原入库单号	条件必填	采购退货使用
+payload.items[].skuCode	出库单明细	商品	是	按货主＋SKU解析
+payload.items[].qty	出库单明细	需求数量	是	正整数；同单同SKU一行
+payload.specified[]	出库单指定实物	库存明细／指定数量／序列号	条件必填	其他出库按仓库、货主、库位、SKU、品质、批次／SN解析库存明细，再传inventoryId和qty；手工入口填写邮件依据
+payload.cancelReason	出库单	取消原因	条件必填	出库取消消息携带；受理时记录，不改受理结论

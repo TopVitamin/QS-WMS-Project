@@ -6,12 +6,12 @@ import { QtyStepper } from '@/components/pda/qty-stepper'
 import { beep } from '@/lib/scan-beep'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import { findLocation, remainingQty, suggestPutawayLocation, validatePutawayLocation } from '@/lib/putaway'
-import type { PutawayOrder } from '@/types/inbound'
+import type { PutawayOrder, PutawayPlanLine } from '@/types/inbound'
 import type { Location } from '@/types/wms'
 import { PutawayContext } from './putaway-shared'
 import type { PutawayFlow } from './use-putaway-flow'
 
-/** 落位录入（PDA 上架 PRD §3、§5）：选商品、填数量，保存到刚扫的目标货位；只记进度不动库存 */
+/** 落位录入（PDA 上架 PRD §3、§5）：选应上架行、填数量，保存到刚扫的目标货位；只记进度不动库存 */
 export function PutawayPlaceStep({ flow }: { flow: PutawayFlow }) {
   const { nav } = flow
   const order = flow.findOrder(nav.param('po'))
@@ -29,30 +29,42 @@ export function PutawayPlaceStep({ flow }: { flow: PutawayFlow }) {
   return <PlaceEditor key={`${order.putawayNo}|${location.code}`} flow={flow} order={order} location={location} />
 }
 
+function openPlanLines(order: PutawayOrder): PutawayPlanLine[] {
+  return order.planLines.filter((l) => remainingQty(order, l.lineNo) > 0)
+}
+
 function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: PutawayOrder; location: Location }) {
   const { t, nav } = flow
   const ctx = flow.locationContext
-  const openLines = order.planLines.filter((l) => remainingQty(order, l.skuCode) > 0)
-  const only = openLines.length === 1 ? openLines[0].skuCode : undefined
-  const [skuCode, setSkuCode] = useState<string | undefined>(only)
+  const openLines = openPlanLines(order)
+  const only = openLines.length === 1 ? openLines[0].lineNo : undefined
+  const [planLineNo, setPlanLineNo] = useState<number | undefined>(only)
   const [qty, setQty] = useState(() => (only ? remainingQty(order, only) : 0))
-  const remain = skuCode ? remainingQty(order, skuCode) : 0
+  const remain = planLineNo ? remainingQty(order, planLineNo) : 0
+  const lineLabel = (line: PutawayPlanLine) =>
+    line.batchNo ? `${line.skuCode} · ${line.batchNo}` : line.skuCode
 
-  const select = (code: string) => {
-    setSkuCode(code)
-    setQty(remainingQty(order, code))
+  const select = (lineNo: number) => {
+    setPlanLineNo(lineNo)
+    setQty(remainingQty(order, lineNo))
   }
 
-  /** 扫商品：选中该行；扫货位：校验后切换目标货位 */
+  /** 扫商品：同SKU多批次时只选中唯一剩余行，否则提示点选；扫货位：校验后切换目标货位 */
   const onScan = (code: string) => {
     const hit = flow.resolveSkuIn(order, code)
     if (hit) {
-      if (remainingQty(order, hit) <= 0) {
+      const candidates = openPlanLines(order).filter((l) => l.skuCode === hit)
+      if (candidates.length === 0) {
         flow.failScan(t('pdaPutaway.lineDone', { sku: hit }))
         return
       }
       beep(true)
-      select(hit)
+      if (candidates.length === 1) select(candidates[0].lineNo)
+      else {
+        setPlanLineNo(undefined)
+        setQty(0)
+        toast.info(t('pdaPutaway.pickBatch', { sku: hit }))
+      }
       return
     }
     const next = findLocation(flow.locations, order.warehouseCode, code)
@@ -71,20 +83,21 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
   }
   usePdaScanListener(onScan)
 
-  const afterSave = (savedSku: string, savedQty: number) => {
-    const suggested = suggestPutawayLocation(order, savedSku, ctx)
+  const afterSave = (savedLabel: string, savedQty: number) => {
+    const suggested = suggestPutawayLocation(order, openLines[0]?.skuCode, ctx)
     beep(true)
-    toast.success(t('pdaPutaway.saved', { sku: savedSku, qty: savedQty, location: location.code }))
+    toast.success(t('pdaPutaway.saved', { sku: savedLabel, qty: savedQty, location: location.code }))
     if (suggested && suggested !== location.code) toast.info(t('pdaPutaway.locationDiffers'))
     nav.returnTo('work', { po: order.putawayNo })
   }
 
   const save = () => {
-    if (!skuCode) return
+    if (!planLineNo) return
+    const line = order.planLines.find((l) => l.lineNo === planLineNo)
     const res = flow.savePutawayLine({
       putawayNo: order.putawayNo,
       locationCode: location.code,
-      skuCode,
+      planLineNo,
       qty,
       operator: flow.operator,
     })
@@ -92,18 +105,18 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
       void flow.notice(t('pdaPutaway.save'), t(res.errorKey))
       return
     }
-    afterSave(skuCode, qty)
+    afterSave(line ? lineLabel(line) : '', qty)
   }
 
-  /** 整箱落位：本单所有剩余数量都记到当前货位 */
+  /** 整箱落位：本单所有剩余数量都记到当前货位，逐应上架行保存 */
   const placeAll = () => {
     let total = 0
     for (const line of openLines) {
-      const lineQty = remainingQty(order, line.skuCode)
+      const lineQty = remainingQty(order, line.lineNo)
       const res = flow.savePutawayLine({
         putawayNo: order.putawayNo,
         locationCode: location.code,
-        skuCode: line.skuCode,
+        planLineNo: line.lineNo,
         qty: lineQty,
         operator: flow.operator,
       })
@@ -113,7 +126,7 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
       }
       total += lineQty
     }
-    afterSave(openLines.map((l) => l.skuCode).join(', '), total)
+    afterSave(openLines.map((l) => lineLabel(l)).join(', '), total)
   }
 
   return (
@@ -129,26 +142,26 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
           <PdaSection title={t('pdaPutaway.promptSku')}>
             {openLines.map((l) => (
               <PdaListItem
-                key={l.skuCode}
+                key={l.lineNo}
                 role="radio"
                 selectable
-                selected={skuCode === l.skuCode}
-                onClick={() => select(l.skuCode)}
+                selected={planLineNo === l.lineNo}
+                onClick={() => select(l.lineNo)}
               >
                 <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="font-mono text-base font-semibold">{l.skuCode}</div>
+                    <div className="font-mono text-base font-semibold">{lineLabel(l)}</div>
                     <div className="line-clamp-2 text-sm">{flow.sku(l.skuCode)?.name}</div>
                   </div>
                   <div className="shrink-0 text-base font-semibold text-primary tabular-nums">
-                    {t('pdaPutaway.lineRemain', { count: remainingQty(order, l.skuCode) })}
+                    {t('pdaPutaway.lineRemain', { count: remainingQty(order, l.lineNo) })}
                   </div>
                 </div>
               </PdaListItem>
             ))}
           </PdaSection>
         </div>
-        {skuCode && (
+        {planLineNo && (
           <PdaCard>
             <QtyStepper
               label={t('pdaPutaway.qty')}
@@ -163,11 +176,11 @@ function PlaceEditor({ flow, order, location }: { flow: PutawayFlow; order: Puta
           </PdaCard>
         )}
       </div>
-      <PdaFooter hint={skuCode ? undefined : t('pdaPutaway.pickSku')}>
+      <PdaFooter hint={planLineNo ? undefined : t('pdaPutaway.pickSku')}>
         <PdaButton variant="outline" className="flex-1" onClick={placeAll}>
           {t('pdaPutaway.placeAll')}
         </PdaButton>
-        <PdaButton className="flex-1" disabled={!skuCode || qty <= 0} onClick={save}>
+        <PdaButton className="flex-1" disabled={!planLineNo || qty <= 0} onClick={save}>
           {t('pdaPutaway.save')}
         </PdaButton>
       </PdaFooter>
