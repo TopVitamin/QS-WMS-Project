@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { applyOutboundAction, outboundAuditRef } from './outbound-actions'
 import { applyInventoryAction, inventoryAuditRef, type InventoryTerminal } from './inventory-actions'
 import type { InventoryCommand } from '@/types/inventory'
-import type { OutboundCommand, OutboundRole } from '@/types/outbound'
+import type { OutboundCommand } from '@/types/outbound'
 import { persist } from 'zustand/middleware'
 import { findSkuMaster } from '@/lib/sku-master'
 import { canConfirmReceiptClose, recomputeInboundOrder, syncInboundPutawayFromOrders } from '@/lib/inbound-derive'
@@ -20,7 +20,15 @@ import type {
   WarehouseMaster,
   ZoneMaster,
 } from '@/types/wms'
-import type { ContainerReceiptLineInput, NewSkuRecord, ReceiptContainerInput, UnclaimedRecord } from '@/types/inbound'
+import type {
+  ContainerReceiptLineInput,
+  InboundMessage,
+  InboundMessageAction,
+  InboundResult,
+  NewSkuRecord,
+  ReceiptContainerInput,
+  UnclaimedRecord,
+} from '@/types/inbound'
 import { applyContainerReceipt, applyReceipt } from './inbound-receive-actions'
 import {
   applyConfirmPutawayEntry,
@@ -31,7 +39,10 @@ import {
 } from './putaway-actions'
 import { applySubmitNewSkuMeasure, type SubmitNewSkuMeasureInput } from './new-sku-actions'
 import { applyRegisterUnclaimed, type RegisterUnclaimedInput } from './unclaimed-actions'
+import { applyReturnReceipt } from './return-actions'
+import { recomputeReturnOrder } from '@/lib/return-derive'
 import { createSeedData, type SeedData } from './seed'
+import type { ReturnOrder, ReturnReceiveLineInput } from '@/types/return'
 import { nextDocNo } from '@/lib/doc-no'
 import { currentOperator } from './current-operator'
 import { createMasterActions } from './master-actions'
@@ -45,8 +56,10 @@ export interface MockPushInboundInput {
   warehouseCode: string
   bizType: InboundOrder['bizType']
   upstreamNo: string
-  skuCode: string
-  plannedQty: number
+  /** 完整 Mock 台用 items；保留 skuCode/plannedQty 兼容旧的单行快速推单 */
+  items?: { skuCode: string; plannedQty: number }[]
+  skuCode?: string
+  plannedQty?: number
   arrivalMethod?: InboundOrder['arrivalMethod']
   containerNo?: string
   trackingNos?: string
@@ -64,10 +77,45 @@ interface DbActions {
     operator: string,
     terminal?: InventoryTerminal,
   ) => { ok: true; no?: string } | { ok: false; errorKey: string; params?: Record<string, string | number> }
-  setOutboundRole: (role: OutboundRole) => void
   resetDemo: () => void
   confirmReceiptClose: (inboundNo: string, operator: string) => ActionResult
   mockPushInboundInstruction: (input: MockPushInboundInput) => ActionResult & { inboundNo?: string }
+  /** 上游明细变更：仅待收货且零实收可变更 */
+  mockChangeInboundInstruction: (input: {
+    inboundNo: string
+    messageId?: string
+    version?: number
+    items: { skuCode: string; plannedQty: number }[]
+  }) => ActionResult
+  /** 上游取消：仅整单零实收可受理 */
+  mockCancelInboundInstruction: (input: {
+    inboundNo: string
+    messageId?: string
+    version?: number
+    reason?: string
+  }) => ActionResult
+  /** 重试入库完成结果回传（Demo 只重试已有结果） */
+  retryInboundResult: (inboundNo: string) => ActionResult
+  /** 退货收货（管理端与 PDA 共用）：生成退货收货记录、异常与共用上架单 */
+  receiveReturn: (input: {
+    returnNo: string
+    containerNo?: string
+    lines: ReturnReceiveLineInput[]
+    operator: string
+  }) => ActionResult
+  /** OMS Mock 退货预报：同来源+上游退货号重复接收返回原单 */
+  mockReturnForecast: (input: {
+    customerId: string
+    warehouseCode: string
+    sourceType: ReturnOrder['sourceType']
+    upstreamNo: string
+    skuCode: string
+    plannedQty: number
+    trackingNo?: string
+    originalOutboundNo?: string
+  }) => ActionResult & { returnNo?: string }
+  /** 上游取消退货单：仅整单零实收 */
+  cancelReturnOrder: (returnNo: string, reason?: string) => ActionResult
   /** 收货提交（两端共用）：一次提交含 1～N 个容器，生成一条收货记录（主 PRD R16） */
   submitReceipt: (input: { inboundNo: string; containers: ReceiptContainerInput[]; operator: string }) => ActionResult
   /** 管理端收货作业台：单容器封装 */
@@ -195,9 +243,52 @@ const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.ran
 
 function nextInboundNo(inbounds: InboundOrder[]): string {
   return nextDocNo(
-    'RK',
+    'IB',
     inbounds.map((o) => o.inboundNo),
   )
+}
+
+/** 整单完成时生成一次结果；取消单不回传完成结果 */
+function ensureInboundResults(state: SeedData): Pick<SeedData, 'inboundResults'> | undefined {
+  const existing = new Set(state.inboundResults.map((r) => r.inboundNo))
+  const added = state.inbounds
+    .filter((o) => o.status === 'COMPLETED' && !existing.has(o.inboundNo))
+    .map<InboundResult>((o) => ({
+      inboundNo: o.inboundNo,
+      upstreamNo: o.upstreamNo,
+      status: 'SENT',
+      attempts: 1,
+      items: o.items.map((l) => ({
+        skuCode: l.skuCode,
+        receivedQty: l.receivedQty,
+        rejectedQty: l.rejectedQty,
+        putawayQty: l.putawayQty,
+      })),
+      at: nowIso(),
+    }))
+  return added.length ? { inboundResults: [...added, ...state.inboundResults] } : undefined
+}
+
+function inboundMessage(
+  action: InboundMessageAction,
+  upstreamNo: string,
+  version: number,
+  status: InboundMessage['status'],
+  inboundNo?: string,
+  errorKey?: string,
+  params?: Record<string, string | number>,
+): InboundMessage {
+  return {
+    id: uid(`MSG-${action}`),
+    upstreamNo,
+    version,
+    action,
+    status,
+    inboundNo,
+    errorKey,
+    params,
+    at: nowIso(),
+  }
 }
 
 export const useDb = create<DbState>()(
@@ -210,11 +301,34 @@ export const useDb = create<DbState>()(
       })
 
       const appendAudit = (entry: Omit<AuditLog, 'id' | 'createdAt'>) => [auditLog(entry), ...get().auditLogs]
+      const finalizeInboundResults = () => {
+        const extra = ensureInboundResults(get())
+        if (extra) set(extra)
+      }
+      const finalizeReturnResults = () => {
+        const state = get()
+        const existing = new Set(state.returnResults.map((r) => r.returnNo))
+        const added = state.returnOrders
+          .filter((o) => o.status === 'COMPLETED' && !existing.has(o.returnNo))
+          .map((o) => ({
+            returnNo: o.returnNo,
+            upstreamNo: o.upstreamNo,
+            status: 'SENT' as const,
+            attempts: 1,
+            items: o.items.map((l) => ({
+              skuCode: l.skuCode,
+              receivedQty: l.receivedQty,
+              rejectedQty: l.rejectedQty,
+              putawayQty: l.putawayQty,
+            })),
+            at: nowIso(),
+          }))
+        if (added.length) set({ returnResults: [...added, ...state.returnResults] })
+      }
 
       return {
         ...createSeedData(),
         ...createMasterActions(get, set),
-        setOutboundRole: (outboundRole) => set({ outboundRole }),
         outboundAction: (command, operator) => {
           const result = applyOutboundAction(get(), command, operator)
           if (result.patch)
@@ -279,6 +393,7 @@ export const useDb = create<DbState>()(
               operator,
             }),
           })
+          finalizeInboundResults()
           return { ok: true }
         },
 
@@ -286,14 +401,32 @@ export const useDb = create<DbState>()(
           const state = get()
           if (!input.customerId) return { ok: false, errorKey: 'inbound.mock.ownerRequired' }
           if (!input.upstreamNo.trim()) return { ok: false, errorKey: 'inbound.mock.upstreamRequired' }
-          if (input.plannedQty <= 0) return { ok: false, errorKey: 'inbound.mock.qtyInvalid' }
+          const items =
+            input.items?.length
+              ? input.items
+              : input.skuCode && input.plannedQty
+                ? [{ skuCode: input.skuCode, plannedQty: input.plannedQty }]
+                : []
+          if (
+            items.length === 0 ||
+            new Set(items.map((i) => i.skuCode)).size !== items.length ||
+            items.some((i) => !Number.isInteger(i.plannedQty) || i.plannedQty <= 0)
+          ) {
+            return { ok: false, errorKey: 'inbound.mock.qtyInvalid' }
+          }
           const owner = state.customerMasters.find((c) => c.id === input.customerId)
-          const sku = owner ? findSkuMaster(state.skuMasters, owner.code, input.skuCode) : undefined
-          if (!sku || sku.status !== 'ENABLED') return { ok: false, errorKey: 'inbound.mock.skuInvalid' }
-          const dup = state.inbounds.some(
-            (o) => o.customerId === input.customerId && o.upstreamNo === input.upstreamNo.trim(),
+          for (const item of items) {
+            const sku = owner ? findSkuMaster(state.skuMasters, owner.code, item.skuCode) : undefined
+            if (!sku || sku.status !== 'ENABLED') return { ok: false, errorKey: 'inbound.mock.skuInvalid' }
+          }
+          /** 按「来源＋业务类型＋上游单号」定位；重复指令返回原单，不新增 */
+          const dup = state.inbounds.find(
+            (o) =>
+              o.customerId === input.customerId &&
+              o.bizType === input.bizType &&
+              o.upstreamNo === input.upstreamNo.trim(),
           )
-          if (dup) return { ok: false, errorKey: 'inbound.mockDuplicateUpstream' }
+          if (dup) return { ok: true, inboundNo: dup.inboundNo }
 
           const inboundNo = nextInboundNo(state.inbounds)
           const ts = nowIso()
@@ -309,24 +442,26 @@ export const useDb = create<DbState>()(
             etaAt: input.etaAt,
             receiptCloseFlag: 'NOT_CONFIRMED',
             status: 'PENDING_RECEIVE',
-            items: [
-              {
-                lineNo: 1,
-                skuCode: input.skuCode,
-                plannedQty: input.plannedQty,
-                receivedQty: 0,
-                rejectedQty: 0,
-                goodQty: 0,
-                defectQty: 0,
-                putawayQty: 0,
-                status: 'PENDING_RECEIVE',
-              },
-            ],
+            items: items.map((item, i) => ({
+              lineNo: i + 1,
+              skuCode: item.skuCode,
+              plannedQty: item.plannedQty,
+              receivedQty: 0,
+              rejectedQty: 0,
+              goodQty: 0,
+              defectQty: 0,
+              putawayQty: 0,
+              status: 'PENDING_RECEIVE',
+            })),
             createdAt: ts,
             updatedAt: ts,
           })
           set({
             inbounds: [order, ...state.inbounds],
+            inboundMessages: [
+              inboundMessage('CREATE', input.upstreamNo.trim(), 0, 'ACCEPTED', inboundNo),
+              ...state.inboundMessages,
+            ],
             auditLogs: appendAudit({
               refType: 'INBOUND',
               refNo: inboundNo,
@@ -336,6 +471,232 @@ export const useDb = create<DbState>()(
             }),
           })
           return { ok: true, inboundNo }
+        },
+
+        mockChangeInboundInstruction: ({ inboundNo, messageId, version = 1, items }) => {
+          const state = get()
+          const order = state.inbounds.find((o) => o.inboundNo === inboundNo)
+          if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
+          const prior = messageId ? state.inboundMessages.find((m) => m.id === messageId) : undefined
+          if (prior) return prior.status === 'ACCEPTED' ? { ok: true } : { ok: false, errorKey: prior.errorKey ?? 'inbound.changeBlocked' }
+          const rejectChange = (errorKey: string) => {
+            set({
+              inboundMessages: [
+                inboundMessage('CHANGE', order.upstreamNo, version, 'REJECTED', inboundNo, errorKey),
+                ...state.inboundMessages,
+              ],
+            })
+            return { ok: false, errorKey }
+          }
+          if (order.status !== 'PENDING_RECEIVE' || order.items.some((l) => l.receivedQty > 0 || l.rejectedQty > 0)) {
+            return rejectChange('inbound.changeBlocked')
+          }
+          if (
+            items.length === 0 ||
+            new Set(items.map((i) => i.skuCode)).size !== items.length ||
+            items.some((i) => !Number.isInteger(i.plannedQty) || i.plannedQty <= 0)
+          ) {
+            return rejectChange('inbound.changeInvalid')
+          }
+          for (const item of items) {
+            const master = state.skuMasters.find((m) => m.customerId === order.customerId && m.code === item.skuCode)
+            if (!master || master.status !== 'ENABLED') return rejectChange('inbound.changeSkuInvalid')
+          }
+          const ts = nowIso()
+          const next: InboundOrder = recomputeInboundOrder({
+            ...order,
+            items: items.map((item, i) => ({
+              lineNo: i + 1,
+              skuCode: item.skuCode,
+              plannedQty: item.plannedQty,
+              receivedQty: 0,
+              rejectedQty: 0,
+              goodQty: 0,
+              defectQty: 0,
+              putawayQty: 0,
+              status: 'PENDING_RECEIVE',
+            })),
+            updatedAt: ts,
+          })
+          set({
+            inbounds: state.inbounds.map((o) => (o.inboundNo === inboundNo ? next : o)),
+            inboundMessages: [
+              inboundMessage('CHANGE', order.upstreamNo, version, 'ACCEPTED', inboundNo),
+              ...state.inboundMessages,
+            ],
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: inboundNo,
+              action: 'INBOUND_MOCK_CHANGE',
+              operator: currentOperator(),
+              detail: `${items.length} lines`,
+            }),
+          })
+          return { ok: true }
+        },
+
+        mockCancelInboundInstruction: ({ inboundNo, messageId, version = 1, reason }) => {
+          const state = get()
+          const order = state.inbounds.find((o) => o.inboundNo === inboundNo)
+          if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
+          const prior = messageId ? state.inboundMessages.find((m) => m.id === messageId) : undefined
+          if (prior) return prior.status === 'ACCEPTED' ? { ok: true } : { ok: false, errorKey: prior.errorKey ?? 'inbound.cancelBlocked' }
+          const received = order.items.reduce((n, l) => n + l.receivedQty, 0)
+          if (received > 0) {
+            set({
+              inboundMessages: [
+                inboundMessage('CANCEL', order.upstreamNo, version, 'REJECTED', inboundNo, 'inbound.cancelBlocked'),
+                ...state.inboundMessages,
+              ],
+            })
+            return { ok: false, errorKey: 'inbound.cancelBlocked' }
+          }
+          const ts = nowIso()
+          const next = recomputeInboundOrder({
+            ...order,
+            status: 'CANCELLED',
+            updatedAt: ts,
+            remark: reason?.trim() || order.remark,
+          })
+          set({
+            inbounds: state.inbounds.map((o) => (o.inboundNo === inboundNo ? next : o)),
+            inboundMessages: [
+              inboundMessage('CANCEL', order.upstreamNo, version, 'ACCEPTED', inboundNo),
+              ...state.inboundMessages,
+            ],
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: inboundNo,
+              action: 'INBOUND_MOCK_CANCEL',
+              operator: currentOperator(),
+              detail: reason,
+            }),
+          })
+          return { ok: true }
+        },
+
+        retryInboundResult: (inboundNo) => {
+          const state = get()
+          const result = state.inboundResults.find((r) => r.inboundNo === inboundNo)
+          if (!result) return { ok: false, errorKey: 'inbound.resultNotFound' }
+          set({
+            inboundResults: state.inboundResults.map((r) =>
+              r.inboundNo === inboundNo ? { ...r, status: 'SENT', attempts: r.attempts + 1, at: nowIso() } : r,
+            ),
+            auditLogs: appendAudit({
+              refType: 'INBOUND',
+              refNo: inboundNo,
+              action: 'INBOUND_RESULT_RETRY',
+              operator: currentOperator(),
+            }),
+          })
+          return { ok: true }
+        },
+
+        receiveReturn: ({ returnNo, containerNo, lines, operator }) => {
+          const result = applyReturnReceipt(get(), { returnNo, containerNo, lines, operator })
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'RETURN',
+              refNo: returnNo,
+              action: 'RETURN_RECEIVE',
+              operator,
+              detail: `${lines.length} lines`,
+            }),
+          })
+          finalizeReturnResults()
+          return { ok: true }
+        },
+
+        mockReturnForecast: (input) => {
+          const state = get()
+          if (!input.upstreamNo.trim()) return { ok: false, errorKey: 'return.error.upstreamRequired' }
+          if (!Number.isInteger(input.plannedQty) || input.plannedQty <= 0) {
+            return { ok: false, errorKey: 'return.error.qtyInvalid' }
+          }
+          if (input.sourceType === 'DELIVERY_FAILED' && !input.originalOutboundNo?.trim()) {
+            return { ok: false, errorKey: 'return.error.originalOutboundRequired' }
+          }
+          const customer = state.customerMasters.find((c) => c.id === input.customerId && c.status === 'ENABLED')
+          const sku = customer
+            ? state.skuMasters.find((m) => m.customerId === input.customerId && m.code === input.skuCode && m.status === 'ENABLED')
+            : undefined
+          if (!customer || !sku) return { ok: false, errorKey: 'return.error.skuInvalid' }
+          const dup = state.returnOrders.find(
+            (o) => o.sourceType === input.sourceType && o.upstreamNo === input.upstreamNo.trim(),
+          )
+          if (dup) return { ok: true, returnNo: dup.returnNo }
+          const at = nowIso()
+          const returnNo = nextDocNo('RT', state.returnOrders.map((o) => o.returnNo), at)
+          const order: ReturnOrder = recomputeReturnOrder({
+            returnNo,
+            warehouseCode: input.warehouseCode,
+            customerId: input.customerId,
+            sourceType: input.sourceType,
+            upstreamNo: input.upstreamNo.trim(),
+            trackingNo: input.trackingNo?.trim() || undefined,
+            originalOutboundNo: input.originalOutboundNo?.trim() || undefined,
+            status: 'PENDING_RECEIVE',
+            items: [
+              {
+                lineNo: 1,
+                skuCode: input.skuCode,
+                plannedQty: input.plannedQty,
+                receivedQty: 0,
+                goodQty: 0,
+                defectQty: 0,
+                rejectedQty: 0,
+                putawayQty: 0,
+                status: 'PENDING_RECEIVE',
+              },
+            ],
+            createdAt: at,
+            updatedAt: at,
+          })
+          set({
+            returnOrders: [order, ...state.returnOrders],
+            auditLogs: appendAudit({
+              refType: 'RETURN',
+              refNo: returnNo,
+              action: 'RETURN_MOCK_FORECAST',
+              operator: currentOperator(),
+              detail: input.upstreamNo,
+            }),
+          })
+          return { ok: true, returnNo }
+        },
+
+        cancelReturnOrder: (returnNo, reason) => {
+          const state = get()
+          const order = state.returnOrders.find((o) => o.returnNo === returnNo)
+          if (!order) return { ok: false, errorKey: 'return.error.notFound' }
+          if (order.status === 'CANCELLED' || order.status === 'COMPLETED') {
+            return { ok: false, errorKey: 'return.error.cancelBlocked' }
+          }
+          if (order.items.some((l) => l.receivedQty > 0)) {
+            return { ok: false, errorKey: 'return.error.cancelBlocked' }
+          }
+          const at = nowIso()
+          const next = recomputeReturnOrder({
+            ...order,
+            status: 'CANCELLED',
+            cancelledAt: at,
+            cancelReason: reason?.trim() || undefined,
+            updatedAt: at,
+          })
+          set({
+            returnOrders: state.returnOrders.map((o) => (o.returnNo === returnNo ? next : o)),
+            auditLogs: appendAudit({
+              refType: 'RETURN',
+              refNo: returnNo,
+              action: 'RETURN_CANCEL',
+              operator: currentOperator(),
+              detail: reason,
+            }),
+          })
+          return { ok: true }
         },
 
         submitReceipt: ({ inboundNo, containers, operator }) => {
@@ -352,6 +713,7 @@ export const useDb = create<DbState>()(
               detail: `${boxes.map((c) => (c.bulkPiece ? 'bulk' : c.containerNo)).join(', ')} · ${boxes.reduce((s, c) => s + c.lines.length, 0)} lines`,
             }),
           })
+          finalizeInboundResults()
           return { ok: true }
         },
 
@@ -369,6 +731,7 @@ export const useDb = create<DbState>()(
               detail: `container ${containerNo ?? 'bulk'} · ${lines.length} lines`,
             }),
           })
+          finalizeInboundResults()
           return { ok: true }
         },
 
@@ -417,6 +780,8 @@ export const useDb = create<DbState>()(
               detail: `${result.order!.actualLines.length} lines`,
             }),
           })
+          finalizeInboundResults()
+          finalizeReturnResults()
           return { ok: true }
         },
 
@@ -441,6 +806,8 @@ export const useDb = create<DbState>()(
             detail: `${result.order!.actualLines.length} lines`,
           })
           set({ ...result.patch, auditLogs: [submit, ...saves.reverse(), ...get().auditLogs] })
+          finalizeInboundResults()
+          finalizeReturnResults()
           return { ok: true }
         },
 
@@ -480,27 +847,11 @@ export const useDb = create<DbState>()(
     {
       name: 'qs-wms-demo-db',
       // 修改 seed.ts 或数据结构后把版本号 +1，浏览器里的旧演示数据会被替换为新种子
-      version: 31,
+      /** 32：IB 单号、四仓主数据/作业同步、收货批次与 SN、退货单/上游消息 */
+      version: 32,
       migrate: (_persisted: unknown, fromVersion: number) => {
-        if (fromVersion < 31) return createSeedData() as unknown as typeof _persisted
+        if (fromVersion < 32) return createSeedData() as unknown as typeof _persisted
         return _persisted
-      },
-      merge: (persisted, current) => {
-        const next = { ...current, ...(persisted as object) } as typeof current
-        const seed = createSeedData()
-        const inbounds = next.inbounds ?? []
-        const legacy = inbounds.length > 0 && !inbounds.some((o) => o.inboundNo.startsWith('RK-'))
-        if (inbounds.length === 0 || legacy) {
-          next.inbounds = seed.inbounds
-          next.receiptRecords = seed.receiptRecords
-          next.putawayOrders = seed.putawayOrders
-          next.inboundExceptions = seed.inboundExceptions
-        } else {
-          next.receiptRecords = next.receiptRecords ?? seed.receiptRecords
-          next.putawayOrders = next.putawayOrders ?? seed.putawayOrders
-          next.inboundExceptions = next.inboundExceptions ?? seed.inboundExceptions
-        }
-        return next
       },
       partialize: (s) => ({
         outboundOrders: s.outboundOrders,
@@ -514,7 +865,6 @@ export const useDb = create<DbState>()(
         outboundResults: s.outboundResults,
         inventoryCounts: s.inventoryCounts,
         stockMoves: s.stockMoves,
-        outboundRole: s.outboundRole,
         warehouses: s.warehouses,
         warehouseMasters: s.warehouseMasters,
         zoneMasters: s.zoneMasters,
@@ -531,11 +881,16 @@ export const useDb = create<DbState>()(
         receiptRecords: s.receiptRecords,
         putawayOrders: s.putawayOrders,
         inboundExceptions: s.inboundExceptions,
+        inboundMessages: s.inboundMessages,
+        inboundResults: s.inboundResults,
+        returnOrders: s.returnOrders,
+        returnReceipts: s.returnReceipts,
+        returnExceptions: s.returnExceptions,
+        returnResults: s.returnResults,
         newSkuRecords: s.newSkuRecords,
         unclaimedRecords: s.unclaimedRecords,
         inventory: s.inventory,
         inventoryLogs: s.inventoryLogs,
-        packages: s.packages,
         auditLogs: s.auditLogs,
       }),
     },
@@ -564,20 +919,41 @@ export const useLookups = () => {
   const skuMasters = useDb((s) => s.skuMasters)
   return useMemo(() => {
     const customerMap = new Map(customers.map((c) => [c.id, c]))
-    const skuMap = new Map(skus.map((s) => [s.code, s]))
-    // 演示商品（如 CABLE-01）只存在于商品资料 skuMasters，展示时兜底其中文名与主条码
+    const key = (customerId: string, code: string) => `${customerId}::${code}`
+    const skuMap = new Map(skus.map((s) => [key(s.customerId, s.code), s]))
+    /**
+     * 商品编码只在货主内唯一；作业对象都带货主，展示/扫码必须按货主取值。
+     * 商品资料是主数据真源，同名 key 覆盖旧 Sku 投影的名称、条码和尺重。
+     */
     skuMasters.forEach((m) => {
-      const existing = skuMap.get(m.code)
-      if (!existing) {
-        skuMap.set(m.code, skuFromMaster(m))
-      } else if (!existing.barcode && m.primaryBarcode) {
-        skuMap.set(m.code, { ...existing, barcode: m.primaryBarcode })
-      }
+      const existing = skuMap.get(key(m.customerId, m.code))
+      const projected = existing ?? skuFromMaster(m)
+      skuMap.set(key(m.customerId, m.code), {
+        ...projected,
+        name: m.name,
+        barcode: m.primaryBarcode ?? projected.barcode,
+        ...(m.grossWeightKg != null ? { weightG: Math.round(m.grossWeightKg * 1000) } : {}),
+        ...(m.lengthCm != null ? { lengthCm: m.lengthCm } : {}),
+        ...(m.widthCm != null ? { widthCm: m.widthCm } : {}),
+        ...(m.heightCm != null ? { heightCm: m.heightCm } : {}),
+      })
     })
+    /** 兼容只传编码的旧调用；同一编码跨货主时不返回名称，避免显示成另一个货主的商品 */
+    const byCode = new Map<string, Sku>()
+    const ambiguous = new Set<string>()
+    skuMap.forEach((s) => {
+      const existing = byCode.get(s.code)
+      if (existing && existing.customerId !== s.customerId) ambiguous.add(s.code)
+      else if (!existing) byCode.set(s.code, s)
+    })
+    ambiguous.forEach((code) => byCode.delete(code))
+    const sku = (code: string, customerId?: string) =>
+      (customerId ? skuMap.get(key(customerId, code)) : undefined) ?? byCode.get(code)
     return {
       customerName: (id: string) => customerMap.get(id)?.name ?? id,
       customerCode: (id: string) => customerMap.get(id)?.code ?? id,
-      sku: (code: string) => skuMap.get(code),
+      sku,
+      skuByOwner: (customerId: string, code: string) => sku(code, customerId),
     }
   }, [customers, skus, skuMasters])
 }

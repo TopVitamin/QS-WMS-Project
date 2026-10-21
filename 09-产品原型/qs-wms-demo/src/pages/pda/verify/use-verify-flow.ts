@@ -125,7 +125,7 @@ export function useVerifyFlow() {
     rowsOf,
     liveOf,
     resolveSku,
-    skuName: (code: string) => sku(code)?.name,
+    skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     run,
     notice,
     confirm,

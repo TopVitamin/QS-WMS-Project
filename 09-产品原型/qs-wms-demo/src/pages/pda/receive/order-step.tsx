@@ -1,12 +1,11 @@
 import dayjs from 'dayjs'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
-import { toast } from 'sonner'
 import { DocNoTail } from '@/components/biz/display'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { PdaButton, PdaCard, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaHeader } from '@/components/pda/pda-header'
-import { ScanInput } from '@/components/pda/scan-input'
+import { ScanInput, type ScanMessage } from '@/components/pda/scan-input'
 import { inboundOrderStatusMeta } from '@/config/status'
 import { lineUnreceivedQty } from '@/lib/inbound-derive'
 import { EMPTY_TEXT } from '@/lib/typography'
@@ -15,6 +14,7 @@ import type { ReceiveFlow } from './use-receive-flow'
 /** 选单（PDA 收货 PRD §2、§3）：扫入库单号或柜号、点选可收货单；有未提交作业时先接续 */
 export function ReceiveOrderStep({ flow }: { flow: ReceiveFlow }) {
   const { t, nav, session, receivable, lineCount, order, orderReceivable, warehouse } = flow
+  const [message, setMessage] = useState<ScanMessage>()
   const location = useLocation()
   const presetNo = (location.state as { inboundNo?: string } | null)?.inboundNo
   const presetHandled = useRef(false)
@@ -44,7 +44,7 @@ export function ReceiveOrderStep({ flow }: { flow: ReceiveFlow }) {
     const key = code.trim().toUpperCase()
     const found = receivable.find((o) => o.inboundNo.toUpperCase() === key || o.containerNo?.toUpperCase() === key)
     if (!found) {
-      toast.error(t('pda.inboundInvalid'))
+      setMessage({ tone: 'error', text: t('pda.inboundInvalid') })
       return false
     }
     return selectOrder(found.inboundNo)
@@ -101,6 +101,7 @@ export function ReceiveOrderStep({ flow }: { flow: ReceiveFlow }) {
         <ScanInput
           label={t('pdaReceive.promptOrder')}
           onScan={onScan}
+          message={message}
           candidates={receivable.slice(0, 4).map((o) => ({ value: o.inboundNo }))}
         />
 

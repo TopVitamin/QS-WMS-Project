@@ -10,13 +10,13 @@
 
 ## 一、页面与路由
 
-| 路由 | 角色 | 容器 |
+| 路由 | 页面类型 | 容器 |
 | --- | --- | --- |
 | `/wms/master/warehouses` | 列表 | `PageContainer fill` + 双 `Panel`（结构见页面骨架「列表页」） |
 | `/wms/master/warehouses/:code` | 详情 | `PageContainer` + 分组 `Panel` + `Descriptions columns={4}` |
 | `/wms/master/warehouses/:code/edit` | 编辑 | 分组 `Panel` + 表单 |
 
-顶栏「当前仓库」只影响**业务单据**默认过滤；仓库资料列表展示**授权内全部仓库**（主 PRD Q05：与 `warehouseMasters` 自动同步一期不做，联调登记）。
+顶栏「当前仓库」只影响**业务单据**默认过滤；仓库资料列表展示**全部演示仓库**（主 PRD Q05：与 `warehouseMasters` 自动同步一期不做，联调登记）。
 
 菜单：**基础资料 → 仓库管理**。本地：`cd 09-产品原型/qs-wms-demo && npm run dev`。
 

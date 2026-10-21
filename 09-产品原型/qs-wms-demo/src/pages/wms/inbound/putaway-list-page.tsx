@@ -98,7 +98,9 @@ export function PutawayListPage() {
               {row.original.sourceNo}
             </DocNo>
           ) : (
-            row.original.sourceNo
+            <DocNo onClick={() => navigate(`/wms/returns/orders/${row.original.sourceNo}`)}>
+              {row.original.sourceNo}
+            </DocNo>
           ),
       }),
       col.accessor('containerNo', {
@@ -183,7 +185,7 @@ export function PutawayListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
+        <FilterBar columns={6}
           onSearch={list.search}
           onReset={list.reset}
           advanced={

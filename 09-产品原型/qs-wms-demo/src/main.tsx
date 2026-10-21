@@ -31,7 +31,7 @@ createRoot(document.getElementById('root')!).render(
     <TooltipProvider delayDuration={300}>
       <ConfirmProvider>
         <RouterProvider router={router} />
-        <Toaster position="top-center" richColors closeButton />
+        <Toaster position="bottom-center" richColors closeButton />
       </ConfirmProvider>
     </TooltipProvider>
   </StrictMode>,

@@ -128,7 +128,9 @@ export function skuKindCount(order: InboundOrder): number {
 export function stagingLocationCode(
   locations: Array<{ code: string; warehouseCode: string; type: string }>,
   warehouseCode: string,
+  preferredCode?: string,
 ): string {
+  if (preferredCode?.trim()) return preferredCode.trim().toUpperCase()
   return (
     locations.find((l) => l.warehouseCode === warehouseCode && l.type === 'STAGING')?.code ?? 'STAGE-IN-01'
   )

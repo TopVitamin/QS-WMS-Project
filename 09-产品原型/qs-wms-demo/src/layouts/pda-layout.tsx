@@ -1,10 +1,12 @@
 import { BatteryFull, Signal, Wifi } from 'lucide-react'
-import { Suspense, useSyncExternalStore } from 'react'
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router'
 import { PageLoading } from '@/components/biz/page-loading'
+import { PdaToaster } from '@/components/pda/pda-toaster'
 import { Button } from '@/components/ui/button'
 import { PDA_STATUS_BAR_HEIGHT, pdaDevices } from '@/config/pda-devices'
+import { setPortalContainer } from '@/lib/portal-container'
 import { useNow } from '@/hooks/use-now'
 import { formatDateTime } from '@/lib/format'
 import { useCurrentWarehouse, useSettings } from '@/stores/settings'
@@ -29,6 +31,11 @@ export function PdaLayout() {
   const setPdaDevice = useSettings((s) => s.setPdaDevice)
   const device = pdaDevices.find((d) => d.key === deviceKey) ?? pdaDevices[0]
   const viewportHeight = useSyncExternalStore(subscribeResize, () => window.innerHeight)
+  const [portal, setPortal] = useState<HTMLDivElement | null>(null)
+  useEffect(() => {
+    setPortalContainer(portal)
+    return () => setPortalContainer(null)
+  }, [portal])
   const zoom = Math.min(1, Math.max(0.5, (viewportHeight - OUTSIDE_FRAME_HEIGHT) / device.height))
   const frameVars = {
     '--pda-w': `${device.width}px`,
@@ -57,8 +64,8 @@ export function PdaLayout() {
         ))}
       </div>
       <div
-        style={frameVars}
-        className="flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:h-(--pda-h) sm:w-(--pda-w) sm:rounded-[28px] sm:shadow-2xl sm:ring-[10px] sm:ring-foreground sm:[zoom:var(--pda-zoom)]"
+        style={{ ...frameVars, contain: 'paint', transform: 'translateZ(0)' }}
+        className="pda-frame relative flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:h-(--pda-h) sm:w-(--pda-w) sm:rounded-[28px] sm:shadow-2xl sm:ring-[10px] sm:ring-foreground sm:[zoom:var(--pda-zoom)]"
       >
         <PdaStatusBar />
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -66,6 +73,8 @@ export function PdaLayout() {
             <Outlet />
           </Suspense>
         </div>
+        <PdaToaster />
+        <div ref={setPortal} />
       </div>
     </div>
   )

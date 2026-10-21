@@ -11,6 +11,8 @@ export const wmsPageRegistry: Record<string, ComponentType> = {
     () => import('./outbound/verify-station-page'),
     'OutboundVerifyStationPage',
   ),
+  '/wms/returns/orders': lazyPage(() => import('./returns/return-list-page'), 'ReturnListPage'),
+  '/wms/system/logs': lazyPage(() => import('./system/operation-log-page'), 'OperationLogPage'),
   '/wms/inventory/counts': lazyPage(() => import('./inventory/stocktake-list-page'), 'StocktakeListPage'),
   '/wms/inventory/moves': lazyPage(() => import('./inventory/move-list-page'), 'MoveListPage'),
   '/wms/inventory/logs': lazyPage(() => import('./inventory/logs-page'), 'InventoryLogsPage'),

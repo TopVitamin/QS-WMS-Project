@@ -78,7 +78,7 @@ export function useQueryFlow() {
     usable,
     toTarget,
     scan,
-    skuName: (code: string) => sku(code)?.name,
+    skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     ownerText: (customerId: string) => `${customerCode(customerId)} ${customerName(customerId)}`,
     ownerCode: customerCode,
   }

@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useState } from 'react'
 import { PdaButton, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
-import { ScanInput } from '@/components/pda/scan-input'
+import { ScanInput, type ScanMessage } from '@/components/pda/scan-input'
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { cn } from '@/lib/utils'
 import { boxKeyOf } from '@/stores/pda-receive-session'
@@ -12,6 +11,7 @@ import type { ReceiveFlow } from './use-receive-flow'
 /** 扫容器（PDA 收货 PRD §3、§5）：绑定下一个作业容器或无容器收货；列出本次作业已有容器 */
 export function ReceiveContainerStep({ flow }: { flow: ReceiveFlow }) {
   const { t, nav, session, order, orderReceivable } = flow
+  const [message, setMessage] = useState<ScanMessage>()
 
   useEffect(() => {
     if (!order || !orderReceivable) {
@@ -48,7 +48,7 @@ export function ReceiveContainerStep({ flow }: { flow: ReceiveFlow }) {
     }
     const kind = flow.classifyNonContainer(containerNo)
     if (kind) {
-      toast.error(t('pdaReceive.notContainer', { kind: t(`pdaReceive.kind.${kind}`) }))
+      setMessage({ tone: 'error', text: t('pdaReceive.notContainer', { kind: t(`pdaReceive.kind.${kind}`) }) })
       return false
     }
     if (isWorkContainerUsedOnInbound(flow.receipts, order.inboundNo, containerNo)) {
@@ -64,7 +64,7 @@ export function ReceiveContainerStep({ flow }: { flow: ReceiveFlow }) {
       <PdaHeader title={t('pda.receive')} onBack={() => nav.back({ step: 'order' })} />
       <ReceiveContext flow={flow} />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <ScanInput label={t('pdaReceive.promptContainer')} onScan={onScan} candidates={candidates} />
+        <ScanInput label={t('pdaReceive.promptContainer')} onScan={onScan} candidates={candidates} message={message} />
 
         {boxes.length > 0 && (
           <PdaSection title={t('pdaReceive.sessionBoxes', { count: boxes.length })}>

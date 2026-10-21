@@ -13,9 +13,13 @@ export function useUnsavedChangesGuard(dirty: boolean, scope: MasterDataI18nScop
   const { t } = useTranslation()
   const dirtyRef = useRef(dirty)
   const savedRef = useRef(false)
+  const prevDirtyRef = useRef(dirty)
 
   useEffect(() => {
     dirtyRef.current = dirty
+    /** 保存后再次进入编辑（dirty 从 false 变 true）时恢复拦截，不能一直沿用上一次的 markSaved */
+    if (!prevDirtyRef.current && dirty) savedRef.current = false
+    prevDirtyRef.current = dirty
   }, [dirty])
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {

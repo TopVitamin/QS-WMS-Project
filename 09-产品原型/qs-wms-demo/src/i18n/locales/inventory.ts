@@ -48,6 +48,7 @@ const labels = {
   ],
   counting: ['盘点中', 'Counting'],
   pending: ['待核对', 'Pending review'],
+  snTag: ['SN', 'SN'],
   yes: ['是', 'Yes'],
   no: ['否', 'No'],
   viewLogs: ['查看流水', 'View transactions'],

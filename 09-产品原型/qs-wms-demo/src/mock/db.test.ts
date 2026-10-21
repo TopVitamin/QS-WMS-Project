@@ -11,7 +11,7 @@ function resetDb() {
 
 /** 固定验收种子 0001：US-LA-01，CABLE-01 预计 500，待收货 */
 function findPendingInbound() {
-  return useDb.getState().inbounds.find((o) => o.inboundNo === 'RK-20261002-0001' && o.status === 'PENDING_RECEIVE')
+  return useDb.getState().inbounds.find((o) => o.inboundNo === 'IB-20261002-0001' && o.status === 'PENDING_RECEIVE')
 }
 
 function getInbound(inboundNo: string) {
@@ -426,7 +426,25 @@ describe('上架单按应上架行落位（上架单主PRD 第三节）', () => 
       submittedAt: undefined,
       submittedBy: undefined,
     }
-    useDb.setState((s) => ({ putawayOrders: [...s.putawayOrders, po] }))
+    useDb.setState((s) => ({
+      putawayOrders: [...s.putawayOrders, po],
+      /** SN 落位必须来自本单收货暂存库存 */
+      inventory: [
+        ...s.inventory,
+        {
+          id: 'INV-TEST-SN-STAGING',
+          warehouseCode: po.warehouseCode,
+          locationCode: po.stagingLocationCode,
+          customerId: po.customerId,
+          skuCode: 'SN-DEMO-01',
+          qualityType: 'GOOD',
+          onHandQty: 2,
+          lockedQty: 0,
+          serialNos: ['SN00000101', 'SN00000102'],
+          firstInboundAt: '2026-10-10T00:00:00.000Z',
+        },
+      ],
+    }))
     const target = suggestPutawayLocation(po, 'SN-DEMO-01', useDb.getState())!
     const save = (sn: string) =>
       useDb.getState().savePutawayLine({
@@ -525,7 +543,7 @@ describe('新品维护量方（新品维护主PRD 第二～四节）', () => {
   })
 
   it('未维护的新品收货整次提交被阻断，量方后同一提交可通过', () => {
-    const order = getInbound('RK-20261002-0009')!
+    const order = getInbound('IB-20261002-0009')!
     const blocked = useDb.getState().submitContainerReceipt({
       inboundNo: order.inboundNo,
       containerNo: 'BOX-NEW-01',
@@ -557,7 +575,7 @@ describe('新品维护量方（新品维护主PRD 第二～四节）', () => {
     const passed = useDb.getState().submitContainerReceipt({
       inboundNo: order.inboundNo,
       containerNo: 'BOX-NEW-01',
-      lines: [{ skuCode: 'SN-DEMO-01', goodQty: 1, defectQty: 0 }],
+      lines: [{ skuCode: 'SN-DEMO-01', goodQty: 1, defectQty: 0, goodSerialNos: ['SN00009999'] }],
       operator: 'test',
     })
     expect(passed).toEqual({ ok: true })

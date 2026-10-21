@@ -2,7 +2,7 @@ import { TagLabel } from '@/components/biz/status-badge'
 import { PdaCard } from '@/components/pda/pda-card'
 import { PdaContextBar, PdaContextDot } from '@/components/pda/pda-context-bar'
 import { PdaFigure, PdaSkuBlock } from '@/components/pda/pda-stock'
-import { inventoryTagMeta, qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, inventoryTagMeta, qualityMeta } from '@/config/status'
 import { cn } from '@/lib/utils'
 import type { PdaMoveLine } from '@/stores/pda-move-session'
 import type { InventoryRecord } from '@/types/wms'
@@ -49,13 +49,13 @@ export function MoveRowCard({
         <PdaSkuBlock
           className="flex-1"
           skuCode={row.skuCode}
-          name={flow.skuName(row.skuCode)}
+          name={flow.skuName(row.skuCode, row.customerId)}
           owner={flow.ownerText(row.customerId)}
           batch={[row.batchNo, row.expiryDate].filter(Boolean).join(' · ') || undefined}
           tags={
             <>
               <TagLabel meta={qualityMeta[row.qualityType]} />
-              {flow.isSn(row) && <TagLabel tone="purple">{t('pdaMove.snTag')}</TagLabel>}
+              {flow.isSn(row) && <TagLabel meta={inventoryFeatureMeta.sn} />}
               {counting && <TagLabel meta={inventoryTagMeta.counting} />}
               {flow.pending(row) && <TagLabel meta={inventoryTagMeta.pending} />}
             </>
@@ -124,7 +124,7 @@ export function MoveLineCard({
           <PdaSkuBlock
             className="mt-1"
             skuCode={line.skuCode}
-            name={flow.skuName(line.skuCode)}
+            name={flow.skuName(line.skuCode, line.customerId)}
             batch={line.batchNo}
             tags={<TagLabel meta={qualityMeta[line.qualityType]} />}
           />

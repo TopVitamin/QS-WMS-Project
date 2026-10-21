@@ -16,6 +16,7 @@ export function MasterDetailActions({
   onToggle,
   onEdit,
   extra,
+  showStatusAction = true,
 }: {
   scope: MasterDataI18nScope
   backTo: string
@@ -23,6 +24,8 @@ export function MasterDetailActions({
   onToggle: (next: UsageStatus) => void
   onEdit: () => void
   extra?: React.ReactNode
+  /** 仓库资料一期状态只读，不渲染启用/停用按钮 */
+  showStatusAction?: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -30,15 +33,16 @@ export function MasterDetailActions({
       <Button variant="outline" asChild>
         <Link to={backTo}>{t(`${scope}.backToList`)}</Link>
       </Button>
-      {enabled ? (
-        <Button variant="destructive" onClick={() => onToggle('DISABLED')}>
-          {t(`${scope}.disableAction`)}
-        </Button>
-      ) : (
-        <Button variant="outline" onClick={() => onToggle('ENABLED')}>
-          {t(`${scope}.enableAction`)}
-        </Button>
-      )}
+      {showStatusAction &&
+        (enabled ? (
+          <Button variant="destructive" onClick={() => onToggle('DISABLED')}>
+            {t(`${scope}.disableAction`)}
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => onToggle('ENABLED')}>
+            {t(`${scope}.enableAction`)}
+          </Button>
+        ))}
       <Button variant={extra ? 'outline' : 'default'} onClick={onEdit}>
         {t(`${scope}.edit`)}
       </Button>

@@ -161,7 +161,7 @@ export function UnclaimedListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
+        <FilterBar columns={6}
           onSearch={() => applyFilters(draft)}
           onReset={() => {
             setDraft(emptyUnclaimedListFilters)

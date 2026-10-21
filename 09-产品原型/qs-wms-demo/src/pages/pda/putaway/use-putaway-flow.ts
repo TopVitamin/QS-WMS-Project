@@ -167,7 +167,7 @@ export function usePutawayFlow() {
     operator,
     ...putaway,
     customerName,
-    skuName: (code: string) => sku(code)?.name,
+    skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     findOrder,
     latestOrder,
     liveLocationContext,

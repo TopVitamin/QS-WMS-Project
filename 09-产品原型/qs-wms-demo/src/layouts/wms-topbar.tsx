@@ -20,6 +20,7 @@ import { findMenuGroup, findMenuLeaf } from '@/config/menu'
 import { formatDateTime, formatTzOffset } from '@/lib/format'
 import { useNow } from '@/hooks/use-now'
 import { useResetDemo } from '@/hooks/use-reset-demo'
+import { useDb } from '@/mock/db'
 import { warehouses } from '@/mock/seed'
 import {
   useCurrentWarehouse,
@@ -42,6 +43,9 @@ export function WmsTopbar() {
   const location = useLocation()
   const settings = useSettings()
   const warehouse = useCurrentWarehouse()
+  const warehouseMasters = useDb((s) => s.warehouseMasters)
+  const warehouseName = (code: string, fallbackKey: string) =>
+    warehouseMasters.find((w) => w.code === code)?.name ?? t(fallbackKey)
   const tz = useDisplayTimezone()
   const now = useNow()
   const resetDemo = useResetDemo()
@@ -88,7 +92,9 @@ export function WmsTopbar() {
                 <div className="flex items-center gap-1.5">
                   <Warehouse data-icon="inline-start" className="size-3.5 text-primary" />
                   <BizCode className="text-xs font-medium text-foreground">{warehouse.code}</BizCode>
-                  <span className="hidden whitespace-nowrap text-muted-foreground xl:inline">{t(warehouse.nameKey)}</span>
+                  <span className="hidden whitespace-nowrap text-muted-foreground xl:inline">
+                    {warehouseName(warehouse.code, warehouse.nameKey)}
+                  </span>
                 </div>
                 <div className="h-3 w-px bg-border shrink-0" />
                 <div className="flex items-center gap-1 text-muted-foreground">
@@ -108,7 +114,7 @@ export function WmsTopbar() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <BizCode className="text-xs font-semibold">{w.code}</BizCode>
-                      <span className="text-sm">{t(w.nameKey)}</span>
+                      <span className="text-sm">{warehouseName(w.code, w.nameKey)}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {w.timezone} · {formatTzOffset(w.timezone)} · {w.currency}

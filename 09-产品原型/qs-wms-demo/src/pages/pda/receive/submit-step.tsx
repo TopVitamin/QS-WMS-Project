@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { DocNoTail } from '@/components/biz/display'
 import { PdaButton, PdaCard, PdaListItem } from '@/components/pda/pda-card'
 import { PdaContextBar } from '@/components/pda/pda-context-bar'
@@ -50,13 +50,20 @@ export function ReceiveSubmitStep({ flow }: { flow: ReceiveFlow }) {
       containers: chosen.map((b) => ({
         containerNo: b.containerNo,
         bulkPiece: b.bulkPiece,
-        lines: b.lines.map(({ skuCode, goodQty, defectQty, rejectedQty, rejectReason }) => ({
-          skuCode,
-          goodQty,
-          defectQty,
-          rejectedQty,
-          rejectReason,
-        })),
+        lines: b.lines.map(
+          ({ skuCode, goodQty, defectQty, rejectedQty, rejectReason, batchNo, productionDate, expiryDate, goodSerialNos, defectSerialNos }) => ({
+            skuCode,
+            goodQty,
+            defectQty,
+            rejectedQty,
+            rejectReason,
+            batchNo: batchNo?.trim() || undefined,
+            productionDate: productionDate || undefined,
+            expiryDate: expiryDate || undefined,
+            goodSerialNos,
+            defectSerialNos,
+          }),
+        ),
       })),
     })
     if (!res.ok) {

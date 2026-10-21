@@ -50,7 +50,7 @@ export function ChannelFormDialog({
   const fieldError = useMasterFormFieldError('masterChannel')
   const channelMasters = useDb((s) => s.channelMasters)
   const carrierMasters = useDb((s) => s.carrierMasters)
-  const packages = useDb((s) => s.packages)
+  const outboundOrders = useDb((s) => s.outboundOrders)
   const createChannelMaster = useDb((s) => s.createChannelMaster)
   const updateChannelMaster = useDb((s) => s.updateChannelMaster)
 
@@ -60,7 +60,7 @@ export function ChannelFormDialog({
   )
 
   const carrierLocked = Boolean(
-    existing && mode === 'edit' && channelHasOpenReferences(existing.code, packages),
+    existing && mode === 'edit' && channelHasOpenReferences(existing.code, outboundOrders),
   )
 
   const enabledCarriers = useMemo(

@@ -9,7 +9,14 @@ import { BizCode, CodeName, Empty, Num } from '@/components/biz/display'
 import { DetailTitle, Section } from '@/components/biz/page-container'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
-import { expiryLevelMeta, inventoryTagMeta, outboundStatusMeta, outboundTypeMeta, qualityMeta } from '@/config/status'
+import {
+  allocationStatusMeta,
+  expiryLevelMeta,
+  inventoryTagMeta,
+  outboundStatusMeta,
+  outboundTypeMeta,
+  qualityMeta,
+} from '@/config/status'
 import { isLiveOutbound, type BalanceRow, type SerialRow, type SkuStockRow } from '@/lib/inventory-derive'
 import { ledgerNumbers } from '@/lib/inventory-ledger'
 import { sortLedger } from '@/lib/inventory-list-match'
@@ -315,7 +322,7 @@ export function StockSkuSheet({
             {row.pending ? (
               <TagLabel meta={inventoryTagMeta.pending} />
             ) : (
-              <TagLabel tone="green">{t('inventory.allocationStatus.NORMAL')}</TagLabel>
+              <TagLabel meta={allocationStatusMeta.NORMAL} />
             )}
           </DescriptionItem>
           <DescriptionItem label={t('inventory.pendingSources')} multiline>

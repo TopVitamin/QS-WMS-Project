@@ -1,7 +1,7 @@
 import { DocNoTail } from '@/components/biz/display'
 import { TagLabel } from '@/components/biz/status-badge'
 import { PdaContextBar, PdaContextDot } from '@/components/pda/pda-context-bar'
-import { outboundTypeMeta } from '@/config/status'
+import { inventoryFeatureMeta, outboundTypeMeta } from '@/config/status'
 import { sum } from '@/lib/outbound-derive'
 import { toVerifyQty, type VerifyRow } from '@/lib/outbound-verify'
 import { cn } from '@/lib/utils'
@@ -52,7 +52,7 @@ export function VerifyRowCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-mono text-base font-semibold">{row.skuCode}</span>
-          {row.sn && <TagLabel tone="purple">{t('outbound.pdaPick.snTag')}</TagLabel>}
+          {row.sn && <TagLabel meta={inventoryFeatureMeta.sn} />}
         </div>
         <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(row.skuCode)}</div>
         {row.batchNo && <div className="mt-0.5 font-mono text-sm text-muted-foreground">{row.batchNo}</div>}

@@ -1,6 +1,6 @@
 import { CircleCheck } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { PdaButton, PdaCard } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { taskTotals } from '@/lib/outbound-derive'

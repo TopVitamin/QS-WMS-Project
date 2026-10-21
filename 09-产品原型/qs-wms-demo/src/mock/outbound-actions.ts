@@ -24,7 +24,6 @@ export const outboundDataKeys = [
   'skuAllocationControls',
   'outboundMessages',
   'outboundResults',
-  'outboundRole',
 ] as const
 export function emptyOutboundData(): OutboundData {
   return {
@@ -37,7 +36,6 @@ export function emptyOutboundData(): OutboundData {
     skuAllocationControls: [],
     outboundMessages: [],
     outboundResults: [],
-    outboundRole: 'SUPERVISOR',
   }
 }
 export const skuKey = (warehouse: string, owner: string, sku: string) => `${warehouse}::${owner}::${sku}`
@@ -290,7 +288,9 @@ export function applyOutboundAction(
       waveNo,
       orderNo: waveNo ? undefined : first.no,
       status: 'PENDING_PICK',
-      stagingCode: 'STAGE-OUT-01',
+      stagingCode:
+        s.warehouseMasters.find((w) => w.code === first.warehouseCode)?.outboundStagingLocation ??
+        'STAGE-OUT-01',
       lines: [],
       assignments: [],
       confirmations: [],
@@ -455,13 +455,8 @@ export function applyOutboundAction(
     const occupied = s.inventory.filter(
       (r) => r.warehouseCode === p.warehouseCode && r.locationCode === location && r.onHandQty > 0,
     )
-    if (
-      occupied.some((r) => r.customerId !== p.customerId || r.qualityType !== l.qualityType) ||
-      (target.master &&
-        ((occupied.some((r) => r.skuCode !== l.skuCode) && !target.master.allowMixSku) ||
-          (occupied.some((r) => r.batchNo !== l.batchNo) && !target.master.allowMixBatch)))
-    )
-      reject('target')
+    /** 目标库位一货主一品质：同货主可多 SKU、多批次，不设混放开关 */
+    if (occupied.some((r) => r.customerId !== p.customerId || r.qualityType !== l.qualityType)) reject('target')
   }
   const message =
     c.type === 'CREATE' && c.input.source === 'OMS'

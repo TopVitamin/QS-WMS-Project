@@ -43,7 +43,7 @@ export function pendingControl(
 export type LocationUsage = 'RECEIVING_STAGING' | 'STORAGE' | 'PICK' | 'DEFECT' | 'OUTBOUND_STAGING' | 'EXCEPTION'
 
 export function locationUsage(
-  s: Pick<SeedData, 'locations' | 'locationMasters'>,
+  s: Pick<SeedData, 'locations' | 'locationMasters'> & Pick<Partial<SeedData>, 'warehouseMasters'>,
   warehouseCode: string,
   code: string,
 ): LocationUsage | undefined {
@@ -51,8 +51,12 @@ export function locationUsage(
   const legacy = s.locations.find((l) => l.warehouseCode === warehouseCode && l.code === code)
   const type = master ? (master.zoneType === 'DEFECT_ISOLATION' ? 'DEFECT' : master.zoneType) : legacy?.type
   if (!type) return undefined
-  if (type === 'STAGING')
+  if (type === 'STAGING') {
+    const configured = s.warehouseMasters?.find((w) => w.code === warehouseCode)
+    if (configured?.receivingStagingLocation && code === configured.receivingStagingLocation) return 'RECEIVING_STAGING'
+    if (configured?.outboundStagingLocation && code === configured.outboundStagingLocation) return 'OUTBOUND_STAGING'
     return code === stagingLocationCode(s.locations, warehouseCode) ? 'RECEIVING_STAGING' : 'OUTBOUND_STAGING'
+  }
   return type
 }
 

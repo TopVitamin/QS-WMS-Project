@@ -143,7 +143,7 @@ export function useReturnFlow() {
     openPutbacks,
     findPutback,
     latestPutback,
-    skuName: (code: string) => sku(code)?.name,
+    skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     master,
     isSn: (line: PutbackLine) => line.serialNos.length > 0,
     resolveSku,

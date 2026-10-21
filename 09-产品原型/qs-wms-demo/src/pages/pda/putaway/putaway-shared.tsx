@@ -2,7 +2,7 @@ import { DocNoTail } from '@/components/biz/display'
 import { TagLabel } from '@/components/biz/status-badge'
 import { PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaContextBar, PdaContextDot } from '@/components/pda/pda-context-bar'
-import { qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { planQty, recordedQty, remainingQty } from '@/lib/putaway'
 import { cn } from '@/lib/utils'
 import type { PutawayOrder, PutawayPlanLine } from '@/types/inbound'
@@ -76,9 +76,9 @@ export function PutawayLineCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-mono text-base font-semibold">{line.skuCode}</span>
-            {flow.isSn(order, line) && <TagLabel tone="purple">{t('pdaPutaway.snTag')}</TagLabel>}
+            {flow.isSn(order, line) && <TagLabel meta={inventoryFeatureMeta.sn} />}
           </div>
-          <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode)}</div>
+          <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode, order.customerId)}</div>
           {(line.batchNo || line.expiryDate) && (
             <div className="mt-0.5 font-mono text-sm text-muted-foreground">
               {[line.batchNo, line.expiryDate].filter(Boolean).join(' · ')}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { PdaButton, PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaContextBar } from '@/components/pda/pda-context-bar'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'

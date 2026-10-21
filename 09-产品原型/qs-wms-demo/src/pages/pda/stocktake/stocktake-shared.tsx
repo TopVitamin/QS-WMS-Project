@@ -2,7 +2,7 @@ import { DocNoTail } from '@/components/biz/display'
 import { TagLabel } from '@/components/biz/status-badge'
 import { PdaContextBar, PdaContextDot } from '@/components/pda/pda-context-bar'
 import { PdaSkuBlock } from '@/components/pda/pda-stock'
-import { qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { cn } from '@/lib/utils'
 import type { InventoryCount, StocktakeLine } from '@/types/inventory'
 import type { StocktakeFlow } from './use-stocktake-flow'
@@ -56,14 +56,14 @@ export function CountLineCard({
       <PdaSkuBlock
         className="flex-1"
         skuCode={line.skuCode}
-        name={flow.skuName(line.skuCode)}
+        name={flow.skuName(line.skuCode, line.customerId)}
         owner={flow.ownerCode(line.customerId)}
         batch={flow.lineBatch(line)}
         tags={
           <>
             <TagLabel meta={qualityMeta[line.qualityType]} />
-            {flow.isSn(line) && <TagLabel tone="purple">{t('pdaStocktake.snTag')}</TagLabel>}
-            {line.added && <TagLabel tone="orange">{t('inventory.stocktake.added')}</TagLabel>}
+            {flow.isSn(line) && <TagLabel meta={inventoryFeatureMeta.sn} />}
+            {line.added && <TagLabel meta={inventoryFeatureMeta.added} />}
           </>
         }
       />

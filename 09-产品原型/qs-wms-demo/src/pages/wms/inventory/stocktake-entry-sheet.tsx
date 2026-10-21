@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { useConfirm } from '@/hooks/use-confirm'
 import { useDb, useLookups } from '@/mock/db'
 import type { InventoryCount, StocktakeLine } from '@/types/inventory'
@@ -172,7 +172,7 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5">
                       <BizCode>{l.locationCode}</BizCode>
-                      {l.added && <TagLabel tone="orange">{t('inventory.stocktake.added')}</TagLabel>}
+                      {l.added && <TagLabel meta={inventoryFeatureMeta.added} />}
                     </span>
                   </TableCell>
                   <TableCell>

@@ -149,7 +149,7 @@ export function CustomerListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
+        <FilterBar columns={6}
           onSearch={applySearch}
           onReset={reset}
           advanced={

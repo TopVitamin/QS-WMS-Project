@@ -7,7 +7,6 @@ import { MasterDetailActions } from '@/components/biz/master-detail-actions'
 import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
 import { WarehouseFullAddressPreview } from '@/components/biz/warehouse-full-address-preview'
 import { usageStatusMeta } from '@/config/status'
-import { useWarehouseMasterStatusToggle } from '@/hooks/use-warehouse-master-status'
 import { countryLabelKey } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 
@@ -16,7 +15,6 @@ export function WarehouseDetailPage() {
   const navigate = useNavigate()
   const { code } = useParams<{ code: string }>()
   const warehouse = useDb((s) => s.warehouseMasters.find((w) => w.code === code))
-  const toggleStatus = useWarehouseMasterStatusToggle()
 
   if (!code || code === 'new') return <Navigate to="/wms/master/warehouses" replace />
   if (!warehouse) return <Navigate to="/wms/master/warehouses" replace />
@@ -37,7 +35,8 @@ export function WarehouseDetailPage() {
           scope="masterWarehouse"
           backTo="/wms/master/warehouses"
           enabled={warehouse.status === 'ENABLED'}
-          onToggle={(next) => toggleStatus(warehouse.code, next)}
+          onToggle={() => undefined}
+          showStatusAction={false}
           onEdit={() => navigate(`/wms/master/warehouses/${code}/edit`)}
         />
       }
@@ -54,6 +53,23 @@ export function WarehouseDetailPage() {
           <DescriptionItem label={t('masterWarehouse.currency')}>{warehouse.currency}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.remark')} className="col-span-full xl:col-span-3">
             {warehouse.remark || <Empty />}
+          </DescriptionItem>
+        </Descriptions>
+      </Section>
+
+      <Section title={t('masterWarehouse.sectionOperation')}>
+        <Descriptions columns={4}>
+          <DescriptionItem label={t('masterWarehouse.unitSystem')}>
+            {t(`masterWarehouse.unitSystemOption.${warehouse.unitSystem}`)}
+          </DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.defaultReceiptMethod')}>
+            {t(`enum.arrivalMethod.${warehouse.defaultReceiptMethod}`)}
+          </DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.receivingStagingLocation')}>
+            <BizCode>{warehouse.receivingStagingLocation}</BizCode>
+          </DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.outboundStagingLocation')}>
+            <BizCode>{warehouse.outboundStagingLocation}</BizCode>
           </DescriptionItem>
         </Descriptions>
       </Section>

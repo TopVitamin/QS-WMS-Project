@@ -1,4 +1,5 @@
-import type { ChannelMaster, ChannelType, LogisticsIntegrationMode, OutboundPackage } from '@/types/wms'
+import type { ChannelMaster, ChannelType, LogisticsIntegrationMode } from '@/types/wms'
+import type { OutboundOrder } from '@/types/outbound'
 
 export const CHANNEL_LIST_PATH = '/wms/master/channels'
 
@@ -6,9 +7,10 @@ export const CHANNEL_TYPE_OPTIONS: ChannelType[] = ['EXPRESS', 'TRUCK', 'PICKUP'
 
 export const INTEGRATION_MODE_OPTIONS: LogisticsIntegrationMode[] = ['OFFLINE_HANDOVER', 'API_RESERVED']
 
-export function channelHasOpenReferences(channelCode: string, packages: OutboundPackage[]): boolean {
-  return packages.some(
-    (p) => p.channelCode === channelCode && p.status !== 'SHIPPED' && p.status !== 'CANCELLED',
+/** 渠道是否被未完结出库单引用（一期不设出库包裹对象） */
+export function channelHasOpenReferences(channelCode: string, orders: OutboundOrder[]): boolean {
+  return orders.some(
+    (o) => o.channelCode === channelCode && o.status !== 'SHIPPED' && o.status !== 'CANCELLED',
   )
 }
 

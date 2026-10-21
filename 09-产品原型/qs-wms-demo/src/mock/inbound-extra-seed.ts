@@ -2,8 +2,8 @@ import type { NewSkuRecord, UnclaimedRecord } from '@/types/inbound'
 
 /**
  * 新品维护固定种子（新品维护 Demo PRD 第九节）：
- * 一条英制仓（美西仓）维护、带来源入库单；一条公制仓（法兰克福仓）独立维护。
- * ANKR 的 CABLE-01 已维护（种子入库单里可收），SN-DEMO-01 未维护（作为新品演示阻断）。
+ * ANKR 的 CABLE-01 已维护（种子入库单里可收）；HOMY 的 CABLE-01、HOMY-003 也已维护，用于多货主同编码。
+ * SN-DEMO-01 未维护，作为新品阻断与「去量方」演示。
  */
 export function createNewSkuSeed(): NewSkuRecord[] {
   return [
@@ -12,7 +12,7 @@ export function createNewSkuSeed(): NewSkuRecord[] {
       customerId: 'C10028',
       skuCode: 'CABLE-01',
       warehouseCode: 'US-LA-01',
-      sourceInboundNo: 'RK-20261002-0003',
+      sourceInboundNo: 'IB-20261002-0003',
       lengthCm: 15,
       widthCm: 8,
       heightCm: 2,
@@ -26,6 +26,21 @@ export function createNewSkuSeed(): NewSkuRecord[] {
     {
       recordNo: 'NS-20261005-0001',
       customerId: 'C10031',
+      skuCode: 'CABLE-01',
+      warehouseCode: 'US-LA-01',
+      lengthCm: 15,
+      widthCm: 8,
+      heightCm: 2,
+      grossWeightKg: 0.08,
+      photos: [],
+      remark: '与 ANKR 同编码、不同货主',
+      maintainedBy: 'web.user',
+      maintainedAt: '2026-10-05T10:20:00.000Z',
+      requestId: 'seed-ns-0002',
+    },
+    {
+      recordNo: 'NS-20261006-0001',
+      customerId: 'C10031',
       skuCode: 'HOMY-003',
       warehouseCode: 'DE-FRA-01',
       lengthCm: 28,
@@ -35,7 +50,7 @@ export function createNewSkuSeed(): NewSkuRecord[] {
       photos: [],
       maintainedBy: 'web.user',
       maintainedAt: '2026-10-05T10:20:00.000Z',
-      requestId: 'seed-ns-0002',
+      requestId: 'seed-ns-0003',
     },
   ]
 }

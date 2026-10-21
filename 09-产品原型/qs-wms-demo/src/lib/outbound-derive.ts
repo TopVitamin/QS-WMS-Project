@@ -199,7 +199,7 @@ export interface OrderActions {
   retryResult: boolean
 }
 
-/** 页头按钮唯一来源：出库单主PRD §6.4 状态—功能矩阵（Demo 不按角色裁剪，等同全权限） */
+/** 页头按钮唯一来源：出库单主PRD §6.4 状态—功能矩阵；不按角色裁剪，所有满足状态条件的动作默认可见 */
 export function orderActions(order: OutboundOrder, db: Db): OrderActions {
   const organizer = true
   const worker = true

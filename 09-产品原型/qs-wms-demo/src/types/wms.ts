@@ -1,5 +1,7 @@
 export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CNY' | 'HKD'
 export type UsageStatus = 'ENABLED' | 'DISABLED'
+/** 一期仓库默认收货方式（与入库单到货方式同枚举） */
+export type WarehouseReceiptMethod = 'CONTAINER' | 'LTL' | 'EXPRESS' | 'OTHER'
 
 /** 基础资料-仓库（与作业用 Warehouse 并存；一期四仓预置） */
 export interface WarehouseMaster {
@@ -8,6 +10,12 @@ export interface WarehouseMaster {
   timezone: string
   currency: CurrencyCode
   status: UsageStatus
+  /** 仓库默认单位制，作业端按它展示重量、尺寸 */
+  unitSystem: UnitSystem
+  defaultReceiptMethod: WarehouseReceiptMethod
+  /** 本仓收货暂存库位、出库暂存库位，必须启用且不同 */
+  receivingStagingLocation: string
+  outboundStagingLocation: string
   remark?: string
   countryCode: string
   state?: string
@@ -39,6 +47,9 @@ export interface Warehouse {
   timezone: string
   currency: CurrencyCode
   unitSystem: UnitSystem
+  defaultReceiptMethod: WarehouseReceiptMethod
+  receivingStagingLocation: string
+  outboundStagingLocation: string
 }
 
 export interface Customer {
@@ -222,8 +233,6 @@ export interface LocationMaster {
   code: string
   status: UsageStatus
   remark?: string
-  allowMixSku: boolean
-  allowMixBatch: boolean
   putawaySequence?: number
   pickSequence?: number
   aisle?: string
@@ -338,62 +347,10 @@ export interface InventoryLog {
   terminal?: 'WEB' | 'PDA' | 'SYSTEM'
 }
 
-/** 附录B 3.2 出库包裹状态 */
-export type PackageStatus =
-  | 'READY_PRINT'
-  | 'PICKING'
-  | 'PICKED'
-  | 'PACKING'
-  | 'SHIPPED'
-  | 'HOLD'
-  | 'CANCELLED'
-
-export interface OutboundPackage {
-  packageNo: string
-  customerOrderNo: string
-  customerId: string
-  warehouseCode: string
-  channelCode: string
-  countryCode: string
-  status: PackageStatus
-  shippingFee: Money
-  createdAt: string
-}
-
-/** 附录B 3.1 波次状态 */
-export type WaveStatus = 'DRAFT' | 'RELEASED' | 'PICKING' | 'COMPLETED' | 'CANCELLED'
-
-export interface Wave {
-  waveNo: string
-  warehouseCode: string
-  status: WaveStatus
-  packageCount: number
-  createdAt: string
-  releasedAt?: string
-  completedAt?: string
-}
-
-/** 附录B 3.3 拣货任务状态 */
-export type PickTaskStatus = 'PENDING' | 'PICKING' | 'COMPLETED' | 'CANCELLED'
-
-export interface PickTask {
-  pickTaskNo: string
-  waveNo: string
-  packageNo: string
-  warehouseCode: string
-  customerId: string
-  skuCode: string
-  locationCode: string
-  planQty: number
-  actualQty: number
-  status: PickTaskStatus
-  createdAt: string
-  completedAt?: string
-}
-
 /** PUTAWAY：上架单自身的保存、撤销与提交；入库单详情按来源单一并列出 */
 export type AuditRefType =
   | 'INBOUND'
+  | 'RETURN'
   | 'PUTAWAY'
   | 'SYSTEM'
   | 'OUTBOUND'
@@ -409,7 +366,13 @@ export type AuditAction =
   | 'INVENTORY_ACTION'
   | 'INBOUND_RECEIPT_CLOSE'
   | 'INBOUND_MOCK_PUSH'
+  | 'INBOUND_MOCK_CHANGE'
+  | 'INBOUND_MOCK_CANCEL'
+  | 'INBOUND_RESULT_RETRY'
   | 'INBOUND_RECEIVE'
+  | 'RETURN_RECEIVE'
+  | 'RETURN_MOCK_FORECAST'
+  | 'RETURN_CANCEL'
   | 'PUTAWAY_SAVE'
   | 'PUTAWAY_REMOVE'
   | 'PUTAWAY'

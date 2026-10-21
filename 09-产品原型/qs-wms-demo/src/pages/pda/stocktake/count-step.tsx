@@ -8,7 +8,7 @@ import { QtyStepper } from '@/components/pda/qty-stepper'
 import { ScanInput, type ScanCandidate, type ScanMessage } from '@/components/pda/scan-input'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { deriveSerials } from '@/lib/inventory-derive'
 import { resolveInventoryScan, skuScanValue } from '@/lib/pda-inventory-scan'
 import { beep } from '@/lib/scan-beep'
@@ -148,13 +148,13 @@ function CountWorkspace({
             <PdaSkuBlock
               className="flex-1"
               skuCode={subject.skuCode}
-              name={flow.skuName(subject.skuCode)}
+              name={flow.skuName(subject.skuCode, subject.customerId)}
               owner={flow.ownerCode(subject.customerId)}
               batch={line ? flow.lineBatch(line) : undefined}
               tags={
                 <>
                   <TagLabel meta={qualityMeta[subject.qualityType]} />
-                  {!line && <TagLabel tone="orange">{t('inventory.stocktake.added')}</TagLabel>}
+                  {!line && <TagLabel meta={inventoryFeatureMeta.added} />}
                 </>
               }
             />

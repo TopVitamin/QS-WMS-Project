@@ -3,12 +3,15 @@ import { PdaButton, PdaCard } from '@/components/pda/pda-card'
 import { PdaChoiceGroup } from '@/components/pda/pda-choice-group'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { QtyStepper } from '@/components/pda/qty-stepper'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { beep } from '@/lib/scan-beep'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import {
   applyReceiveDraftChange,
   defaultReceiveDraft,
   emptyReceiveDraft,
+  parseSerialNos,
   REJECT_REASONS,
   validateInboundReceiveDraft,
   type InboundReceiveDraft,
@@ -60,6 +63,7 @@ function LineEditor({
 }) {
   const { t, nav, session } = flow
   const limit = flow.thisRemain(item.skuCode, box.key)
+  const master = flow.master(item.skuCode)
   const saved = box.lines.find((l) => l.skuCode === item.skuCode)
   const [init] = useState(() => initialDraft(saved, entry, limit))
   const [draft, setDraft] = useState<InboundReceiveDraft>(init.draft)
@@ -109,6 +113,20 @@ function LineEditor({
     if (err) {
       flow.failScan(t(err))
       return
+    }
+    if (master?.batchEnabled && !draft.batchNo?.trim()) {
+      flow.failScan(t('inbound.receive.batchRequired'))
+      return
+    }
+    if (master?.expiryEnabled && !draft.expiryDate?.trim()) {
+      flow.failScan(t('inbound.receive.expiryRequired'))
+      return
+    }
+    if (master?.snEnabled) {
+      if ((draft.goodSerialNos ?? []).length !== draft.goodQty || (draft.defectSerialNos ?? []).length !== draft.defectQty) {
+        flow.failScan(t('inbound.receive.serialCount'))
+        return
+      }
     }
     session.upsertLine(box.key, { ...draft, receivedQty: draft.goodQty + draft.defectQty, skuCode: item.skuCode })
     beep(true)
@@ -171,6 +189,72 @@ function LineEditor({
             onScanText={onScan}
           />
         </PdaCard>
+
+        {(master?.batchEnabled || master?.expiryEnabled || master?.snEnabled) && (
+          <PdaCard className="flex flex-col gap-3">
+            {master?.batchEnabled && (
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">{t('inbound.batchNo')}</span>
+                <Input
+                  className="h-12 text-base"
+                  value={draft.batchNo ?? ''}
+                  placeholder={t('common.inputPlaceholder')}
+                  onChange={(e) => setDraft({ ...draft, batchNo: e.target.value })}
+                />
+              </label>
+            )}
+            {master?.expiryEnabled && (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-muted-foreground">{t('inbound.productionDate')}</span>
+                  <Input
+                    className="h-12 text-base"
+                    type="date"
+                    value={draft.productionDate ?? ''}
+                    onChange={(e) => setDraft({ ...draft, productionDate: e.target.value })}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm text-muted-foreground">{t('inbound.expiryDate')}</span>
+                  <Input
+                    className="h-12 text-base"
+                    type="date"
+                    value={draft.expiryDate ?? ''}
+                    onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })}
+                  />
+                </label>
+              </div>
+            )}
+            {master?.snEnabled && draft.goodQty > 0 && (
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">
+                  {t('inbound.receive.goodSerialNos', { count: draft.goodQty })}
+                </span>
+                <Textarea
+                  rows={2}
+                  className="text-sm"
+                  value={(draft.goodSerialNos ?? []).join('\n')}
+                  placeholder={t('inbound.receive.serialPlaceholder')}
+                  onChange={(e) => setDraft({ ...draft, goodSerialNos: parseSerialNos(e.target.value) })}
+                />
+              </label>
+            )}
+            {master?.snEnabled && draft.defectQty > 0 && (
+              <label className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">
+                  {t('inbound.receive.defectSerialNos', { count: draft.defectQty })}
+                </span>
+                <Textarea
+                  rows={2}
+                  className="text-sm"
+                  value={(draft.defectSerialNos ?? []).join('\n')}
+                  placeholder={t('inbound.receive.serialPlaceholder')}
+                  onChange={(e) => setDraft({ ...draft, defectSerialNos: parseSerialNos(e.target.value) })}
+                />
+              </label>
+            )}
+          </PdaCard>
+        )}
 
         {hasReject && (
           <div ref={reasonsRef} className="flex flex-col gap-2">

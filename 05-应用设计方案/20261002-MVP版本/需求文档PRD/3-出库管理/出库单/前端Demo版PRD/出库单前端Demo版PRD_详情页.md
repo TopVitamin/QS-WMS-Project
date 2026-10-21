@@ -27,24 +27,24 @@
 
 ### 2.2 页头按钮矩阵
 
-按钮全部来自 `orderActions(order, db, role)`（公共分册 §3.3），不满足条件的不渲染。
+按钮全部来自 `orderActions(order, db)`（公共分册 §3.3），不满足条件的不渲染。
 
 | 按钮 | 条件（摘自主PRD §6.4） | 样式 | 行为 |
 | --- | --- | --- | --- |
 | 返回列表 | 始终，最左 | outline | 回列表并带回 `listSearch` |
-| 按单生成拣货任务 | 待处理；组织者／主管 | primary | `run({type:'ALLOCATE'})`；与列表工具栏「按单生成拣货任务」同义；成功 toast 任务号，停留本页，拣货任务页签 +1 |
-| 重新分配 | 待拣货或待复核；有缺货或待拣；组织者／主管 | outline | 同一 `ALLOCATE` 命令；返回已存在任务时 toast「已有未完成任务 PK-…」 |
-| 去复核 | 待拣货、待复核；已拣＞已复核；现场人员／主管 | outline 下拉 | 「复核工作台」打开 `/wms/outbound/verify-station?no=`；「PDA 复核」打开 `/pda/verify?no=`（见[复核工作台 Demo PRD](../../复核工作台/复核工作台前端Demo版PRD.md)） |
-| 确认出库 | 待出库；主管 | primary | 打开确认出库弹窗（弹窗分册 §2） |
-| 补登交接 | 已出库；现场人员／主管 | outline | 打开登记交接弹窗 |
+| 按单生成拣货任务 | 待处理 | primary | `run({type:'ALLOCATE'})`；与列表工具栏「按单生成拣货任务」同义；成功 toast 任务号，停留本页，拣货任务页签 +1 |
+| 重新分配 | 待拣货或待复核；有缺货或待拣 | outline | 同一 `ALLOCATE` 命令；返回已存在任务时 toast「已有未完成任务 PK-…」 |
+| 去复核 | 待拣货、待复核；已拣＞已复核 | outline 下拉 | 「复核工作台」打开 `/wms/outbound/verify-station?no=`；「PDA 复核」打开 `/pda/verify?no=`（见[复核工作台 Demo PRD](../../复核工作台/复核工作台前端Demo版PRD.md)） |
+| 确认出库 | 待出库 | primary | 打开确认出库弹窗（弹窗分册 §2） |
+| 补登交接 | 已出库 | outline | 打开登记交接弹窗 |
 | 更多 | 有任一低频动作时 | outline 下拉 | 见下表 |
 
 | 「更多」菜单项 | 条件 | 行为 |
 | --- | --- | --- |
-| 退拣 | 待拣货、待复核；有有效实拣；现场人员／主管 | 退拣弹窗 |
+| 退拣 | 待拣货、待复核；有有效实拣 | 退拣弹窗 |
 | 模拟变更 | 待拣货；OMS 来源；非其他出库 | OMS Mock 弹窗锁定变更模式 |
 | 模拟取消 | 未出库未取消；OMS 来源 | OMS Mock 弹窗锁定取消模式（destructive 文字） |
-| 取消出库单 | 未出库未取消；手工来源；主管 | `useConfirm` destructive 后 `run({type:'CANCEL'})` |
+| 取消出库单 | 未出库未取消；手工来源 | `useConfirm` destructive 后 `run({type:'CANCEL'})` |
 | 模拟回传失败 | 已出库；有出库结果 | `run({type:'RETRY_RESULT', simulateFailure:true})` |
 | 重交出库结果 | 已出库；结果状态为失败 | `run({type:'RETRY_RESULT'})` |
 

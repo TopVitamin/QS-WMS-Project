@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { PdaButton, PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaChoiceGroup } from '@/components/pda/pda-choice-group'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
@@ -82,7 +82,7 @@ function ShortEditor({ flow, task, line }: { flow: PickFlow; task: OutboundPickT
             <div className="font-mono text-base font-semibold">
               {line.locationCode} · {line.skuCode}
             </div>
-            <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode)}</div>
+            <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode, task.customerId)}</div>
             {line.batchNo && <div className="mt-0.5 font-mono text-sm text-muted-foreground">{line.batchNo}</div>}
           </div>
           <div className="shrink-0 text-right">

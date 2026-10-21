@@ -16,6 +16,10 @@ function warehouseInput(code: string): Omit<WarehouseMaster, 'createdAt' | 'crea
     timezone: 'UTC',
     currency: 'USD',
     status: 'ENABLED',
+    unitSystem: 'imperial',
+    defaultReceiptMethod: 'CONTAINER',
+    receivingStagingLocation: 'STAGE-IN-01',
+    outboundStagingLocation: 'STAGE-OUT-01',
     countryCode: 'US',
     city: 'Test City',
     address1: '1 Test Way',
@@ -32,8 +36,6 @@ function locationInput(
     zoneType: 'STORAGE',
     code,
     status: 'ENABLED',
-    allowMixSku: true,
-    allowMixBatch: false,
     productForms: ['SMALL'],
   }
 }
@@ -55,9 +57,9 @@ describe('master data actions', () => {
     expect(after.updatedAt >= updatedAt).toBe(true)
   })
 
-  it('rejects a duplicate warehouse code', () => {
+  it('rejects creating a fifth warehouse', () => {
     const result = useDb.getState().createWarehouseMaster(warehouseInput('US-LA-01'))
-    expect(result).toEqual({ ok: false, errorKey: 'masterWarehouse.error.duplicateCode' })
+    expect(result).toEqual({ ok: false, errorKey: 'masterWarehouse.error.createDisabled' })
   })
 
   it('creates a location only under an enabled zone of the same warehouse', () => {

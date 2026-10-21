@@ -12,6 +12,7 @@ import {
   ScanSearch,
   ShoppingCart,
   Truck,
+  Undo2,
   Warehouse,
   type LucideIcon,
 } from 'lucide-react'
@@ -42,10 +43,23 @@ const groups: { titleKey: string; tone: StatusTone; items: PdaFunction[] }[] = [
     titleKey: 'pda.inboundGroup',
     tone: 'blue',
     items: [
-      { key: 'sign', titleKey: 'pda.sign', icon: Truck, to: '/pda/soon/sign', ready: false },
+      { key: 'arrival', titleKey: 'pda.arrival', icon: Truck, to: '/pda/soon/arrival', ready: false },
       { key: 'receive', titleKey: 'pda.receive', icon: PackageOpen, to: '/pda/receive', ready: true },
       { key: 'putaway', titleKey: 'pda.putaway', icon: ArrowUpFromLine, to: '/pda/putaway', ready: true },
       { key: 'unclaimed', titleKey: 'menu.unclaimed', icon: PackageSearch, to: '/pda/unclaimed', ready: true },
+    ],
+  },
+  {
+    titleKey: 'pda.returnGroup',
+    tone: 'orange',
+    items: [
+      {
+        key: 'return-receive',
+        titleKey: 'return.pda.title',
+        icon: Undo2,
+        to: '/pda/return-receive',
+        ready: true,
+      },
     ],
   },
   {
@@ -80,14 +94,20 @@ export function PdaHomePage() {
   const { operator, setWarehouse, language, setLanguage } = useSettings()
   const putawayOrders = useDb((s) => s.putawayOrders)
   const logs = useDb((s) => s.inventoryLogs)
+  const warehouseMasters = useDb((s) => s.warehouseMasters)
 
   const stats = useMemo(() => {
     const dayStart = dayjs().tz(warehouse.timezone).startOf('day')
     return {
       pendingTasks: listOpenPutawayOrders(putawayOrders, warehouse.code).length,
-      doneToday: logs.filter(
-        (l) => l.warehouseCode === warehouse.code && l.operator === operator && dayjs(l.createdAt).isAfter(dayStart),
-      ).length,
+      /** 一条业务动作可能写一减一加两条流水，按作业号去重后才等于「完成的作业数」 */
+      doneToday: new Set(
+        logs
+          .filter(
+            (l) => l.warehouseCode === warehouse.code && l.operator === operator && dayjs(l.createdAt).isAfter(dayStart),
+          )
+          .map((l) => l.jobNo || l.refNo || l.id),
+      ).size,
     }
   }, [putawayOrders, logs, warehouse, operator])
 
@@ -129,7 +149,7 @@ export function PdaHomePage() {
             <SelectContent>
               {warehouses.map((w) => (
                 <SelectItem key={w.code} value={w.code}>
-                  {w.code} · {t(w.nameKey)}
+                  {w.code} · {warehouseMasters.find((m) => m.code === w.code)?.name ?? t(w.nameKey)}
                 </SelectItem>
               ))}
             </SelectContent>

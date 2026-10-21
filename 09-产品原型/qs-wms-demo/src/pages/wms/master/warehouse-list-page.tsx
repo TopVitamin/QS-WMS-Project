@@ -1,4 +1,4 @@
-import { Download, Plus } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usageStatusMeta } from '@/config/status'
 import { useListFilters } from '@/hooks/use-list-filters'
-import { useWarehouseMasterStatusToggle } from '@/hooks/use-warehouse-master-status'
 import { FILTER_ALL } from '@/lib/master-data'
 import { countryLabelKey, formatWarehouseFullAddress, WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
@@ -59,7 +58,6 @@ export function WarehouseListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const warehouseMasters = useDb((s) => s.warehouseMasters)
-  const toggleStatus = useWarehouseMasterStatusToggle()
   const { filters, draft, setDraft, applySearch, reset } = useListFilters(emptyFilters)
 
   const rows = useMemo(() => {
@@ -140,50 +138,34 @@ export function WarehouseListPage() {
         enableSorting: false,
         enableHiding: false,
         meta: { pin: 'right', label: t('common.actions') },
-        cell: ({ row }) => {
-          const w = row.original
-          const enabled = w.status === 'ENABLED'
-          return (
-            <RowActions
-              actions={[
-                {
-                  key: 'edit',
-                  label: t('masterWarehouse.edit'),
-                  onClick: () => navigate(`/wms/master/warehouses/${w.code}/edit`),
-                },
-                {
-                  key: 'toggle',
-                  label: t(enabled ? 'masterWarehouse.disableAction' : 'masterWarehouse.enableAction'),
-                  danger: enabled,
-                  onClick: () => toggleStatus(w.code, enabled ? 'DISABLED' : 'ENABLED'),
-                },
-              ]}
-            />
-          )
-        },
+        cell: ({ row }) => (
+          <RowActions
+            actions={[
+              {
+                key: 'edit',
+                label: t('masterWarehouse.edit'),
+                onClick: () => navigate(`/wms/master/warehouses/${row.original.code}/edit`),
+              },
+            ]}
+          />
+        ),
       }),
     ])
-  }, [navigate, t, toggleStatus])
+  }, [navigate, t])
 
   return (
     <PageContainer
       fill
       title={t('menu.warehouses')}
       actions={
-        <>
-          <Button onClick={() => navigate('/wms/master/warehouses/new')}>
-            <Plus data-icon="inline-start" />
-            {t('masterWarehouse.create')}
-          </Button>
-          <Button variant="outline" onClick={() => toast.info(t('masterWarehouse.exportMock'))}>
-            <Download data-icon="inline-start" />
-            {t('common.export')}
-          </Button>
-        </>
+        <Button variant="outline" onClick={() => toast.info(t('masterWarehouse.exportMock'))}>
+          <Download data-icon="inline-start" />
+          {t('common.export')}
+        </Button>
       }
     >
       <Panel className="p-4">
-        <FilterBar onSearch={applySearch} onReset={reset}>
+        <FilterBar columns={6} onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterWarehouse.code')}>
             <Input
               value={draft.code}

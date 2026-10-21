@@ -17,9 +17,7 @@ import type {
   InventoryRecord,
   Location,
   LocationMaster,
-  OutboundPackage,
   ZoneMaster,
-  PackageStatus,
   Sku,
   SkuBarcode,
   SkuMaster,
@@ -28,12 +26,15 @@ import type {
 } from '@/types/wms'
 import { createInboundDemoBundle } from './inbound-seed'
 import { createNewSkuSeed, createUnclaimedSeed } from './inbound-extra-seed'
+import { createReturnSeed } from './return-seed'
 import { createLocationMasters } from './location-masters'
 import { createSkuMasters } from './sku-masters'
 import { createWarehouseMasters } from './warehouse-masters'
 import { createZoneMasters } from './zone-masters'
 import { stagingLocationCode } from '@/lib/inbound-derive'
-import type { NewSkuRecord, UnclaimedRecord } from '@/types/inbound'
+import { zoneTypeToLocationType } from '@/lib/location-master'
+import type { InboundResult, NewSkuRecord, UnclaimedRecord } from '@/types/inbound'
+import type { ReturnData } from '@/types/return'
 
 /** 固定种子的伪随机数，保证每次重置后演示数据一致 */
 function createRandom(seed: number) {
@@ -49,15 +50,53 @@ function createRandom(seed: number) {
   }
 }
 
-const DAY = 24 * 60 * 60 * 1000
 const pad = (n: number, len = 4) => String(n).padStart(len, '0')
-const ymd = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1, 2)}${pad(d.getUTCDate(), 2)}`
 
 export const warehouses: Warehouse[] = [
-  { code: 'US-LA-01', nameKey: 'warehouse.US-LA-01', countryCode: 'US', timezone: 'America/Los_Angeles', currency: 'USD', unitSystem: 'imperial' },
-  { code: 'US-NJ-01', nameKey: 'warehouse.US-NJ-01', countryCode: 'US', timezone: 'America/New_York', currency: 'USD', unitSystem: 'imperial' },
-  { code: 'DE-FRA-01', nameKey: 'warehouse.DE-FRA-01', countryCode: 'DE', timezone: 'Europe/Berlin', currency: 'EUR', unitSystem: 'metric' },
-  { code: 'HK-WH-01', nameKey: 'warehouse.HK-WH-01', countryCode: 'HK', timezone: 'Asia/Hong_Kong', currency: 'HKD', unitSystem: 'metric' },
+  {
+    code: 'US-LA-01',
+    nameKey: 'warehouse.US-LA-01',
+    countryCode: 'US',
+    timezone: 'America/Los_Angeles',
+    currency: 'USD',
+    unitSystem: 'imperial',
+    defaultReceiptMethod: 'CONTAINER',
+    receivingStagingLocation: 'STAGE-IN-01',
+    outboundStagingLocation: 'STAGE-OUT-01',
+  },
+  {
+    code: 'US-NJ-01',
+    nameKey: 'warehouse.US-NJ-01',
+    countryCode: 'US',
+    timezone: 'America/New_York',
+    currency: 'USD',
+    unitSystem: 'imperial',
+    defaultReceiptMethod: 'CONTAINER',
+    receivingStagingLocation: 'STAGE-IN-01',
+    outboundStagingLocation: 'STAGE-OUT-01',
+  },
+  {
+    code: 'DE-FRA-01',
+    nameKey: 'warehouse.DE-FRA-01',
+    countryCode: 'DE',
+    timezone: 'Europe/Berlin',
+    currency: 'EUR',
+    unitSystem: 'metric',
+    defaultReceiptMethod: 'LTL',
+    receivingStagingLocation: 'STAGE-IN-01',
+    outboundStagingLocation: 'STAGE-OUT-01',
+  },
+  {
+    code: 'HK-WH-01',
+    nameKey: 'warehouse.HK-WH-01',
+    countryCode: 'HK',
+    timezone: 'Asia/Hong_Kong',
+    currency: 'HKD',
+    unitSystem: 'metric',
+    defaultReceiptMethod: 'EXPRESS',
+    receivingStagingLocation: 'STAGE-IN-01',
+    outboundStagingLocation: 'STAGE-OUT-01',
+  },
 ]
 
 export const customerMasters = createCustomerMasters()
@@ -135,7 +174,7 @@ function buildLocations(): Location[] {
   return list
 }
 
-export interface SeedData extends OutboundData {
+export interface SeedData extends OutboundData, ReturnData {
   warehouses: Warehouse[]
   warehouseMasters: WarehouseMaster[]
   zoneMasters: ZoneMaster[]
@@ -152,6 +191,8 @@ export interface SeedData extends OutboundData {
   receiptRecords: import('@/types/inbound').ReceiptRecord[]
   putawayOrders: import('@/types/inbound').PutawayOrder[]
   inboundExceptions: import('@/types/inbound').InboundException[]
+  inboundMessages: import('@/types/inbound').InboundMessage[]
+  inboundResults: import('@/types/inbound').InboundResult[]
   newSkuRecords: NewSkuRecord[]
   unclaimedRecords: UnclaimedRecord[]
   inventory: InventoryRecord[]
@@ -160,17 +201,29 @@ export interface SeedData extends OutboundData {
   inventoryCounts: InventoryCount[]
   /** 移库作业 */
   stockMoves: StockMove[]
-  packages: OutboundPackage[]
   auditLogs: AuditLog[]
 }
 
-export function createSeedData(now = Date.now()): SeedData {
-  const r = createRandom(20260924)
+export function createSeedData(): SeedData {
   const customerMasters = createCustomerMasters()
   const customersList = customerMastersToLegacy(customerMasters)
   const skus = buildSkus()
   const { skuMasters, skuBarcodes } = createSkuMasters(customers, skus)
+  const zoneMasters = createZoneMasters()
+  const locationMasters = createLocationMasters()
   const locations = buildLocations()
+  /** 主数据样例货位同步投影到作业库位，保证“资料里能看到的货位”也能被上架/盘点引用 */
+  locationMasters.forEach((m) => {
+    if (!locations.some((l) => l.warehouseCode === m.warehouseCode && l.code === m.code)) {
+      locations.push({
+        code: m.code,
+        warehouseCode: m.warehouseCode,
+        zone: m.zoneCode,
+        type: zoneTypeToLocationType(m.zoneType),
+        status: m.status,
+      })
+    }
+  })
   const inventory: InventoryRecord[] = []
   const inventoryLogs: InventoryLog[] = []
   const inboundBundle = createInboundDemoBundle()
@@ -178,9 +231,25 @@ export function createSeedData(now = Date.now()): SeedData {
   const receiptRecords = [...inboundBundle.receiptRecords]
   const putawayOrders = [...inboundBundle.putawayOrders]
   const inboundExceptions = [...inboundBundle.inboundExceptions]
+  const inboundMessages: import('@/types/inbound').InboundMessage[] = []
+  const inboundResults: InboundResult[] = inbounds
+    .filter((o) => o.status === 'COMPLETED')
+    .map((o) => ({
+      inboundNo: o.inboundNo,
+      upstreamNo: o.upstreamNo,
+      status: 'SENT' as const,
+      attempts: 1,
+      items: o.items.map((l) => ({
+        skuCode: l.skuCode,
+        receivedQty: l.receivedQty,
+        rejectedQty: l.rejectedQty,
+        putawayQty: l.putawayQty,
+      })),
+      at: o.completedAt ?? o.updatedAt,
+    }))
+  const returnOrders = createReturnSeed()
   const newSkuRecords = createNewSkuSeed()
   const unclaimedRecords = createUnclaimedSeed()
-  const packages: OutboundPackage[] = []
   const auditLogs: AuditLog[] = []
 
   // 库存按子记录推导：已提交上架单 → 目标库位；已收未上架余量 → 收货暂存库位（不良品品质锁定）
@@ -287,28 +356,6 @@ export function createSeedData(now = Date.now()): SeedData {
       })
     })
 
-  warehouses.forEach((w, wi) => {
-    const pkgStatus: PackageStatus[] = ['READY_PRINT', 'READY_PRINT', 'PICKING', 'PICKED', 'PACKING', 'SHIPPED', 'SHIPPED', 'SHIPPED', 'HOLD']
-    const channels = w.countryCode === 'US' ? ['USPS-GA', 'UPS-GROUND', 'FEDEX-HD'] : w.countryCode === 'JP' ? ['SAGAWA', 'YAMATO'] : ['DHL-PAKET', 'DPD-CLASSIC', 'ROYALMAIL-48']
-    const pkgCount = wi === 0 ? 160 : 60
-    for (let i = 0; i < pkgCount; i++) {
-      const createdAt = new Date(now - r.int(0, 6) * DAY - r.int(0, 86_000) * 1000)
-      const day = ymd(createdAt)
-      const status = now - createdAt.getTime() < DAY ? r.pick(['READY_PRINT', 'PICKING', 'PACKING'] as const) : r.pick(pkgStatus)
-      packages.push({
-        packageNo: `PKG${day}${w.code.slice(0, 2)}${pad(i + 1)}`,
-        customerOrderNo: `ORD-${day}-${r.int(100, 999)}`,
-        customerId: r.pick(customers).id,
-        warehouseCode: w.code,
-        channelCode: r.pick(channels),
-        countryCode: w.countryCode,
-        status,
-        shippingFee: { amount: w.currency === 'JPY' ? r.int(600, 1800) : r.int(4, 18) + 0.5, currency: w.currency },
-        createdAt: createdAt.toISOString(),
-      })
-    }
-  })
-
   inbounds.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   // 少量历史审计记录，便于详情页演示
@@ -333,8 +380,8 @@ export function createSeedData(now = Date.now()): SeedData {
     ...createOutboundSeed(inventory, locations, skuMasters, warehouses.map(w => w.code)),
     warehouses,
     warehouseMasters: createWarehouseMasters(),
-    zoneMasters: createZoneMasters(),
-    locationMasters: createLocationMasters(),
+    zoneMasters,
+    locationMasters,
     carrierMasters: createCarrierMasters(),
     channelMasters: createChannelMasters(),
     customerMasters,
@@ -347,13 +394,18 @@ export function createSeedData(now = Date.now()): SeedData {
     receiptRecords,
     putawayOrders,
     inboundExceptions,
+    inboundMessages,
+    inboundResults,
+    returnOrders,
+    returnReceipts: [],
+    returnExceptions: [],
+    returnResults: [],
     newSkuRecords,
     unclaimedRecords,
     inventory,
     inventoryLogs,
     inventoryCounts: [],
     stockMoves: [],
-    packages,
     auditLogs,
   })
   return playInventorySeedFlows(withOutbound)

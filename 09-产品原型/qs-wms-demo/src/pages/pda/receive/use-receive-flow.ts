@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { beep } from '@/lib/scan-beep'
 import { useConfirm } from '@/hooks/use-confirm'
 import { useInbound, useReceivableInbounds } from '@/hooks/use-inbound'
@@ -177,6 +177,7 @@ export function useReceiveFlow() {
     thisRemain,
     resolveSku,
     isNewSkuInOrder,
+    master: (code: string) => skuMasters.find((m) => m.customerId === order?.customerId && m.code === code),
     classifyNonContainer,
     notice,
     failScan,

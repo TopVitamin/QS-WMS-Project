@@ -56,7 +56,7 @@ describe('interpretQtyInput（规范 §4.2 扫码不写成数量）', () => {
 function receipt(lines: Array<{ containerNo?: string }>, containerNo?: string): ReceiptRecord {
   return {
     receiptNo: 'RC-TEST',
-    inboundNo: 'RK-TEST',
+    inboundNo: 'IB-TEST',
     warehouseCode: 'US-LA-01',
     customerId: 'C1',
     containerNo,
@@ -87,9 +87,9 @@ describe('收货记录容器（主 PRD R16）', () => {
 
   it('finds containers used on line level, case-insensitively', () => {
     const records = [receipt([{ containerNo: 'BOX-A' }, { containerNo: 'BOX-B' }])]
-    expect(isWorkContainerUsedOnInbound(records, 'RK-TEST', 'box-b')).toBe(true)
-    expect(isWorkContainerUsedOnInbound(records, 'RK-TEST', 'BOX-C')).toBe(false)
-    expect(isWorkContainerUsedOnInbound(records, 'RK-OTHER', 'BOX-A')).toBe(false)
+    expect(isWorkContainerUsedOnInbound(records, 'IB-TEST', 'box-b')).toBe(true)
+    expect(isWorkContainerUsedOnInbound(records, 'IB-TEST', 'BOX-C')).toBe(false)
+    expect(isWorkContainerUsedOnInbound(records, 'IB-OTHER', 'BOX-A')).toBe(false)
   })
 })
 

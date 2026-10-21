@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { CodeName, DateTime, DocNo, Empty } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
-import { OptionSelect, UsageStatusFilter, YesNoFilter } from '@/components/biz/option-select'
+import { OptionSelect, UsageStatusFilter } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
 import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge } from '@/components/biz/status-badge'
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { usageStatusMeta } from '@/config/status'
 import { useListFilters } from '@/hooks/use-list-filters'
 import { useLocationMasterStatusToggle } from '@/hooks/use-location-master-status'
-import { FILTER_ALL, masterCompositeRowId, matchYesNo, sortByUpdatedAtDesc } from '@/lib/master-data'
+import { FILTER_ALL, masterCompositeRowId, sortByUpdatedAtDesc } from '@/lib/master-data'
 import {
   enabledZonesForWarehouse,
   hasAnyEnabledZone,
@@ -33,8 +33,6 @@ interface Filters {
   code: string
   zoneType: string
   status: string
-  allowMixSku: string
-  allowMixBatch: string
 }
 
 const emptyFilters: Filters = {
@@ -43,8 +41,6 @@ const emptyFilters: Filters = {
   code: '',
   zoneType: FILTER_ALL,
   status: FILTER_ALL,
-  allowMixSku: FILTER_ALL,
-  allowMixBatch: FILTER_ALL,
 }
 
 function matchLocation(row: LocationMaster, filters: Filters): boolean {
@@ -53,8 +49,6 @@ function matchLocation(row: LocationMaster, filters: Filters): boolean {
   if (filters.code && !row.code.toLowerCase().includes(filters.code.trim().toLowerCase())) return false
   if (filters.zoneType !== FILTER_ALL && row.zoneType !== filters.zoneType) return false
   if (filters.status !== FILTER_ALL && row.status !== filters.status) return false
-  if (!matchYesNo(row.allowMixSku, filters.allowMixSku)) return false
-  if (!matchYesNo(row.allowMixBatch, filters.allowMixBatch)) return false
   return true
 }
 
@@ -140,18 +134,6 @@ export function LocationListPage() {
           return v ? <span className="block max-w-40 truncate" title={v}>{v}</span> : <Empty />
         },
       }),
-      col.accessor('allowMixSku', {
-        header: t('masterLocation.allowMixSku'),
-        enableSorting: false,
-        meta: { label: t('masterLocation.allowMixSku') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
-      }),
-      col.accessor('allowMixBatch', {
-        header: t('masterLocation.allowMixBatch'),
-        enableSorting: false,
-        meta: { label: t('masterLocation.allowMixBatch') },
-        cell: ({ getValue }) => (getValue() ? t('common.yes') : t('common.no')),
-      }),
       col.display({
         id: 'actions',
         header: t('common.actions'),
@@ -213,23 +195,7 @@ export function LocationListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
-          onSearch={applySearch}
-          onReset={reset}
-          advanced={
-            <>
-              <FilterItem label={t('masterLocation.allowMixSku')}>
-                <YesNoFilter value={draft.allowMixSku} onValueChange={(v) => setDraft({ ...draft, allowMixSku: v })} />
-              </FilterItem>
-              <FilterItem label={t('masterLocation.allowMixBatch')}>
-                <YesNoFilter
-                  value={draft.allowMixBatch}
-                  onValueChange={(v) => setDraft({ ...draft, allowMixBatch: v })}
-                />
-              </FilterItem>
-            </>
-          }
-        >
+        <FilterBar columns={6} onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterLocation.warehouseCode')}>
             <OptionSelect
               allOption
@@ -277,11 +243,7 @@ export function LocationListPage() {
           columns={columns}
           getRowId={(r) => masterCompositeRowId(r.warehouseCode, r.code)}
           pageSize={20}
-          initialColumnVisibility={{
-            remark: false,
-            allowMixSku: false,
-            allowMixBatch: false,
-          }}
+          initialColumnVisibility={{ remark: false }}
         />
       </Panel>
     </PageContainer>

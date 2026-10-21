@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils'
 
 interface FilterBarProps {
   /**
-   * PRD 统一写 `columns={6}`。布局固定 6 列，只接受 6，参数用于类型约束和文档对齐。
+   * PRD 统一写 `columns={6}`。布局固定 6 列，只接受 6；设为必填，漏写会在类型检查时报错。
    */
-  columns?: 6
+  columns: 6
   /** 常显筛选项，最多 5 个 */
   children: React.ReactNode
   /** 第 6 个及以后的筛选项，点「展开」才显示 */

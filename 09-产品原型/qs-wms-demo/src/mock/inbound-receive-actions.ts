@@ -137,6 +137,8 @@ export function applyReceipt(
 
   /** R04：同一 SKU 历史实收＋拒收，加本次各容器合计，不得超过预计；新品未维护阻断整次提交 */
   const activityBySku = new Map<string, number>()
+  const existingSerials = new Set(state.inventory.flatMap((r) => r.serialNos ?? []))
+  const submittedSerials = new Set<string>()
   for (const c of containers) {
     for (const line of c.lines) {
       if (countingStocktake(state.inventoryCounts, order.warehouseCode, order.customerId, line.skuCode))
@@ -152,6 +154,25 @@ export function applyReceipt(
       const activity = line.goodQty + line.defectQty + rejectedQty
       if (activity <= 0) return { ok: false, errorKey: 'error.qtyInvalid' }
       if (rejectedQty > 0 && !line.rejectReason) return { ok: false, errorKey: 'inbound.receive.rejectReasonRequired' }
+
+      const master = state.skuMasters.find((m) => m.customerId === order.customerId && m.code === line.skuCode)
+      if (master?.batchEnabled && !line.batchNo?.trim()) return { ok: false, errorKey: 'inbound.receive.batchRequired' }
+      if (master?.expiryEnabled && !line.expiryDate?.trim()) {
+        return { ok: false, errorKey: 'inbound.receive.expiryRequired' }
+      }
+      const goodSerials = (line.goodSerialNos ?? []).map((sn) => sn.trim().toUpperCase()).filter(Boolean)
+      const defectSerials = (line.defectSerialNos ?? []).map((sn) => sn.trim().toUpperCase()).filter(Boolean)
+      if (master?.snEnabled) {
+        if (goodSerials.length !== line.goodQty || defectSerials.length !== line.defectQty) {
+          return { ok: false, errorKey: 'inbound.receive.serialCount' }
+        }
+        for (const sn of [...goodSerials, ...defectSerials]) {
+          if (existingSerials.has(sn) || submittedSerials.has(sn)) {
+            return { ok: false, errorKey: 'inbound.receive.serialDuplicated', params: { serialNo: sn } }
+          }
+          submittedSerials.add(sn)
+        }
+      }
       activityBySku.set(line.skuCode, (activityBySku.get(line.skuCode) ?? 0) + activity)
     }
   }
@@ -161,7 +182,8 @@ export function applyReceipt(
   }
 
   const ts = new Date().toISOString()
-  const stagingCode = stagingLocationCode(state.locations, order.warehouseCode)
+  const receivingStaging = state.warehouseMasters.find((w) => w.code === order.warehouseCode)?.receivingStagingLocation
+  const stagingCode = stagingLocationCode(state.locations, order.warehouseCode, receivingStaging)
   const receiptNo = nextDocNo('RC', (state.receiptRecords ?? []).map((r) => r.receiptNo), ts)
   const receiptLines: ReceiptRecordLine[] = containers
     .flatMap((c) => c.lines.map((line) => ({ line, containerNo: c.containerNo })))
@@ -176,9 +198,11 @@ export function applyReceipt(
         goodQty: line.goodQty,
         defectQty: line.defectQty,
         rejectReason: rejectedQty > 0 ? line.rejectReason : undefined,
-        batchNo: line.batchNo,
+        batchNo: line.batchNo?.trim() || undefined,
         productionDate: line.productionDate,
         expiryDate: line.expiryDate,
+        goodSerialNos: line.goodSerialNos?.map((sn) => sn.trim().toUpperCase()).filter(Boolean),
+        defectSerialNos: line.defectSerialNos?.map((sn) => sn.trim().toUpperCase()).filter(Boolean),
       }
     })
 
@@ -244,6 +268,7 @@ export function applyReceipt(
     qty: number,
     batchNo?: string,
     expiryDate?: string,
+    serialNos?: string[],
   ): InventoryRecord | undefined => {
     if (qty <= 0) return undefined
     const locked = qualityType === 'DEFECTIVE' ? qty : 0
@@ -260,6 +285,7 @@ export function applyReceipt(
         ...inventory[idx],
         onHandQty: inventory[idx].onHandQty + qty,
         lockedQty: inventory[idx].lockedQty + locked,
+        ...(serialNos?.length ? { serialNos: [...(inventory[idx].serialNos ?? []), ...serialNos] } : {}),
       }
       return inventory[idx]
     }
@@ -272,6 +298,7 @@ export function applyReceipt(
         qualityType,
         batchNo,
         expiryDate,
+        serialNos: serialNos?.length ? serialNos : undefined,
         onHandQty: qty,
         lockedQty: locked,
         firstInboundAt: ts,
@@ -296,9 +323,12 @@ export function applyReceipt(
         }),
       )
     }
-    receiveLog(upsertStagingStock(line.skuCode, 'GOOD', line.goodQty, line.batchNo, line.expiryDate), line.goodQty)
     receiveLog(
-      upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty, line.batchNo, line.expiryDate),
+      upsertStagingStock(line.skuCode, 'GOOD', line.goodQty, line.batchNo, line.expiryDate, line.goodSerialNos),
+      line.goodQty,
+    )
+    receiveLog(
+      upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty, line.batchNo, line.expiryDate, line.defectSerialNos),
       line.defectQty,
     )
 

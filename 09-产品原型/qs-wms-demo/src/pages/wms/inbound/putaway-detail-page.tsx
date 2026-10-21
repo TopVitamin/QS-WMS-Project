@@ -111,7 +111,7 @@ export function PutawayDetailPage() {
               {order.sourceType === 'INBOUND' ? (
                 <DocNo onClick={() => navigate(`/wms/inbound/orders/${order.sourceNo}`)}>{order.sourceNo}</DocNo>
               ) : (
-                <BizCode>{order.sourceNo}</BizCode>
+                <DocNo onClick={() => navigate(`/wms/returns/orders/${order.sourceNo}`)}>{order.sourceNo}</DocNo>
               )}
             </DescriptionItem>
             <DescriptionItem label={t('common.customer')}>

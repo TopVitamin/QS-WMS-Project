@@ -1,4 +1,16 @@
-import type { InventoryRecord, LocationMaster, ProductFormFactor, ZoneMaster, ZoneType } from '@/types/wms'
+import type {
+  InventoryRecord,
+  LocationMaster,
+  LocationType,
+  ProductFormFactor,
+  ZoneMaster,
+  ZoneType,
+} from '@/types/wms'
+
+/** 库区类型 → 作业库位类型；不良隔离在作业侧叫 DEFECT */
+export function zoneTypeToLocationType(zoneType: ZoneType): LocationType {
+  return zoneType === 'DEFECT_ISOLATION' ? 'DEFECT' : zoneType
+}
 
 export const ZONE_TYPE_I18N: Record<ZoneType, string> = {
   STORAGE: 'masterLocation.zoneTypes.STORAGE',
@@ -17,7 +29,7 @@ export const PRODUCT_FORM_I18N: Record<ProductFormFactor, string> = {
 export const PRODUCT_FORM_OPTIONS: ProductFormFactor[] = ['SMALL', 'LARGE', 'IRREGULAR']
 
 export type LocationMasterFormErrors = Partial<
-  Record<'zoneCode' | 'code' | 'status' | 'allowMixSku' | 'allowMixBatch' | 'putawaySequence' | 'pickSequence', string>
+  Record<'zoneCode' | 'code' | 'status' | 'putawaySequence' | 'pickSequence', string>
 >
 
 export function validateLocationMasterForm(form: LocationMaster): LocationMasterFormErrors {
@@ -78,8 +90,6 @@ export function createEmptyLocationForm(warehouseCode = '', zoneCode = ''): Loca
     zoneType: 'PICK',
     code: '',
     status: 'ENABLED',
-    allowMixSku: true,
-    allowMixBatch: false,
     productForms: [],
     createdAt: '',
     createdBy: '',

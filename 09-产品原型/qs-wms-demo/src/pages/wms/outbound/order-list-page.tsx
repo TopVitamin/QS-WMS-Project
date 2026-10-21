@@ -214,7 +214,7 @@ export function OutboundOrderListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar
+        <FilterBar columns={6}
           onSearch={list.search}
           onReset={list.reset}
           advanced={

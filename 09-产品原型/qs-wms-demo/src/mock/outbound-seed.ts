@@ -215,7 +215,7 @@ export function createOutboundSeed(
         recipient,
         address,
         phone: warehouseCode === LA ? `+1-323-555-${String(1000 + laOrderIndex).slice(-4)}` : undefined,
-        originalInboundNo: type === 'PURCHASE_RETURN' ? 'RK-20261002-0001' : undefined,
+        originalInboundNo: type === 'PURCHASE_RETURN' ? 'IB-20261002-0001' : undefined,
         items,
         specified: [],
         createdAt,

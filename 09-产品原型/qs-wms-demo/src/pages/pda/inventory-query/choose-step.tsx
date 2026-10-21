@@ -38,7 +38,7 @@ export function QueryChooseStep({ flow }: { flow: QueryFlow }) {
                 ) : (
                   <PdaSkuBlock
                     skuCode={hit.kind === 'serial' ? hit.serialNo : hit.skuCode}
-                    name={hit.kind === 'serial' ? hit.skuCode : flow.skuName(hit.skuCode)}
+                    name={hit.kind === 'serial' ? hit.skuCode : flow.skuName(hit.skuCode, 'customerId' in hit ? hit.customerId : undefined)}
                     owner={flow.ownerText(hit.customerId)}
                   />
                 )}

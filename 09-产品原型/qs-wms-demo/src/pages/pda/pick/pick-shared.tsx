@@ -1,7 +1,7 @@
 import { DocNoTail } from '@/components/biz/display'
 import { TagLabel } from '@/components/biz/status-badge'
 import { PdaContextBar, PdaContextDot } from '@/components/pda/pda-context-bar'
-import { qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { pickLineRemaining, pickLocationProgress } from '@/lib/outbound-pick-route'
 import { taskTotals } from '@/lib/outbound-derive'
 import { cn } from '@/lib/utils'
@@ -72,9 +72,9 @@ export function PickLineCard({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-mono text-base font-semibold">{line.skuCode}</span>
             {line.qualityType === 'DEFECTIVE' && <TagLabel meta={qualityMeta.DEFECTIVE} />}
-            {sn && <TagLabel tone="purple">{t('outbound.pdaPick.snTag')}</TagLabel>}
+            {sn && <TagLabel meta={inventoryFeatureMeta.sn} />}
           </div>
-          <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode)}</div>
+          <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode, task.customerId)}</div>
           {(line.batchNo || line.expiryDate) && (
             <div className="mt-0.5 font-mono text-sm text-muted-foreground">
               {[line.batchNo, line.expiryDate].filter(Boolean).join(' · ')}

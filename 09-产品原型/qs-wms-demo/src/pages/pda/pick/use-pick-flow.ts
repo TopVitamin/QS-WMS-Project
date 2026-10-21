@@ -145,7 +145,7 @@ export function usePickFlow() {
     openTasks,
     findTask,
     latestTask,
-    skuName: (code: string) => sku(code)?.name,
+    skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     master,
     isSn,
     resolveSku,

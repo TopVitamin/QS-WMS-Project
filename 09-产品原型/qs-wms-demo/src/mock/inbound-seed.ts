@@ -22,14 +22,14 @@ function order(
   extra: Partial<InboundOrder> = {},
 ): InboundOrder {
   const base: InboundOrder = {
-    inboundNo: `RK-20261002-${suffix}`,
+    inboundNo: `IB-20261002-${suffix}`,
     customerId: ANKR,
     warehouseCode: WH,
     bizType: 'NORMAL',
     upstreamNo,
     arrivalMethod: 'CONTAINER',
     containerNo: `MSCU${suffix}`,
-    trackingNos: `TRK-${suffix}`,
+    trackingNos: `TIB-${suffix}`,
     etaAt: '2026-10-15T08:00:00.000Z',
     receiptCloseFlag: 'NOT_CONFIRMED',
     status: 'PENDING_RECEIVE',
@@ -772,7 +772,7 @@ const HOMY = 'C10031'
 
 /** 其它顶栏仓库各补几条待收货单，避免切换仓后列表全空（验收种子仍在 US-LA-01） */
 function createFillerInboundsForOtherWarehouses(): InboundOrder[] {
-  const warehouses = ['US-NJ-01', 'DE-FRA-01', 'UK-LON-01', 'JP-TYO-01'] as const
+  const warehouses = ['US-NJ-01', 'DE-FRA-01', 'HK-WH-01'] as const
   const methods: InboundOrder['arrivalMethod'][] = ['CONTAINER', 'LTL', 'EXPRESS', 'OTHER']
   const list: InboundOrder[] = []
   warehouses.forEach((wh, wi) => {
@@ -783,7 +783,7 @@ function createFillerInboundsForOtherWarehouses(): InboundOrder[] {
       const receivedQty = partialReceiving ? 15 : 0
       list.push(
         recomputeInboundOrder({
-          inboundNo: `RK-20261001-${suffix}`,
+          inboundNo: `IB-20261001-${suffix}`,
           customerId: HOMY,
           warehouseCode: wh,
           bizType: i % 3 === 0 ? 'TRANSFER' : 'NORMAL',

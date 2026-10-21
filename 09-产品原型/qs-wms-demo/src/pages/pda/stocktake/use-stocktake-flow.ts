@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { useConfirm } from '@/hooks/use-confirm'
 import { useInventoryState } from '@/hooks/use-inventory-state'
 import { usePdaStep } from '@/hooks/use-pda-step'
@@ -337,7 +337,7 @@ export function useStocktakeFlow() {
     progress,
     lineBatch,
     sourceText,
-    skuName: (code: string) => sku(code)?.name,
+    skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     ownerText: (customerId: string) => `${customerCode(customerId)} ${customerName(customerId)}`,
     ownerCode: customerCode,
   }

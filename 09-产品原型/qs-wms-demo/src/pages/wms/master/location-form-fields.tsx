@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { FormField, FormGrid } from '@/components/biz/form-field'
-import { OptionSelect, YesNoSelect } from '@/components/biz/option-select'
+import { OptionSelect } from '@/components/biz/option-select'
 import { Section } from '@/components/biz/page-container'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -113,17 +113,6 @@ export function LocationFormFields({
               onChange={(e) => setForm({ ...form, remark: e.target.value })}
               rows={2}
             />
-          </FormField>
-        </FormGrid>
-      </Section>
-
-      <Section title={t('masterLocation.sectionMix')}>
-        <FormGrid>
-          <FormField label={t('masterLocation.allowMixSku')} required>
-            <YesNoSelect value={form.allowMixSku} onChange={(v) => setForm({ ...form, allowMixSku: v })} />
-          </FormField>
-          <FormField label={t('masterLocation.allowMixBatch')} required>
-            <YesNoSelect value={form.allowMixBatch} onChange={(v) => setForm({ ...form, allowMixBatch: v })} />
           </FormField>
         </FormGrid>
       </Section>

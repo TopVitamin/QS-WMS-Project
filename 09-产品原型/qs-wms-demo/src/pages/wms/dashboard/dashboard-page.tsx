@@ -1,19 +1,24 @@
 import dayjs from 'dayjs'
-import { AlertTriangle, ArrowRight, ArrowUpFromLine, Boxes, PackageOpen, Printer, Smartphone, Truck, type LucideIcon } from 'lucide-react'
+import {
+  ArrowRight,
+  ArrowUpFromLine,
+  Boxes,
+  ClipboardCheck,
+  PackageCheck,
+  PackageOpen,
+  Smartphone,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
-import { DateTime, DocNo, Money, Num } from '@/components/biz/display'
+import { DateTime, DocNo, Num } from '@/components/biz/display'
 import { PageContainer, Section } from '@/components/biz/page-container'
 import { StatCard } from '@/components/biz/stat-card'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
-import {
-  inboundOrderStatusMeta,
-  packageStatusMeta,
-  putawayOrderStatusMeta,
-  type StatusTone,
-} from '@/config/status'
+import { inboundOrderStatusMeta, outboundStatusMeta, putawayOrderStatusMeta, type StatusTone } from '@/config/status'
 import { formatDateTime } from '@/lib/format'
 import { listOpenPutawayOrders, pendingPutawayQty } from '@/lib/putaway'
 import { toneDotClass } from '@/lib/tone-styles'
@@ -21,7 +26,16 @@ import { textLink } from '@/lib/typography'
 import { cn } from '@/lib/utils'
 import { useDb, useLookups } from '@/mock/db'
 import { useCurrentWarehouse, useSettings } from '@/stores/settings'
-import type { PackageStatus } from '@/types/wms'
+import type { OutboundStatus } from '@/types/outbound'
+
+const OUTBOUND_STATUSES: OutboundStatus[] = [
+  'PENDING_HANDLE',
+  'PENDING_PICK',
+  'PENDING_VERIFY',
+  'PENDING_SHIPMENT',
+  'SHIPPED',
+  'CANCELLED',
+]
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -29,13 +43,14 @@ export function DashboardPage() {
   const warehouse = useCurrentWarehouse()
   const operator = useSettings((s) => s.operator)
   const allInbounds = useDb((s) => s.inbounds)
-  const allPackages = useDb((s) => s.packages)
+  const allOutbound = useDb((s) => s.outboundOrders)
   const allPutawayOrders = useDb((s) => s.putawayOrders)
+  const warehouseMasters = useDb((s) => s.warehouseMasters)
   const { customerName } = useLookups()
 
   const data = useMemo(() => {
     const inbounds = allInbounds.filter((o) => o.warehouseCode === warehouse.code)
-    const packages = allPackages.filter((p) => p.warehouseCode === warehouse.code)
+    const outbound = allOutbound.filter((o) => o.warehouseCode === warehouse.code)
     const openPutaways = listOpenPutawayOrders(allPutawayOrders, warehouse.code)
     const dayStart = dayjs().tz(warehouse.timezone).startOf('day')
     const trend = Array.from({ length: 7 }, (_, i) => {
@@ -46,24 +61,28 @@ export function DashboardPage() {
       }).length
       return { label: d.format('MM-DD'), count }
     })
-    const statuses = Object.keys(packageStatusMeta) as PackageStatus[]
-    const pkgDist = statuses.map((s) => ({ status: s, count: packages.filter((p) => p.status === s).length }))
-    const fee = packages
-      .filter((p) => p.status === 'SHIPPED')
-      .reduce((a, p) => a + p.shippingFee.amount, 0)
+    const orderDist = OUTBOUND_STATUSES.map((s) => ({
+      status: s,
+      count: outbound.filter((o) => o.status === s).length,
+    }))
     return {
       pendingInbound: inbounds.filter((o) => o.status === 'PENDING_RECEIVE').length,
       pendingPutaway: openPutaways.reduce((a, p) => a + pendingPutawayQty(p), 0),
-      readyPrint: packages.filter((p) => p.status === 'READY_PRINT').length,
-      abnormal: packages.filter((p) => p.status === 'HOLD').length,
-      shipped: packages.filter((p) => p.status === 'SHIPPED' && dayjs(p.createdAt).isAfter(dayStart.subtract(1, 'day'))).length,
+      pendingHandle: outbound.filter((o) => o.status === 'PENDING_HANDLE').length,
+      pendingVerify: outbound.filter((o) => o.status === 'PENDING_VERIFY').length,
+      shipped: outbound.filter(
+        (o) =>
+          o.status === 'SHIPPED' &&
+          dayjs(o.shippedAt ?? o.updatedAt)
+            .tz(warehouse.timezone)
+            .isAfter(dayStart),
+      ).length,
       trend,
-      pkgDist,
-      pkgTotal: packages.length,
-      fee: { amount: fee, currency: warehouse.currency },
+      orderDist,
+      orderTotal: outbound.length,
       recent: inbounds.slice(0, 6),
     }
-  }, [allInbounds, allPackages, allPutawayOrders, warehouse])
+  }, [allInbounds, allOutbound, allPutawayOrders, warehouse])
 
   /** 每张 KPI 的颜色取它所统计状态的色调，保证「同一状态同一颜色」 */
   const kpis: { label: string; value: number; icon: LucideIcon; tone: StatusTone; to: string }[] = [
@@ -72,35 +91,35 @@ export function DashboardPage() {
       value: data.pendingInbound,
       icon: PackageOpen,
       tone: inboundOrderStatusMeta.PENDING_RECEIVE.tone,
-      to: '/wms/inbound/orders',
+      to: '/wms/inbound/orders?status=PENDING_RECEIVE',
     },
     {
       label: t('dashboard.pendingPutaway'),
       value: data.pendingPutaway,
       icon: ArrowUpFromLine,
       tone: putawayOrderStatusMeta.PENDING.tone,
-      to: '/wms/inbound/putaway',
+      to: '/wms/inbound/putaway?status=PENDING',
     },
     {
-      label: t('dashboard.readyPrint'),
-      value: data.readyPrint,
-      icon: Printer,
-      tone: packageStatusMeta.READY_PRINT.tone,
-      to: '/wms/outbound/packages',
+      label: t('dashboard.pendingHandle'),
+      value: data.pendingHandle,
+      icon: PackageCheck,
+      tone: outboundStatusMeta.PENDING_HANDLE.tone,
+      to: '/wms/outbound/orders?status=PENDING_HANDLE',
     },
     {
       label: t('dashboard.shippedToday'),
       value: data.shipped,
       icon: Truck,
-      tone: packageStatusMeta.SHIPPED.tone,
-      to: '/wms/outbound/packages',
+      tone: outboundStatusMeta.SHIPPED.tone,
+      to: '/wms/outbound/orders?status=SHIPPED',
     },
     {
-      label: t('dashboard.abnormal'),
-      value: data.abnormal,
-      icon: AlertTriangle,
-      tone: packageStatusMeta.HOLD.tone,
-      to: '/wms/inbound/orders',
+      label: t('dashboard.pendingVerify'),
+      value: data.pendingVerify,
+      icon: ClipboardCheck,
+      tone: outboundStatusMeta.PENDING_VERIFY.tone,
+      to: '/wms/outbound/orders?status=PENDING_VERIFY',
     },
   ]
   const maxTrend = Math.max(1, ...data.trend.map((d) => d.count))
@@ -109,7 +128,9 @@ export function DashboardPage() {
     <PageContainer
       title={t('dashboard.greeting', { name: operator })}
       description={t('dashboard.subtitle', {
-        warehouse: `${warehouse.code} ${t(warehouse.nameKey)}`,
+        warehouse: `${warehouse.code} ${
+          warehouseMasters.find((w) => w.code === warehouse.code)?.name ?? t(warehouse.nameKey)
+        }`,
         time: formatDateTime(new Date().toISOString(), warehouse.timezone),
       })}
     >
@@ -136,30 +157,30 @@ export function DashboardPage() {
         </Section>
 
         <Section
-          title={t('dashboard.packageStatus')}
+          title={t('dashboard.outboundStatus')}
           extra={
             <span className="text-xs text-muted-foreground">
-              {t('dashboard.shippingFee')}: <Money value={data.fee} className="font-medium text-foreground" />
+              {t('dashboard.outboundTotal')}: <Num value={data.orderTotal} className="font-medium text-foreground" />
             </span>
           }
         >
           <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
-            {data.pkgDist.map((d) =>
+            {data.orderDist.map((d) =>
               d.count ? (
                 <div
                   key={d.status}
-                  className={toneDotClass[packageStatusMeta[d.status].tone]}
-                  style={{ width: `${(d.count / data.pkgTotal) * 100}%` }}
+                  className={toneDotClass[outboundStatusMeta[d.status].tone]}
+                  style={{ width: `${(d.count / Math.max(1, data.orderTotal)) * 100}%` }}
                 />
               ) : null,
             )}
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-            {data.pkgDist.map((d) => (
+            {data.orderDist.map((d) => (
               <div key={d.status} className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2 text-muted-foreground">
-                  <span className={cn('size-2 rounded-full', toneDotClass[packageStatusMeta[d.status].tone])} />
-                  {t(packageStatusMeta[d.status].labelKey)}
+                  <span className={cn('size-2 rounded-full', toneDotClass[outboundStatusMeta[d.status].tone])} />
+                  {t(outboundStatusMeta[d.status].labelKey)}
                 </span>
                 <Num value={d.count} className="font-medium" />
               </div>

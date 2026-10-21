@@ -67,6 +67,7 @@ export function InboundOrderReceivePage() {
   const receiptRecords = useDb((s) => s.receiptRecords ?? [])
   const { customerCode, customerName, sku } = useLookups()
   const skuBarcodes = useDb((s) => s.skuBarcodes)
+  const skuMasters = useDb((s) => s.skuMasters)
   const newSkuRecords = useDb((s) => s.newSkuRecords)
   const session = useWebReceiveSession((s) => s.sessions[inboundNo] ?? EMPTY_WEB_RECEIVE_SESSION)
   const updateSession = useWebReceiveSession((s) => s.update)
@@ -360,6 +361,11 @@ export function InboundOrderReceivePage() {
           defectQty: e.defectQty,
           rejectedQty: e.rejectedQty,
           rejectReason: e.rejectReason,
+          batchNo: e.batchNo?.trim() || undefined,
+          productionDate: e.productionDate || undefined,
+          expiryDate: e.expiryDate || undefined,
+          goodSerialNos: e.goodSerialNos,
+          defectSerialNos: e.defectSerialNos,
         })),
       })
     }
@@ -504,10 +510,23 @@ export function InboundOrderReceivePage() {
                 setActiveEdit(code, { ...(activeBox.edits[code] ?? emptyReceiveDraft()), rejectReason: reason })
                 setFeedback(undefined)
               }}
+              onMetaChange={(code, patch) => {
+                if (!activeBox) return
+                setActiveEdit(code, { ...(activeBox.edits[code] ?? emptyReceiveDraft()), ...patch })
+                setFeedback(undefined)
+              }}
               onClear={(code) => setActiveEdit(code, undefined)}
               onEnterDone={refocusScan}
-              skuName={(code) => sku(code)?.name}
-              skuBarcode={(code) => sku(code)?.barcode}
+              skuName={(code) => sku(code, order?.customerId)?.name}
+              skuBarcode={(code) => sku(code, order?.customerId)?.barcode}
+              skuConfig={(code) => {
+                const master = skuMasters.find((m) => m.customerId === order?.customerId && m.code === code)
+                return {
+                  batchEnabled: master?.batchEnabled,
+                  expiryEnabled: master?.expiryEnabled,
+                  snEnabled: master?.snEnabled,
+                }
+              }}
               isNewSku={(code) => isNewSku(newSkuRecords, order?.customerId ?? '', code)}
               onGoMeasure={(code) => setMeasureSku(code)}
             />

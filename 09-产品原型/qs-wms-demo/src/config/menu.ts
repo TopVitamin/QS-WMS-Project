@@ -44,6 +44,12 @@ export const wmsMenu: MenuGroup[] = [
     ],
   },
   {
+    key: 'returns',
+    titleKey: 'menu.returns',
+    icon: Undo2,
+    children: [{ path: '/wms/returns/orders', titleKey: 'menu.returnOrders', milestone: 'M1' }],
+  },
+  {
     key: 'inventory',
     titleKey: 'menu.inventory',
     icon: Boxes,
@@ -65,12 +71,6 @@ export const wmsMenu: MenuGroup[] = [
       { path: '/wms/outbound/verify-station', titleKey: 'menu.verifyStation', milestone: 'M3' },
       { path: '/wms/outbound/return-putaway', titleKey: 'menu.outboundPutbacks', milestone: 'M3' },
     ],
-  },
-  {
-    key: 'returns',
-    titleKey: 'menu.returns',
-    icon: Undo2,
-    children: [{ path: '/wms/returns/orders', titleKey: 'menu.returnOrders', milestone: 'M4' }],
   },
   {
     key: 'billing',
@@ -100,7 +100,7 @@ export const wmsMenu: MenuGroup[] = [
     titleKey: 'menu.system',
     icon: Settings2,
     children: [
-      { path: '/wms/system/users', titleKey: 'menu.users', milestone: 'M4' },
+      { path: '/wms/system/logs', titleKey: 'menu.operationLogs', milestone: 'M1' },
       { path: '/wms/system/params', titleKey: 'menu.params', milestone: 'M4' },
     ],
   },

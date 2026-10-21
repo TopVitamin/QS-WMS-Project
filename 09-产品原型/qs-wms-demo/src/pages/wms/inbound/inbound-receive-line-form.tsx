@@ -7,9 +7,11 @@ import { WorkbenchProductCode, WorkbenchProductName } from '@/components/biz/wor
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { formatNumber } from '@/lib/format'
 import {
   emptyReceiveDraft,
+  parseSerialNos,
   receiveDraftActivity,
   REJECT_REASONS,
   type InboundReceiveDraft,
@@ -37,6 +39,7 @@ interface InboundReceiveLineFormProps {
   onSelectSku: (skuCode: string) => void
   onQtyChange: (skuCode: string, field: ReceiveQtyField, value: number) => void
   onReasonChange: (skuCode: string, reason: string) => void
+  onMetaChange: (skuCode: string, patch: Partial<InboundReceiveDraft>) => void
   onClear: (skuCode: string) => void
   /** 数量框回车确认后调用（作业台用来把焦点拉回扫码框） */
   onEnterDone?: () => void
@@ -45,12 +48,15 @@ interface InboundReceiveLineFormProps {
   /** 新品判断：无 NS 记录的 SKU 行内提示并可就地量方（新品维护 Demo PRD 第三节） */
   isNewSku?: (skuCode: string) => boolean
   onGoMeasure?: (skuCode: string) => void
+  /** 商品追溯配置：批次/效期/SN 决定本行是否展开采集区 */
+  skuConfig: (skuCode: string) => { batchEnabled?: boolean; expiryEnabled?: boolean; snEnabled?: boolean }
 }
 
 type ReceiveEditContextValue = {
   edits: Record<string, InboundReceiveDraft>
   changeQty: (skuCode: string, field: ReceiveQtyField, value: number) => void
   changeReason: (skuCode: string, reason: string) => void
+  changeMeta: (skuCode: string, patch: Partial<InboundReceiveDraft>) => void
   clear: (skuCode: string) => void
   enterDone?: () => void
   containerReady: boolean
@@ -78,17 +84,20 @@ export function InboundReceiveLineForm({
   onSelectSku,
   onQtyChange,
   onReasonChange,
+  onMetaChange,
   onClear,
   onEnterDone,
   skuName,
   skuBarcode,
   isNewSku,
   onGoMeasure,
+  skuConfig,
 }: InboundReceiveLineFormProps) {
   const ctx: ReceiveEditContextValue = {
     edits,
     changeQty: onQtyChange,
     changeReason: onReasonChange,
+    changeMeta: onMetaChange,
     clear: onClear,
     enterDone: onEnterDone,
     containerReady,
@@ -131,12 +140,15 @@ export function InboundReceiveLineForm({
               const active = activeSku === line.skuCode
               const limit = limits[line.skuCode] ?? 0
               const rejected = (edits[line.skuCode]?.rejectedQty ?? 0) > 0
+              const config = skuConfig(line.skuCode)
+              const traceOpen = active && Boolean(config.batchEnabled || config.expiryEnabled || config.snEnabled)
+              const subRows = Number(rejected) + Number(traceOpen)
               const select = () => onSelectSku(line.skuCode)
               const rowClass = cn('cursor-pointer', active && wt.rowActive)
               return (
                 <Fragment key={line.skuCode}>
                   <tr className={rowClass} onClick={select}>
-                    <td rowSpan={rejected ? 2 : 1} className={cn(wt.td, wt.stickyFirst, active && wt.rowActiveBar)}>
+                    <td rowSpan={Math.max(1, subRows + 1)} className={cn(wt.td, wt.stickyFirst, active && wt.rowActiveBar)}>
                       <WorkbenchProductCode barcode={skuBarcode(line.skuCode)} sku={line.skuCode}>
                         {isNewSku?.(line.skuCode) && (
                           <span className="flex items-center gap-2 text-sm">
@@ -155,7 +167,7 @@ export function InboundReceiveLineForm({
                         )}
                       </WorkbenchProductCode>
                     </td>
-                    <td rowSpan={rejected ? 2 : 1} className={wt.td}>
+                    <td rowSpan={Math.max(1, subRows + 1)} className={wt.td}>
                       <WorkbenchProductName name={skuName(line.skuCode)} />
                     </td>
                     <td className={wt.td}>
@@ -180,6 +192,13 @@ export function InboundReceiveLineForm({
                       <ReceiveRowResetCell line={line} />
                     </td>
                   </tr>
+                  {traceOpen && (
+                    <tr className={rowClass} onClick={select}>
+                      <td colSpan={5} className={cn(wt.td, wt.tdSub)} onClick={(e) => e.stopPropagation()}>
+                        <ReceiveTraceCell line={line} config={config} editable />
+                      </td>
+                    </tr>
+                  )}
                   {rejected && (
                     <tr className={rowClass} onClick={select}>
                       <td colSpan={5} className={cn(wt.td, wt.tdSub)} onClick={(e) => e.stopPropagation()}>
@@ -220,6 +239,89 @@ function ReceiveQtyCell({ line, field }: { line: InboundOrderLine; field: Receiv
       onChange={(v) => changeQty(line.skuCode, field, v)}
       onEnterDone={enterDone}
     />
+  )
+}
+
+/** 批次/效期/SN 采集：选中行且有追溯配置时作为本行下面的子行出现 */
+function ReceiveTraceCell({
+  line,
+  config,
+  editable,
+}: {
+  line: InboundOrderLine
+  config: { batchEnabled?: boolean; expiryEnabled?: boolean; snEnabled?: boolean }
+  editable: boolean
+}) {
+  const { t } = useTranslation()
+  const { edits, changeMeta } = useReceiveEdit()
+  const edit = edits[line.skuCode] ?? emptyReceiveDraft()
+  const fieldClass = 'h-11 w-full text-base'
+  const labelClass = 'text-sm text-muted-foreground'
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {config.batchEnabled && (
+        <label className="flex flex-col gap-1">
+          <span className={labelClass}>{t('inbound.batchNo')}</span>
+          <Input
+            className={fieldClass}
+            value={edit.batchNo ?? ''}
+            placeholder={t('common.inputPlaceholder')}
+            disabled={!editable}
+            onChange={(e) => changeMeta(line.skuCode, { batchNo: e.target.value })}
+          />
+        </label>
+      )}
+      {config.expiryEnabled && (
+        <>
+          <label className="flex flex-col gap-1">
+            <span className={labelClass}>{t('inbound.productionDate')}</span>
+            <Input
+              className={fieldClass}
+              type="date"
+              value={edit.productionDate ?? ''}
+              disabled={!editable}
+              onChange={(e) => changeMeta(line.skuCode, { productionDate: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className={labelClass}>{t('inbound.expiryDate')}</span>
+            <Input
+              className={fieldClass}
+              type="date"
+              value={edit.expiryDate ?? ''}
+              disabled={!editable}
+              onChange={(e) => changeMeta(line.skuCode, { expiryDate: e.target.value })}
+            />
+          </label>
+        </>
+      )}
+      {config.snEnabled && edit.goodQty > 0 && (
+        <label className="flex flex-col gap-1">
+          <span className={labelClass}>{t('inbound.receive.goodSerialNos', { count: edit.goodQty })}</span>
+          <Textarea
+            rows={2}
+            className="text-sm"
+            value={(edit.goodSerialNos ?? []).join('\n')}
+            placeholder={t('inbound.receive.serialPlaceholder')}
+            disabled={!editable}
+            onChange={(e) => changeMeta(line.skuCode, { goodSerialNos: parseSerialNos(e.target.value) })}
+          />
+        </label>
+      )}
+      {config.snEnabled && edit.defectQty > 0 && (
+        <label className="flex flex-col gap-1">
+          <span className={labelClass}>{t('inbound.receive.defectSerialNos', { count: edit.defectQty })}</span>
+          <Textarea
+            rows={2}
+            className="text-sm"
+            value={(edit.defectSerialNos ?? []).join('\n')}
+            placeholder={t('inbound.receive.serialPlaceholder')}
+            disabled={!editable}
+            onChange={(e) => changeMeta(line.skuCode, { defectSerialNos: parseSerialNos(e.target.value) })}
+          />
+        </label>
+      )}
+    </div>
   )
 }
 

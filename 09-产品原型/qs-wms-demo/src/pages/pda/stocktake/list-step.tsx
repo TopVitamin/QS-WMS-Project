@@ -100,7 +100,7 @@ export function StocktakeListStep({ flow }: { flow: StocktakeFlow }) {
               >
                 <PdaSkuBlock
                   skuCode={c.skuCode}
-                  name={flow.skuName(c.skuCode)}
+                  name={flow.skuName(c.skuCode, c.customerId)}
                   owner={flow.ownerCode(c.customerId)}
                   tags={<TagLabel meta={inventoryTagMeta.pending} />}
                 />

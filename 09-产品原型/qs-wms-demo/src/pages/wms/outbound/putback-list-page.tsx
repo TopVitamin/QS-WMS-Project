@@ -143,7 +143,7 @@ export function OutboundPutbackListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar onSearch={list.search} onReset={list.reset}>
+        <FilterBar columns={6} onSearch={list.search} onReset={list.reset}>
           <FilterItem label={t('outbound.ui.putbackNo')}>
             <Input
               value={draft.no}

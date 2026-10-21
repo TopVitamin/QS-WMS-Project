@@ -155,7 +155,7 @@ function ItemWorkspace({ flow, count, location }: { flow: StocktakeFlow; count: 
           <PdaSection title={t('pdaStocktake.pickOwner')}>
             {choice.options.map((k) => (
               <PdaListItem key={k.customerId} chevron onClick={() => chooseSku(k, true)}>
-                <PdaSkuBlock skuCode={k.skuCode} name={flow.skuName(k.skuCode)} owner={flow.ownerText(k.customerId)} />
+                <PdaSkuBlock skuCode={k.skuCode} name={flow.skuName(k.skuCode, k.customerId)} owner={flow.ownerText(k.customerId)} />
               </PdaListItem>
             ))}
           </PdaSection>

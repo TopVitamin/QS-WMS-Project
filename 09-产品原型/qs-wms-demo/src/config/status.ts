@@ -1,8 +1,9 @@
-import type { InboundBizType, InboundOrderStatus, PackageStatus, QualityType, UsageStatus } from '@/types/wms'
+import type { InboundBizType, InboundOrderStatus, QualityType, UsageStatus } from '@/types/wms'
 import type { PutawayOrderStatus, UnclaimedStatus } from '@/types/inbound'
 import type { OrderComposition } from '@/lib/outbound-derive'
 import type { OutboundPickTask, OutboundPutback, OutboundStatus, OutboundType, PickStatus, WaveStatus } from '@/types/outbound'
 import type { StocktakeSource, StocktakeStatus } from '@/types/inventory'
+import type { ReturnOrderStatus, ReturnSourceType } from '@/types/return'
 import type { ExpiryLevel, SerialStatus } from '@/lib/inventory-derive'
 
 export const outboundStatusMeta: Record<OutboundStatus, StatusMeta> = {
@@ -37,7 +38,17 @@ export const outboundResultStatusMeta: Record<'SENT' | 'FAILED', StatusMeta> = {
   SENT: { tone: 'green', labelKey: 'status.outboundResult.SENT' },
   FAILED: { tone: 'red', labelKey: 'status.outboundResult.FAILED' },
 }
-export const allocationStatusMeta = { NORMAL: { tone: 'green', labelKey: 'outbound.normal' }, PENDING: { tone: 'red', labelKey: 'outbound.pending' }, COUNTING: { tone: 'blue', labelKey: 'outbound.counting' } } satisfies Record<string, StatusMeta>
+export const allocationStatusMeta = {
+  NORMAL: { tone: 'green', labelKey: 'inventory.allocationStatus.NORMAL' },
+  PENDING: { tone: 'red', labelKey: 'inventory.allocationStatus.PENDING' },
+  COUNTING: { tone: 'blue', labelKey: 'inventory.counting' },
+} satisfies Record<string, StatusMeta>
+
+/** 库存/盘点行上的固定标记：新增实盘行、SN 商品 */
+export const inventoryFeatureMeta = {
+  added: { tone: 'orange', labelKey: 'inventory.stocktake.added' },
+  sn: { tone: 'purple', labelKey: 'inventory.snTag' },
+} satisfies Record<string, StatusMeta>
 
 /**
  * 全站统一的状态色调。新增状态时只能从这里选色调，不要在页面里自定义颜色。
@@ -67,6 +78,20 @@ export const inboundOrderStatusMeta: Record<InboundOrderStatus, StatusMeta> = {
   CANCELLED: { tone: 'gray', labelKey: 'status.inboundOrder.CANCELLED' },
 }
 
+export const returnOrderStatusMeta: Record<ReturnOrderStatus, StatusMeta> = {
+  PENDING_RECEIVE: { tone: 'gray', labelKey: 'status.returnOrder.PENDING_RECEIVE' },
+  RECEIVING: { tone: 'blue', labelKey: 'status.returnOrder.RECEIVING' },
+  PUTAWAYING: { tone: 'blue', labelKey: 'status.returnOrder.PUTAWAYING' },
+  COMPLETED: { tone: 'green', labelKey: 'status.returnOrder.COMPLETED' },
+  CANCELLED: { tone: 'gray', labelKey: 'status.returnOrder.CANCELLED' },
+}
+
+export const returnSourceMeta: Record<ReturnSourceType, StatusMeta> = {
+  CUSTOMER: { tone: 'gray', labelKey: 'return.source.CUSTOMER' },
+  PLATFORM: { tone: 'blue', labelKey: 'return.source.PLATFORM' },
+  DELIVERY_FAILED: { tone: 'orange', labelKey: 'return.source.DELIVERY_FAILED' },
+}
+
 export const putawayOrderStatusMeta: Record<PutawayOrderStatus, StatusMeta> = {
   PENDING: { tone: 'orange', labelKey: 'status.putawayOrder.PENDING' },
   PUTAWAYING: { tone: 'blue', labelKey: 'status.putawayOrder.PUTAWAYING' },
@@ -81,16 +106,6 @@ export const unclaimedStatusMeta: Record<UnclaimedStatus, StatusMeta> = {
 export const usageStatusMeta: Record<UsageStatus, StatusMeta> = {
   ENABLED: { tone: 'green', labelKey: 'status.usage.ENABLED' },
   DISABLED: { tone: 'gray', labelKey: 'status.usage.DISABLED' },
-}
-
-export const packageStatusMeta: Record<PackageStatus, StatusMeta> = {
-  READY_PRINT: { tone: 'orange', labelKey: 'status.package.READY_PRINT' },
-  PICKING: { tone: 'blue', labelKey: 'status.package.PICKING' },
-  PICKED: { tone: 'cyan', labelKey: 'status.package.PICKED' },
-  PACKING: { tone: 'purple', labelKey: 'status.package.PACKING' },
-  SHIPPED: { tone: 'green', labelKey: 'status.package.SHIPPED' },
-  HOLD: { tone: 'red', labelKey: 'status.package.HOLD' },
-  CANCELLED: { tone: 'gray', labelKey: 'status.package.CANCELLED' },
 }
 
 /** 枚举属性（不是生命周期状态）用 TagLabel 展示，颜色同样只在这里定义 */

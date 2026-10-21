@@ -3,7 +3,7 @@ import { currentOperator } from './current-operator'
 import { carrierHasEnabledChannels } from '@/lib/carrier-master'
 import { channelHasOpenReferences } from '@/lib/channel-master'
 import { customerHasInventory } from '@/lib/customer-master'
-import { isLocationOccupied } from '@/lib/location-master'
+import { isLocationOccupied, zoneTypeToLocationType } from '@/lib/location-master'
 import { cannotDisableTrace, findSkuMaster, hasOpenSkuWork, hasSkuStock } from '@/lib/sku-master'
 import { blockingLocationCodes } from '@/lib/zone-master'
 import type {
@@ -65,47 +65,30 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       }
       const list = [...get().warehouseMasters]
       list[idx] = next
-      set({ warehouseMasters: list })
+      /** 作业端仍用 Warehouse 投影；主数据保存后同步时区、币别、单位与暂存位，避免“改了资料作业不生效” */
+      const warehouses = get().warehouses.map((w) =>
+        w.code === code
+          ? {
+              ...w,
+              countryCode: next.countryCode,
+              timezone: next.timezone,
+              currency: next.currency,
+              unitSystem: next.unitSystem,
+              defaultReceiptMethod: next.defaultReceiptMethod,
+              receivingStagingLocation: next.receivingStagingLocation,
+              outboundStagingLocation: next.outboundStagingLocation,
+            }
+          : w,
+      )
+      set({ warehouseMasters: list, warehouses })
       return { ok: true }
     },
 
-    createWarehouseMaster: (input) => {
-      const code = input.code.trim()
-      if (get().warehouseMasters.some((w) => w.code === code)) {
-        return { ok: false, errorKey: 'masterWarehouse.error.duplicateCode' }
-      }
-      const now = nowIso()
-      const row: WarehouseMaster = {
-        ...input,
-        code,
-        status: input.status ?? 'ENABLED',
-        createdAt: now,
-        createdBy: currentOperator(),
-        updatedAt: now,
-        updatedBy: currentOperator(),
-      }
-      set({
-        warehouseMasters: [...get().warehouseMasters, row].sort((a, b) => a.code.localeCompare(b.code)),
-      })
-      return { ok: true }
-    },
+    /** 一期四仓预置，不提供业务侧新增；保留 action 以便直接调用时也能被拒绝 */
+    createWarehouseMaster: () => ({ ok: false, errorKey: 'masterWarehouse.error.createDisabled' }),
 
-    setWarehouseMasterStatus: (code, status) => {
-      const idx = get().warehouseMasters.findIndex((w) => w.code === code)
-      if (idx < 0) return { ok: false, errorKey: 'masterWarehouse.notFound' }
-      const prev = get().warehouseMasters[idx]
-      if (prev.status === status) return { ok: true }
-      const next: WarehouseMaster = {
-        ...prev,
-        status,
-        updatedAt: nowIso(),
-        updatedBy: currentOperator(),
-      }
-      const list = [...get().warehouseMasters]
-      list[idx] = next
-      set({ warehouseMasters: list })
-      return { ok: true }
-    },
+    /** 仓库状态一期只读展示，四仓默认启用；不提供业务侧启停 */
+    setWarehouseMasterStatus: () => ({ ok: false, errorKey: 'masterWarehouse.error.statusReadOnly' }),
 
     createLocationMaster: (input) => {
       const warehouseCode = input.warehouseCode.trim()
@@ -132,6 +115,17 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       }
       set({
         locationMasters: [...get().locationMasters, row].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+        /** 作业端仍读 locations；主数据新增后立即投影，避免“新建货位上架不到” */
+        locations: [
+          ...get().locations.filter((l) => !(l.warehouseCode === warehouseCode && l.code === code)),
+          {
+            code,
+            warehouseCode,
+            zone: zone.code,
+            type: zoneTypeToLocationType(row.zoneType),
+            status: row.status,
+          },
+        ],
       })
       return { ok: true }
     },
@@ -164,7 +158,17 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       }
       const list = [...get().locationMasters]
       list[idx] = next
-      set({ locationMasters: list })
+      const locations = get().locations.map((l) =>
+        l.warehouseCode === warehouseCode && l.code === code
+          ? {
+              ...l,
+              zone: next.zoneCode,
+              type: zoneTypeToLocationType(next.zoneType),
+              status: next.status,
+            }
+          : l,
+      )
+      set({ locationMasters: list, locations })
       return { ok: true }
     },
 
@@ -184,7 +188,10 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       }
       const list = [...get().locationMasters]
       list[idx] = next
-      set({ locationMasters: list })
+      const locations = get().locations.map((l) =>
+        l.warehouseCode === warehouseCode && l.code === code ? { ...l, status } : l,
+      )
+      set({ locationMasters: list, locations })
       return { ok: true }
     },
 
@@ -362,7 +369,21 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       }
       const list = [...get().skuMasters]
       list[idx] = next
-      set({ skuMasters: list })
+      /** 作业侧仍用旧 Sku 投影；商品资料保存后同步名称、条码与仓内尺重，避免“改了商品作业不生效” */
+      const skus = get().skus.map((s) =>
+        s.customerId === next.customerId && s.code === next.code
+          ? {
+              ...s,
+              name: next.name,
+              barcode: next.primaryBarcode ?? s.barcode,
+              ...(next.grossWeightKg != null ? { weightG: Math.round(next.grossWeightKg * 1000) } : {}),
+              ...(next.lengthCm != null ? { lengthCm: next.lengthCm } : {}),
+              ...(next.widthCm != null ? { widthCm: next.widthCm } : {}),
+              ...(next.heightCm != null ? { heightCm: next.heightCm } : {}),
+            }
+          : s,
+      )
+      set({ skuMasters: list, skus })
       return { ok: true }
     },
 
@@ -458,8 +479,11 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
           updatedBy: currentOperator(),
         }
       })
+      const skus = get().skus.map((s) =>
+        s.customerId === master.customerId && s.code === master.code ? { ...s, barcode: primary ?? '' } : s,
+      )
 
-      set({ skuBarcodes: barcodes, skuMasters: masters })
+      set({ skuBarcodes: barcodes, skuMasters: masters, skus })
       return { ok: true }
     },
 
@@ -482,7 +506,13 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
         })
       }
 
-      set({ skuBarcodes: barcodes, skuMasters: masters })
+      const primaryForOwner = masters.find((m) => m.ownerCode === prev.ownerCode && m.code === prev.skuCode)?.primaryBarcode
+      const skus = get().skus.map((s) =>
+        s.code === prev.skuCode && get().skuMasters.some((m) => m.ownerCode === prev.ownerCode && m.code === prev.skuCode && m.customerId === s.customerId)
+          ? { ...s, barcode: primaryForOwner ?? '' }
+          : s,
+      )
+      set({ skuBarcodes: barcodes, skuMasters: masters, skus })
       return { ok: true }
     },
 
@@ -574,9 +604,7 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       const idx = get().channelMasters.findIndex((ch) => ch.code === code)
       if (idx < 0) return { ok: false, errorKey: 'masterChannel.notFound' }
       const prev = get().channelMasters[idx]
-      const locked =
-        channelHasOpenReferences(code, get().packages) ||
-        get().outboundOrders.some((o) => o.channelCode === code && !['SHIPPED', 'CANCELLED'].includes(o.status))
+      const locked = channelHasOpenReferences(code, get().outboundOrders)
       let nextCarrier = prev.carrierCode
       if (patch.carrierCode && patch.carrierCode !== prev.carrierCode) {
         if (locked) return { ok: false, errorKey: 'masterChannel.error.carrierLocked' }
@@ -605,11 +633,7 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       if (idx < 0) return { ok: false, errorKey: 'masterChannel.notFound' }
       const prev = get().channelMasters[idx]
       if (prev.status === status) return { ok: true }
-      if (
-        status === 'DISABLED' &&
-        (channelHasOpenReferences(code, get().packages) ||
-          get().outboundOrders.some((o) => o.channelCode === code && !['SHIPPED', 'CANCELLED'].includes(o.status)))
-      ) {
+      if (status === 'DISABLED' && channelHasOpenReferences(code, get().outboundOrders)) {
         return { ok: false, errorKey: 'masterChannel.error.disableReferenced' }
       }
       const next: ChannelMaster = {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { PdaButton, PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaChoiceGroup } from '@/components/pda/pda-choice-group'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'

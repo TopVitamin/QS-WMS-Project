@@ -65,6 +65,8 @@ export interface ReceiptRecordLine {
   batchNo?: string
   productionDate?: string
   expiryDate?: string
+  goodSerialNos?: string[]
+  defectSerialNos?: string[]
 }
 
 export interface ReceiptRecord {
@@ -90,6 +92,9 @@ export type ContainerReceiptLineInput = {
   batchNo?: string
   productionDate?: string
   expiryDate?: string
+  /** 启用 SN 时按品质逐件采集；条数必须等于对应数量 */
+  goodSerialNos?: string[]
+  defectSerialNos?: string[]
 }
 
 /** 一次收货提交中的一个容器（或一组无容器收货） */
@@ -101,7 +106,7 @@ export type ReceiptContainerInput = {
 
 export type PutawayOrderStatus = 'PENDING' | 'PUTAWAYING' | 'COMPLETED'
 
-/** 上架单来源业务：入库单或退货单（一期 Demo 只有入库来源） */
+/** 上架单来源业务：入库单或退货单，两者共用同一上架对象 */
 export type PutawaySourceType = 'INBOUND' | 'RETURN'
 
 export interface PutawayPlanLine {
@@ -161,6 +166,30 @@ export interface InboundException {
   reason?: string
   receiptNo: string
   createdAt: string
+}
+
+/** 上游 OMS Mock 消息：新建/明细变更/取消；受理与否都留痕 */
+export type InboundMessageAction = 'CREATE' | 'CHANGE' | 'CANCEL'
+export interface InboundMessage {
+  id: string
+  upstreamNo: string
+  version: number
+  action: InboundMessageAction
+  status: 'ACCEPTED' | 'REJECTED'
+  inboundNo?: string
+  errorKey?: string
+  params?: Record<string, string | number>
+  at: string
+}
+
+/** 入库完成结果，整单完成时生成一次，可重试 */
+export interface InboundResult {
+  inboundNo: string
+  upstreamNo: string
+  status: 'SENT' | 'FAILED'
+  attempts: number
+  items: { skuCode: string; receivedQty: number; rejectedQty: number; putawayQty: number }[]
+  at: string
 }
 
 /**

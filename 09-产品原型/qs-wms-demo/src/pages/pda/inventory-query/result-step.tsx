@@ -88,7 +88,7 @@ function BalanceCard({ flow, row, showSku }: { flow: QueryFlow; row: BalanceRow;
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {showSku ? (
-            <PdaSkuBlock skuCode={r.skuCode} name={flow.skuName(r.skuCode)} owner={flow.ownerText(r.customerId)} />
+            <PdaSkuBlock skuCode={r.skuCode} name={flow.skuName(r.skuCode, r.customerId)} owner={flow.ownerText(r.customerId)} />
           ) : (
             <PdaLocation code={r.locationCode} usage={row.usage && t(`inventory.usage.${row.usage}`)} />
           )}
@@ -140,7 +140,7 @@ function SkuResult({ flow, owner, sku }: { flow: QueryFlow; owner: string; sku: 
       <PdaCard>
         <PdaSkuBlock
           skuCode={sku}
-          name={flow.skuName(sku)}
+          name={flow.skuName(sku, owner)}
           owner={flow.ownerText(owner)}
           tags={
             <>
@@ -245,7 +245,7 @@ function SerialResult({ flow, owner, sku, sn }: { flow: QueryFlow; owner: string
           <span className="font-mono text-xl font-bold break-all">{sn}</span>
           <TagLabel meta={serialStatusMeta[row.status]} />
         </div>
-        <PdaSkuBlock className="mt-2" skuCode={sku} name={flow.skuName(sku)} owner={flow.ownerText(owner)} />
+        <PdaSkuBlock className="mt-2" skuCode={sku} name={flow.skuName(sku, owner)} owner={flow.ownerText(owner)} />
         <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3">
           <PdaFigure
             size="md"

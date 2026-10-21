@@ -33,7 +33,6 @@ const StocktakeDetailPage = lazyPage(
   () => import('@/pages/wms/inventory/stocktake-detail-page'),
   'StocktakeDetailPage',
 )
-const WarehouseCreatePage = lazyPage(() => import('@/pages/wms/master/warehouse-create-page'), 'WarehouseCreatePage')
 const WarehouseDetailPage = lazyPage(() => import('@/pages/wms/master/warehouse-detail-page'), 'WarehouseDetailPage')
 const WarehouseEditPage = lazyPage(() => import('@/pages/wms/master/warehouse-edit-page'), 'WarehouseEditPage')
 const ZoneCreatePage = lazyPage(() => import('@/pages/wms/master/zone-create-page'), 'ZoneCreatePage')
@@ -68,6 +67,9 @@ const PdaInventoryQueryPage = lazyPage(() => import('@/pages/pda/inventory-query
 const PdaMovePage = lazyPage(() => import('@/pages/pda/move-page'), 'PdaMovePage')
 const PdaStocktakePage = lazyPage(() => import('@/pages/pda/stocktake-page'), 'PdaStocktakePage')
 const PdaStocktakeStartPage = lazyPage(() => import('@/pages/pda/stocktake-start-page'), 'PdaStocktakeStartPage')
+const ReturnDetailPage = lazyPage(() => import('@/pages/wms/returns/return-detail-page'), 'ReturnDetailPage')
+const ReturnReceivePage = lazyPage(() => import('@/pages/wms/returns/return-receive-page'), 'ReturnReceivePage')
+const PdaReturnReceivePage = lazyPage(() => import('@/pages/pda/return-receive-page'), 'PdaReturnReceivePage')
 
 export const router = createHashRouter([
   {
@@ -85,11 +87,12 @@ export const router = createHashRouter([
           { path: 'outbound/pick-tasks/:taskNo', element: <OutboundPickTaskDetailPage /> },
           { path: 'outbound/return-putaway/:putbackNo/entry', element: <OutboundPutbackEntryPage /> },
           { path: 'outbound/return-putaway/:putbackNo', element: <OutboundPutbackDetailPage /> },
+          { path: 'returns/orders/:returnNo/receive', element: <ReturnReceivePage /> },
+          { path: 'returns/orders/:returnNo', element: <ReturnDetailPage /> },
           { path: 'outbound/packages', element: <Navigate to="/wms/outbound/orders" replace /> },
           { path: 'outbound/handover', element: <Navigate to="/wms/outbound/orders" replace /> },
           { path: 'inventory/moves/:moveNo', element: <MoveDetailPage /> },
           { path: 'inventory/counts/:stocktakeNo', element: <StocktakeDetailPage /> },
-          { path: 'master/warehouses/new', element: <WarehouseCreatePage /> },
           { path: 'master/warehouses/:code/edit', element: <WarehouseEditPage /> },
           { path: 'master/warehouses/:code', element: <WarehouseDetailPage /> },
           { path: 'master/zones/new', element: <ZoneCreatePage /> },
@@ -124,6 +127,7 @@ export const router = createHashRouter([
           { path: 'pick', element: <PdaPickPage /> },
           { path: 'verify', element: <PdaVerifyPage /> },
           { path: 'return-putaway', element: <PdaReturnPutawayPage /> },
+          { path: 'return-receive', element: <PdaReturnReceivePage /> },
           { path: 'receive', element: <PdaReceivePage /> },
           { path: 'putaway', element: <PdaPutawayPage /> },
           { path: 'unclaimed', element: <PdaUnclaimedPage /> },
@@ -132,6 +136,7 @@ export const router = createHashRouter([
           { path: 'stocktake', element: <PdaStocktakePage /> },
           { path: 'stocktake/start', element: <PdaStocktakeStartPage /> },
           { path: 'soon/:fn', element: <PdaComingSoonPage /> },
+          { path: '*', element: <Navigate to="/pda" replace /> },
         ],
       },
       { path: '*', element: <Navigate to="/wms/dashboard" replace /> },

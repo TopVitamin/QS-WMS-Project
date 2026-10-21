@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/command'
 import { wmsMenu } from '@/config/menu'
 import { useResetDemo } from '@/hooks/use-reset-demo'
+import { useDb } from '@/mock/db'
 import { warehouses } from '@/mock/seed'
 import { useSettings } from '@/stores/settings'
 import { useTabs } from '@/stores/tabs'
@@ -29,6 +30,7 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
   const { t } = useTranslation()
   const navigate = useNavigate()
   const settings = useSettings()
+  const warehouseMasters = useDb((s) => s.warehouseMasters)
   const resetDemo = useResetDemo()
 
   useEffect(() => {
@@ -99,7 +101,7 @@ export function WmsCommandPalette({ open, onOpenChange }: WmsCommandPaletteProps
               <div className="flex flex-1 items-center gap-2">
                 <span>{t('settings.switchWarehouse')}:</span>
                 <BizCode className="font-medium">{w.code}</BizCode>
-                <span>{t(w.nameKey)}</span>
+                <span>{warehouseMasters.find((m) => m.code === w.code)?.name ?? t(w.nameKey)}</span>
               </div>
               {w.code === settings.warehouseCode && (
                 <TagLabel tone="blue">{t('common.currentSelected')}</TagLabel>

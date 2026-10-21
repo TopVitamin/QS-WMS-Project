@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
-import { toast } from 'sonner'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { DocNoTail, Empty } from '@/components/biz/display'
 import { TagLabel } from '@/components/biz/status-badge'
 import { PdaButton, PdaCard } from '@/components/pda/pda-card'

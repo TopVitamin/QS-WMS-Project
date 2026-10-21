@@ -333,7 +333,7 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
     return col.columns([
       col.accessor('skuCode', {
         header: t('outbound.ui.sku'),
-        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue())?.name} />,
+        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue(), o.customerId)?.name} />,
       }),
       col.accessor('shippedQty', {
         header: t('outbound.ui.shipped'),
@@ -346,7 +346,7 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
         cell: ({ getValue }) => <Num value={getValue()} />,
       }),
     ])
-  }, [sku, t])
+  }, [o.customerId, sku, t])
 
   const logColumns = useMemo(() => outboundLogColumns(t, o.no), [o.no, t])
   const demand = totals.demand
@@ -621,7 +621,7 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
   )
 }
 
-type SkuLookup = (code: string) => { name?: string } | undefined
+type SkuLookup = (code: string, customerId?: string) => { name?: string } | undefined
 
 function useItemColumns(o: OutboundOrder, t: Translate, sku: SkuLookup) {
   return useMemo(() => {
@@ -637,7 +637,7 @@ function useItemColumns(o: OutboundOrder, t: Translate, sku: SkuLookup) {
       col.accessor('lineNo', { header: t('outbound.ui.lineNo'), meta: { align: 'right' } }),
       col.accessor('skuCode', {
         header: t('outbound.ui.sku'),
-        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue())?.name} className="max-w-60" />,
+        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue(), o.customerId)?.name} className="max-w-60" />,
       }),
       qty('demand'),
       qty('reserved'),
@@ -665,7 +665,7 @@ function useSpecifiedColumns(
       col.accessor((p) => inv(p)?.skuCode ?? o.items.find((i) => i.lineNo === p.itemNo)?.skuCode ?? '', {
         id: 'sku',
         header: t('outbound.ui.sku'),
-        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue())?.name} />,
+        cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue(), o.customerId)?.name} />,
       }),
       col.accessor((p) => inv(p)?.locationCode ?? '', {
         id: 'location',

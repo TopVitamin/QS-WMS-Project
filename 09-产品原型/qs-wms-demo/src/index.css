@@ -140,3 +140,9 @@
 }
 .animate-scan-ok { animation: scan-ok 0.6s ease-out; }
 .animate-scan-error { animation: scan-error 0.9s ease-out; }
+/* PDA 机框内的 Dialog 留出边距，避免在 360 宽机框里贴边 */
+.pda-frame [data-slot="dialog-content"] {
+  max-width: calc(100% - 2rem);
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+}

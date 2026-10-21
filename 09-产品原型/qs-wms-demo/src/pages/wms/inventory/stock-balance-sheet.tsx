@@ -8,7 +8,7 @@ import { DetailTitle, Section } from '@/components/biz/page-container'
 import { TagLabel } from '@/components/biz/status-badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { expiryLevelMeta, inventoryTagMeta, qualityMeta } from '@/config/status'
+import { allocationStatusMeta, expiryLevelMeta, inventoryTagMeta, qualityMeta } from '@/config/status'
 import type { BalanceRow, SkuStockRow } from '@/lib/inventory-derive'
 import { ledgerNumbers } from '@/lib/inventory-ledger'
 import { useDb, useLookups } from '@/mock/db'
@@ -161,14 +161,14 @@ export function StockBalanceSheet({
                 <DocLink no={row.counting.no} />
               </span>
             ) : (
-              <TagLabel tone="green">{t('inventory.allocationStatus.NORMAL')}</TagLabel>
+              <TagLabel meta={allocationStatusMeta.NORMAL} />
             )}
           </DescriptionItem>
           <DescriptionItem label={t('inventory.allocation')}>
             {row.pending ? (
               <TagLabel meta={inventoryTagMeta.pending} />
             ) : (
-              <TagLabel tone="green">{t('inventory.allocationStatus.NORMAL')}</TagLabel>
+              <TagLabel meta={allocationStatusMeta.NORMAL} />
             )}
           </DescriptionItem>
           <DescriptionItem label={t('inventory.stock.expiryConversion')}>

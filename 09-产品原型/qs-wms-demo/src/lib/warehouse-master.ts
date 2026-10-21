@@ -35,6 +35,10 @@ export interface WarehouseMasterFormErrors {
   name?: string
   timezone?: string
   currency?: string
+  unitSystem?: string
+  defaultReceiptMethod?: string
+  receivingStagingLocation?: string
+  outboundStagingLocation?: string
   countryCode?: string
   city?: string
   address1?: string
@@ -46,7 +50,18 @@ const CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 export function validateWarehouseMasterForm(
   input: Pick<
     WarehouseMaster,
-    'code' | 'name' | 'timezone' | 'currency' | 'countryCode' | 'city' | 'address1' | 'contactEmail'
+    | 'code'
+    | 'name'
+    | 'timezone'
+    | 'currency'
+    | 'unitSystem'
+    | 'defaultReceiptMethod'
+    | 'receivingStagingLocation'
+    | 'outboundStagingLocation'
+    | 'countryCode'
+    | 'city'
+    | 'address1'
+    | 'contactEmail'
   >,
 ): WarehouseMasterFormErrors {
   const errors: WarehouseMasterFormErrors = {}
@@ -56,6 +71,18 @@ export function validateWarehouseMasterForm(
   if (!input.name.trim()) errors.name = 'required'
   if (!input.timezone) errors.timezone = 'required'
   if (!input.currency) errors.currency = 'required'
+  if (!input.unitSystem) errors.unitSystem = 'required'
+  if (!input.defaultReceiptMethod) errors.defaultReceiptMethod = 'required'
+  if (!input.receivingStagingLocation.trim()) errors.receivingStagingLocation = 'required'
+  if (!input.outboundStagingLocation.trim()) errors.outboundStagingLocation = 'required'
+  if (
+    input.receivingStagingLocation.trim() &&
+    input.outboundStagingLocation.trim() &&
+    input.receivingStagingLocation.trim().toUpperCase() === input.outboundStagingLocation.trim().toUpperCase()
+  ) {
+    errors.receivingStagingLocation = 'sameAsOutbound'
+    errors.outboundStagingLocation = 'sameAsReceiving'
+  }
   if (!input.countryCode) errors.countryCode = 'required'
   if (!input.city.trim()) errors.city = 'required'
   if (!input.address1.trim()) errors.address1 = 'required'
@@ -87,6 +114,10 @@ export function createEmptyWarehouseForm(): WarehouseMaster {
     timezone: WAREHOUSE_TIMEZONE_OPTIONS[0],
     currency: 'USD',
     status: 'ENABLED',
+    unitSystem: 'metric',
+    defaultReceiptMethod: 'CONTAINER',
+    receivingStagingLocation: '',
+    outboundStagingLocation: '',
     countryCode: 'HK',
     city: '',
     address1: '',

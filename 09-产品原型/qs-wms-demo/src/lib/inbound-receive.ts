@@ -6,15 +6,44 @@ export interface InboundReceiveDraft {
   goodQty: number
   defectQty: number
   rejectReason?: string
+  /** 启用批次/效期时按行采集；同一容器同一 SKU 多批次暂按多次收货处理 */
+  batchNo?: string
+  productionDate?: string
+  expiryDate?: string
+  /** 启用 SN 时按品质逐件采集；条数必须等于良品/不良品数量 */
+  goodSerialNos?: string[]
+  defectSerialNos?: string[]
 }
 
 export function emptyReceiveDraft(): InboundReceiveDraft {
-  return { receivedQty: 0, rejectedQty: 0, goodQty: 0, defectQty: 0 }
+  return {
+    receivedQty: 0,
+    rejectedQty: 0,
+    goodQty: 0,
+    defectQty: 0,
+    goodSerialNos: [],
+    defectSerialNos: [],
+  }
+}
+
+/** 文本域/输入框里的 SN：支持换行、逗号、中文逗号分隔，统一大写去重前先保留原值供校验 */
+export function parseSerialNos(text: string): string[] {
+  return text
+    .split(/[\s,，]+/)
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean)
 }
 
 /** 选中行默认按未收数量预填良品（相当于「全部记为良品」） */
 export function defaultReceiveDraft(remain: number): InboundReceiveDraft {
-  return { receivedQty: remain, rejectedQty: 0, goodQty: remain, defectQty: 0 }
+  return {
+    receivedQty: remain,
+    rejectedQty: 0,
+    goodQty: remain,
+    defectQty: 0,
+    goodSerialNos: [],
+    defectSerialNos: [],
+  }
 }
 
 /** 本行本次收货的活动数量：良品＋不良品＋拒收 */

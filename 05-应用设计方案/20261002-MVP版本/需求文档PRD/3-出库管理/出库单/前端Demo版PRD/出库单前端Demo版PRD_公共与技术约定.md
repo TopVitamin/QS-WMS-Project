@@ -2,7 +2,7 @@
 
 > **版本**：WMS-V0.2  
 > **更新时间**：2026-10-15  
-> **定位**：出库单 Demo 实现的**共用层**：路由、类型与派生、动作、组件与 UI 规范、角色、跨端走查、i18n、代码索引。页面级规则见同目录[列表页](出库单前端Demo版PRD_列表页.md)、[详情页](出库单前端Demo版PRD_详情页.md)、[弹窗与 Mock](出库单前端Demo版PRD_弹窗与Mock.md)。  
+> **定位**：出库单 Demo 实现的**共用层**：路由、类型与派生、动作、组件与 UI 规范、动作可见性、跨端走查、i18n、代码索引。页面级规则见同目录[列表页](出库单前端Demo版PRD_列表页.md)、[详情页](出库单前端Demo版PRD_详情页.md)、[弹窗与 Mock](出库单前端Demo版PRD_弹窗与Mock.md)。
 > **业务真源**：[《出库单主PRD》](../出库单主PRD.md)（§6.4 状态—功能矩阵）；布局见[《出库单页面骨架》](../出库单页面骨架.md)。
 
 **样式与组件（必读）**：
@@ -20,7 +20,7 @@
 
 | 分册 | 功能 | 内容 |
 | --- | --- | --- |
-| **本文** | — | 路由、类型、派生、动作、组件速查、角色、走查、i18n、代码索引 |
+| **本文** | — | 路由、类型、派生、动作、组件速查、动作可见性、走查、i18n、代码索引 |
 | [列表页](出库单前端Demo版PRD_列表页.md) | F01、F05、F12 | FilterBar、StatusTabs、DataTable、组波 |
 | [详情页](出库单前端Demo版PRD_详情页.md) | F02、F03 及页头入口 | 页头按钮矩阵、概览、八个页签、复核记录 Sheet |
 | [弹窗与 Mock](出库单前端Demo版PRD_弹窗与Mock.md) | F04、F06～F11 | 确认出库、交接、退拣、包裹信息、Mock、其他出库、处理记录；种子 |
@@ -79,7 +79,7 @@
 | `orderTotals(order)` | 各行需求、预占、缺货（非其他出库：需求−预占）、已拣、待拣（非其他出库：预占−已拣；其他出库：需求−已拣）、已复核、实发、未发（已出库：需求−实发） | 列表、详情汇总卡、商品明细 |
 | `lineQty(order, item)` | 同上，单行 | 商品明细 |
 | `orderTasks(db, no)` | 按单、补拣任务 `orderNo = no`，波次任务按份额包含本单 | 拣货任务页签、状态判定 |
-| `orderActions(order, db)` | 返回 `{allocate, reallocate, verify, unpick, ship, handover, mockChange, mockCancel, manualCancel, retryResult}` 布尔值，**逐条实现主PRD §6.4**（Demo 不按角色裁剪，等同全权限） | 详情页头、更多菜单 |
+| `orderActions(order, db)` | 返回 `{allocate, reallocate, verify, unpick, ship, handover, mockChange, mockCancel, manualCancel, retryResult}` 布尔值，**逐条实现主PRD §6.4**（不按角色裁剪，等同全权限） | 详情页头、更多菜单 |
 | `shipCheck(order, db)` | 逐行返回 `{skuCode, demand, picked, verified, shipQty, unshipped, problem?}`，行级 `problem` 为 `unverified`／`short`；整单 `orderProblem` 为 `openTask`（有未完成任务）或 `package`（B2C 包裹信息未齐）；整单 `ok` 与 `shipTotal` | 确认出库弹窗 |
 | `taskQtyForOrder(task, no)` | 波次任务只取本单份额的应拣、实拣 | 拣货任务页签 |
 
@@ -122,7 +122,7 @@
 | 交接时间 | `DateTimeField`（按展示时区录入，提交 `toUtcIso(local, tz)`） |
 | 数字录入 | `Input type="number"`，`min=1`、整数校验；不用 `QtyStepper`（PDA 专用） |
 
-**权限**：Demo 不提供角色切换；页头按钮与动作层按主PRD §6.4 状态矩阵展示，等同具备组织者、现场人员、主管的全部能力。生产环境仍按 R16 鉴权。
+**动作可见性**：不提供登录与角色切换；页头按钮与动作层按主PRD §6.4 状态矩阵展示，等同全权限。
 
 ---
 
@@ -133,7 +133,7 @@
 | 1 | 列表打开 0001 → 生成拣货任务 | 状态待拣货；拣货任务页签 1 条 |
 | 2 | 拣货任务详情 → PDA 拣货，分次确认 1、2 并提交 | 回出库单：已拣 3，待复核；库存流水两次下架 |
 | 3 | 出库单「去复核」→ 复核工作台或 PDA 复核 3 | 复核记录 1 条，有效 3 |
-| 4 | 主管「确认出库」勾同时登记交接 | 已出库；交接 1、出库结果 1 |
+| 4 | 「确认出库」勾同时登记交接 | 已出库；交接 1、出库结果 1 |
 | 5 | 打开 0008（已取消） | 返库上架单页签 1 张未完成；点单号进返库上架单详情 |
 | 6 | 切 English、切 DE-FRA-01 | 文案与时区随之变化；德国仓列表只显示该仓单据 |
 

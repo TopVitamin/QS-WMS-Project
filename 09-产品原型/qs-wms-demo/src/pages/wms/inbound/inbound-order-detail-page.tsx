@@ -30,6 +30,7 @@ import type { InboundException, PutawayOrder, ReceiptRecord } from '@/types/inbo
 import type { InboundOrderLine } from '@/types/wms'
 import { InboundPutawaySheet } from './inbound-putaway-sheet'
 import { InboundReceiptSheet } from './inbound-receipt-sheet'
+import { InboundCancelDialog, InboundChangeDialog, InboundUpstreamPanel } from './inbound-upstream'
 import { auditLogColumns } from './audit-log-columns'
 import { ReceiptCloseDialog } from './receipt-close-dialog'
 
@@ -53,6 +54,8 @@ export function InboundOrderDetailPage() {
   const [receipt, setReceipt] = useState<ReceiptRecord>()
   const [putaway, setPutaway] = useState<PutawayOrder>()
   const [closeOpen, setCloseOpen] = useState(false)
+  const [upstream, setUpstream] = useState<'change' | 'cancel'>()
+  const inboundMessages = useDb((s) => s.inboundMessages.filter((m) => m.inboundNo === inboundNo))
 
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
   const backTo = listSearch ? `/wms/inbound/orders?${listSearch}` : '/wms/inbound/orders'
@@ -67,14 +70,14 @@ export function InboundOrderDetailPage() {
         id: 'skuBarcode',
         header: t('common.productBarcode'),
         cell: ({ getValue }) => {
-          const barcode = sku(getValue())?.barcode
+          const barcode = sku(getValue(), order?.customerId)?.barcode
           return barcode ? <BizCode>{barcode}</BizCode> : <Empty />
         },
       }),
       col.accessor('skuCode', {
         id: 'skuName',
         header: t('masterSku.name'),
-        cell: ({ getValue }) => sku(getValue())?.name ?? getValue(),
+        cell: ({ getValue }) => sku(getValue(), order?.customerId)?.name ?? getValue(),
       }),
       col.accessor('status', {
         header: t('common.status'),
@@ -122,7 +125,7 @@ export function InboundOrderDetailPage() {
         cell: ({ getValue }) => <Num value={getValue()} />,
       }),
     ])
-  }, [t, sku, orderStatus])
+  }, [t, sku, order?.customerId, orderStatus])
 
   if (!inboundNo) return <Navigate to="/wms/inbound/orders" replace />
   if (!order) return <Navigate to="/wms/inbound/orders" replace />
@@ -143,6 +146,9 @@ export function InboundOrderDetailPage() {
 
   const rejectedQty = sumLines(order, (l) => l.rejectedQty)
   const unreceivedQty = sumLines(order, lineUnreceivedQty)
+  const totalReceived = sumLines(order, (l) => l.receivedQty)
+  const canChange = order.status === 'PENDING_RECEIVE' && totalReceived + rejectedQty === 0
+  const canCancel = order.status !== 'CANCELLED' && totalReceived === 0
 
   return (
     <PageContainer
@@ -162,6 +168,16 @@ export function InboundOrderDetailPage() {
           {showReceive && (
             <Button variant="outline" onClick={() => navigate('/pda/receive', { state: { inboundNo } })}>
               {t('inbound.openPdaReceive')}
+            </Button>
+          )}
+          {canChange && (
+            <Button variant="outline" onClick={() => setUpstream('change')}>
+              {t('inbound.upstream.changeAction')}
+            </Button>
+          )}
+          {canCancel && (
+            <Button variant="outline" onClick={() => setUpstream('cancel')}>
+              {t('inbound.upstream.cancelAction')}
             </Button>
           )}
           {showReceiptClose && <Button onClick={() => setCloseOpen(true)}>{t('inbound.receiptClose')}</Button>}
@@ -289,12 +305,18 @@ export function InboundOrderDetailPage() {
             content: (
               <DataTable
                 data={exceptions}
-                columns={exceptionTabColumns(t, (code) => sku(code)?.name ?? code)}
+                columns={exceptionTabColumns(t, (code) => sku(code, order?.customerId)?.name ?? code)}
                 getRowId={(e) => e.exceptionNo}
                 selectable={false}
                 emptyText={t('inbound.tabs.empty.exceptions')}
               />
             ),
+          },
+          {
+            value: 'upstream',
+            label: t('inbound.upstream.tab'),
+            count: inboundMessages.length,
+            content: <InboundUpstreamPanel order={order} />,
           },
           {
             value: 'logs',
@@ -315,6 +337,8 @@ export function InboundOrderDetailPage() {
 
       <InboundReceiptSheet record={receipt} onClose={() => setReceipt(undefined)} />
       <InboundPutawaySheet order={putaway} onClose={() => setPutaway(undefined)} />
+      {upstream === 'change' && <InboundChangeDialog order={order} onClose={() => setUpstream(undefined)} />}
+      {upstream === 'cancel' && <InboundCancelDialog order={order} onClose={() => setUpstream(undefined)} />}
 
       <ReceiptCloseDialog
         order={closeOpen ? order : undefined}

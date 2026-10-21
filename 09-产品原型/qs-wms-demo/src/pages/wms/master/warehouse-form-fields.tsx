@@ -11,7 +11,8 @@ import {
   WAREHOUSE_TIMEZONE_OPTIONS,
   type WarehouseMasterFormErrors,
 } from '@/lib/warehouse-master'
-import type { CurrencyCode, WarehouseMaster } from '@/types/wms'
+import { useDb } from '@/mock/db'
+import type { CurrencyCode, UnitSystem, WarehouseMaster, WarehouseReceiptMethod } from '@/types/wms'
 
 const CURRENCIES: CurrencyCode[] = ['HKD', 'USD', 'EUR', 'GBP', 'JPY', 'CNY']
 
@@ -26,6 +27,12 @@ interface WarehouseFormFieldsProps {
 export function WarehouseFormFields({ mode, form, setForm, errors, fieldError }: WarehouseFormFieldsProps) {
   const { t } = useTranslation()
   const ph = t('common.inputPlaceholder')
+  const locations = useDb((s) => s.locations)
+  const stagingOptions = locations
+    .filter((l) => l.warehouseCode === form.code && l.type === 'STAGING')
+    .map((l) => ({ value: l.code, label: l.code }))
+  const receiptMethods: WarehouseReceiptMethod[] = ['CONTAINER', 'LTL', 'EXPRESS', 'OTHER']
+  const unitSystems: UnitSystem[] = ['metric', 'imperial']
 
   return (
     <>
@@ -71,6 +78,46 @@ export function WarehouseFormFields({ mode, form, setForm, errors, fieldError }:
               placeholder={ph}
               onChange={(e) => setForm({ ...form, remark: e.target.value })}
               rows={2}
+            />
+          </FormField>
+        </FormGrid>
+      </Section>
+
+      <Section title={t('masterWarehouse.sectionOperation')}>
+        <FormGrid>
+          <FormField label={t('masterWarehouse.unitSystem')} required error={fieldError('unitSystem')}>
+            <OptionSelect
+              value={form.unitSystem}
+              onValueChange={(v) => setForm({ ...form, unitSystem: v as UnitSystem })}
+              invalid={!!errors.unitSystem}
+              options={unitSystems.map((v) => ({ value: v, label: t(`masterWarehouse.unitSystemOption.${v}`) }))}
+            />
+          </FormField>
+          <FormField label={t('masterWarehouse.defaultReceiptMethod')} required error={fieldError('defaultReceiptMethod')}>
+            <OptionSelect
+              value={form.defaultReceiptMethod}
+              onValueChange={(v) => setForm({ ...form, defaultReceiptMethod: v as WarehouseReceiptMethod })}
+              invalid={!!errors.defaultReceiptMethod}
+              options={receiptMethods.map((v) => ({
+                value: v,
+                label: t(`enum.arrivalMethod.${v}`),
+              }))}
+            />
+          </FormField>
+          <FormField label={t('masterWarehouse.receivingStagingLocation')} required error={fieldError('receivingStagingLocation')}>
+            <OptionSelect
+              value={form.receivingStagingLocation}
+              onValueChange={(v) => setForm({ ...form, receivingStagingLocation: v })}
+              invalid={!!errors.receivingStagingLocation}
+              options={stagingOptions}
+            />
+          </FormField>
+          <FormField label={t('masterWarehouse.outboundStagingLocation')} required error={fieldError('outboundStagingLocation')}>
+            <OptionSelect
+              value={form.outboundStagingLocation}
+              onValueChange={(v) => setForm({ ...form, outboundStagingLocation: v })}
+              invalid={!!errors.outboundStagingLocation}
+              options={stagingOptions}
             />
           </FormField>
         </FormGrid>

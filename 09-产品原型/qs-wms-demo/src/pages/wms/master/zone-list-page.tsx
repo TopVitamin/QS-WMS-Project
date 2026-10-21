@@ -180,7 +180,7 @@ export function ZoneListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar onSearch={applySearch} onReset={reset}>
+        <FilterBar columns={6} onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterZone.warehouseCode')}>
             <OptionSelect
               allOption

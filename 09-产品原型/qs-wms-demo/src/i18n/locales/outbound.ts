@@ -17,7 +17,6 @@ const labels = {
   cancelNotice: ['受理后出库单立即已取消：释放预占与未拣分配，已确认实拣自动退拣生成返库单', 'Cancellation takes effect immediately: reservations and un-picked allocations are released, and picked goods are un-picked into a put-back order.'],
   resend: ['重发', 'Resend'],
   results: ['出库结果', 'Shipment results'],
-  role: ['演示角色', 'Demo role'],
   no: ['单号', 'Document no.'],
   typeLabel: ['业务类型', 'Business type'],
   warehouse: ['仓库', 'Warehouse'],
@@ -239,11 +238,6 @@ const statuses = {
   PUTAWAYING: ['上架中', 'Putting away'],
   COUNTING: ['盘点中', 'Counting'],
 } as const
-const roles = {
-  ORGANIZER: ['仓库组织者', 'Organizer'],
-  WORKER: ['现场人员', 'Warehouse worker'],
-  SUPERVISOR: ['主管', 'Supervisor'],
-} as const
 const sources = {
   OMS: ['OMS Mock', 'OMS Mock'],
   MANUAL: ['管理端手工', 'Manual'],
@@ -288,8 +282,6 @@ const errors = {
     '同一消息或业务指令的内容已变，请使用变更指令或新消息',
     'The message or instruction content has changed. Use a change instruction or a new message.',
   ],
-  supervisor: ['请切换主管后执行', 'Switch to supervisor to perform this action.'],
-  role: ['当前角色不能执行此操作', 'The current role cannot perform this action.'],
   notFound: ['记录不存在，请返回重新定位', 'Record not found. Return and select again.'],
   terminal: ['记录已结束，不能重复操作', 'This record is closed. The action cannot be repeated.'],
   pending: [
@@ -398,7 +390,6 @@ const ui = {
   putbackNotFound: ['未找到返库上架单', 'Put-back order not found'],
   backToList: ['返回列表', 'Back to list'],
   more: ['更多', 'More'],
-  roleLabel: ['演示角色', 'Demo role'],
   no: ['出库单号', 'Outbound no.'],
   waveNo: ['波次号', 'Wave no.'],
   sourceOrder: ['原出库单号', 'Source outbound no.'],
@@ -576,7 +567,7 @@ const ui = {
   unpickTitle: ['退拣 · {{no}}', 'Unpick · {{no}}'],
   unpickQty: ['退拣数量', 'Unpick qty'],
   unpickMissingHint: ['将把该 SKU 标记待核对，返库后须盘点解除', 'The SKU will be marked for checking until counted'],
-  unpickDamagedHint: ['残损须先由主管转不良再退拣', 'Damaged goods must be converted to defective by a supervisor first'],
+  unpickDamagedHint: ['残损须先做在库品质转换再退拣', 'Damaged goods must be converted to defective before unpick'],
   confirmUnpick: ['确认退拣', 'Confirm unpick'],
   qtyMax: ['不超过有效 {{count}}', 'Up to {{count}}'],
   packTitle: ['补包裹信息 · {{no}}', 'Package info · {{no}}'],
@@ -668,8 +659,6 @@ const ui = {
   stationB2cPackageDetail: ['容器类型选「包裹」，并填写包裹号与重量', 'Choose Package and enter the package no. and weight'],
   stationWeightTitle: ['包裹重量还没填', 'Package weight is missing'],
   stationWeightDetail: ['填一个大于 0 的模拟重量（kg），提交后生成 Mock 运单', 'Enter a mock weight above 0 kg; a mock tracking no. is created on submit'],
-  stationRoleTitle: ['当前演示角色不能提交复核', 'The current demo role cannot submit verification'],
-  stationRoleDetail: ['在顶栏把演示角色切到现场人员或主管', 'Switch the demo role to Worker or Supervisor in the top bar'],
   stationSubmitFailTitle: ['复核没有提交成功', 'Verification was not submitted'],
   stationSubmittedTitle: ['已提交复核 {{no}}：{{count}} 件', 'Verification {{no}} submitted: {{count}} units'],
   stationSubmittedTitle_one: ['已提交复核 {{no}}：{{count}} 件', 'Verification {{no}} submitted: {{count}} unit'],
@@ -918,7 +907,6 @@ const build = (lang: 0 | 1) => ({
   type: pairs(types, lang),
   composition: pairs(compositions, lang),
   status: pairs(statuses, lang),
-  roles: pairs(roles, lang),
   sources: pairs(sources, lang),
   containers: pairs(containers, lang),
   unpickReasons: pairs(unpickReasons, lang),

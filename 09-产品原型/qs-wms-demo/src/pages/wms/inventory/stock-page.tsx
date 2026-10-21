@@ -13,7 +13,7 @@ import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { StatusTabs } from '@/components/biz/status-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { expiryLevelMeta, inventoryTagMeta, qualityMeta, serialStatusMeta } from '@/config/status'
+import { allocationStatusMeta, expiryLevelMeta, inventoryTagMeta, qualityMeta, serialStatusMeta } from '@/config/status'
 import { useListState } from '@/hooks/use-list-state'
 import { useNow } from '@/hooks/use-now'
 import {
@@ -113,7 +113,7 @@ export function StockPage() {
   const list = useListState<StockFilters, never>({ empty: emptyStockFilters, keepParams: KEEP_PARAMS })
   const { filters, draft, setDraft } = list
   const data = useStockData(warehouseCode)
-  const skuName = useCallback((code: string) => sku(code)?.name, [sku])
+  const skuName = useCallback((code: string, customerId?: string) => sku(code, customerId)?.name, [sku])
 
   const skuRows = useMemo(
     () =>
@@ -191,7 +191,7 @@ export function StockPage() {
         cell: ({ row }) => (
           <CodeName
             code={row.original.skuCode}
-            name={skuName(row.original.skuCode)}
+            name={skuName(row.original.skuCode, row.original.customerId)}
             onClick={() => openSheet(row.original.id)}
             className="max-w-64"
           />
@@ -220,7 +220,7 @@ export function StockPage() {
             {row.original.pending ? (
               <TagLabel meta={inventoryTagMeta.pending} />
             ) : (
-              <TagLabel tone="green">{t('inventory.allocationStatus.NORMAL')}</TagLabel>
+              <TagLabel meta={allocationStatusMeta.NORMAL} />
             )}
             {row.original.counting && <TagLabel meta={inventoryTagMeta.counting} />}
           </span>
@@ -246,7 +246,7 @@ export function StockPage() {
         cell: ({ row }) => (
           <CodeName
             code={row.original.record.skuCode}
-            name={skuName(row.original.record.skuCode)}
+            name={skuName(row.original.record.skuCode, row.original.record.customerId)}
             onClick={() => openSheet(row.original.id)}
             className="max-w-64"
           />
@@ -322,7 +322,13 @@ export function StockPage() {
       }),
       col.accessor('skuCode', {
         header: t('inventory.sku'),
-        cell: ({ getValue }) => <CodeName code={getValue()} name={skuName(getValue())} className="max-w-64" />,
+        cell: ({ row }) => (
+          <CodeName
+            code={row.original.skuCode}
+            name={skuName(row.original.skuCode, row.original.customerId)}
+            className="max-w-64"
+          />
+        ),
       }),
       col.accessor('customerId', {
         header: t('inventory.owner'),

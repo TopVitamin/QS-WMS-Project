@@ -14,13 +14,14 @@ export function resolvePageTab(pathname: string): PageTab | undefined {
     }
   const outbound = pathname.match(/^\/wms\/outbound\/(orders|waves|pick-tasks|return-putaway)\/[^/]+$/)
   if (outbound) return { path: pathname, titleKey: `outbound.ui.${({ orders: 'order', waves: 'wave', 'pick-tasks': 'task', 'return-putaway': 'putback' } as const)[outbound[1] as 'orders']}Title` }
+  const returnReceive = pathname.match(/^\/wms\/returns\/orders\/[^/]+\/receive$/)
+  if (returnReceive) return { path: pathname, titleKey: 'return.receive.title' }
+  const returnDetail = pathname.match(/^\/wms\/returns\/orders\/[^/]+$/)
+  if (returnDetail) return { path: pathname, titleKey: 'return.detailTitle' }
+
   const inventoryDetail = pathname.match(/^\/wms\/inventory\/(moves|counts)\/[^/]+$/)
   if (inventoryDetail)
     return { path: pathname, titleKey: inventoryDetail[1] === 'moves' ? 'inventory.move.title' : 'inventory.stocktake.title' }
-  if (pathname === '/wms/master/warehouses/new') {
-    return { path: pathname, titleKey: 'masterWarehouse.tabCreate' }
-  }
-
   const warehouseEdit = pathname.match(/^\/wms\/master\/warehouses\/([^/]+)\/edit$/)
   if (warehouseEdit && warehouseEdit[1] !== 'new') {
     return { path: pathname, titleKey: 'masterWarehouse.tabEdit' }

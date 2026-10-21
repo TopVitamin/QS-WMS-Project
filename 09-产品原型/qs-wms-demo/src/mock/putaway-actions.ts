@@ -1,4 +1,5 @@
 import { stagingLocationCode, syncInboundPutawayFromOrders } from '@/lib/inbound-derive'
+import { syncReturnPutawayFromOrders } from '@/lib/return-derive'
 import { countingStocktake } from '@/lib/inventory-derive'
 import { balanceLog, pairLogs } from '@/lib/inventory-ledger'
 import { findLocation, isFullyRecorded, remainingQty, validatePutawayLocation } from '@/lib/putaway'
@@ -43,11 +44,31 @@ export function applySavePutawayLine(
   const planLine = order.planLines.find((l) => l.lineNo === input.planLineNo)
   if (!planLine) return { ok: false, errorKey: 'pdaPutaway.error.lineNotFound' }
   if (input.qty > remainingQty(order, planLine.lineNo)) return { ok: false, errorKey: 'pdaPutaway.error.overRemain' }
-  const serialNos = input.serialNos?.filter(Boolean)
-  if (serialNos && serialNos.length !== input.qty) return { ok: false, errorKey: 'pdaPutaway.error.serialMismatch' }
+  const serialNos = input.serialNos?.map((sn) => sn.trim().toUpperCase()).filter(Boolean)
+  const snEnabled = Boolean(
+    state.skuMasters.find((m) => m.customerId === order.customerId && m.code === planLine.skuCode)?.snEnabled,
+  )
+  if (snEnabled && (!serialNos || serialNos.length !== input.qty)) {
+    return { ok: false, errorKey: 'pdaPutaway.error.serialMismatch' }
+  }
   if (serialNos) {
+    if (serialNos.length !== input.qty) return { ok: false, errorKey: 'pdaPutaway.error.serialMismatch' }
     const used = new Set(order.actualLines.flatMap((a) => a.serialNos ?? []))
     if (serialNos.some((sn) => used.has(sn))) return { ok: false, errorKey: 'pdaPutaway.error.serialDuplicated' }
+    /** SN 必须来自本单收货暂存库存，不能手输任意序列号落位 */
+    const staging = state.inventory.find(
+      (r) =>
+        r.warehouseCode === order.warehouseCode &&
+        r.locationCode === order.stagingLocationCode &&
+        r.customerId === order.customerId &&
+        r.skuCode === planLine.skuCode &&
+        r.qualityType === order.qualityType &&
+        (r.batchNo ?? '') === (planLine.batchNo ?? '') &&
+        (r.expiryDate ?? '') === (planLine.expiryDate ?? ''),
+    )
+    if (serialNos.some((sn) => !staging?.serialNos?.includes(sn))) {
+      return { ok: false, errorKey: 'pdaPutaway.error.serialNotInStock' }
+    }
   }
   const locationError = validatePutawayLocation(order, input.locationCode, state)
   if (locationError) return { ok: false, errorKey: locationError }
@@ -113,7 +134,9 @@ export function applySubmitPutawayOrder(
   }
 
   const ts = new Date().toISOString()
-  const stagingCode = order.stagingLocationCode || stagingLocationCode(state.locations, order.warehouseCode)
+  const receivingStaging = state.warehouseMasters.find((w) => w.code === order.warehouseCode)?.receivingStagingLocation
+  const stagingCode =
+    order.stagingLocationCode || stagingLocationCode(state.locations, order.warehouseCode, receivingStaging)
   const defective = order.qualityType === 'DEFECTIVE'
   const inventory: InventoryRecord[] = [...state.inventory]
   const logs: InventoryLog[] = []
@@ -200,17 +223,23 @@ export function applySubmitPutawayOrder(
     submittedBy: input.operator,
   }
   const putawayOrders = replaceOrder(state, next)
-  /** 退货来源的上架单不改入库单进度 */
+  /** 来源业务进度：入库单或退货单，二者只更新对应来源 */
   const inbounds =
     order.sourceType === 'INBOUND'
       ? state.inbounds.map((o) =>
           o.inboundNo === order.sourceNo ? { ...syncInboundPutawayFromOrders(o, putawayOrders), updatedAt: ts } : o,
         )
       : state.inbounds
+  const returnOrders =
+    order.sourceType === 'RETURN'
+      ? state.returnOrders.map((o) =>
+          o.returnNo === order.sourceNo ? syncReturnPutawayFromOrders(o, putawayOrders) : o,
+        )
+      : state.returnOrders
   return {
     ok: true,
     order: next,
-    patch: { putawayOrders, inventory, inbounds, inventoryLogs: [...state.inventoryLogs, ...logs] },
+    patch: { putawayOrders, inventory, inbounds, returnOrders, inventoryLogs: [...state.inventoryLogs, ...logs] },
   }
 }
 

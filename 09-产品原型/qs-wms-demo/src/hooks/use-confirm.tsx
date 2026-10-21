@@ -8,6 +8,8 @@ export interface ConfirmOptions {
   variant?: 'default' | 'destructive'
   /** 只保留确认按钮，用作业务阻断提示（PDA 规范 §5） */
   hideCancel?: boolean
+  /** PDA/作业台阻断用大字号；默认管理端尺寸 */
+  size?: 'default' | 'pda'
 }
 
 export type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>

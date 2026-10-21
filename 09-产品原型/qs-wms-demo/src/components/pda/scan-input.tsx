@@ -1,4 +1,4 @@
-import { ScanLine } from 'lucide-react'
+import { Keyboard, ScanLine } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
@@ -42,6 +42,7 @@ export function ScanInput({ label, onScan, candidates, message }: ScanInputProps
   const boxRef = useRef<HTMLDivElement>(null)
   const [value, setValue] = useState('')
   const [flash, setFlash] = useState<{ ok: boolean; key: number }>()
+  const [keyboard, setKeyboard] = useState(false)
 
   // 拉回焦点不滚动主区：当前对象（库位卡等）在扫码框上方，滚走就看不到了
   useEffect(() => {
@@ -90,8 +91,20 @@ export function ScanInput({ label, onScan, candidates, message }: ScanInputProps
           className="h-full min-w-0 flex-1 bg-transparent font-mono text-lg outline-none placeholder:font-sans placeholder:text-base placeholder:text-muted-foreground"
           autoComplete="off"
           autoCapitalize="characters"
-          inputMode="none"
+          inputMode={keyboard ? 'text' : 'none'}
         />
+        <button
+          type="button"
+          className="flex size-12 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:bg-accent"
+          aria-label={t('pda.keyboard')}
+          aria-pressed={keyboard}
+          onClick={() => {
+            setKeyboard((v) => !v)
+            requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))
+          }}
+        >
+          <Keyboard className="size-5" />
+        </button>
       </div>
       {message && (
         <p

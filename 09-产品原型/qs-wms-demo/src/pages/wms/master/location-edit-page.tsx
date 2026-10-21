@@ -40,8 +40,6 @@ export function LocationEditPage() {
       updateLocationMaster(warehouseCode, code ?? '', {
         ...(occupied ? {} : { zoneCode: next.zoneCode }),
         remark: next.remark?.trim() || undefined,
-        allowMixSku: next.allowMixSku,
-        allowMixBatch: next.allowMixBatch,
         putawaySequence: next.putawaySequence,
         pickSequence: next.pickSequence,
         aisle: next.aisle?.trim() || undefined,

@@ -45,7 +45,7 @@ export function MoveDoneStep({ flow }: { flow: MoveFlow }) {
               <PdaCard key={l.lineNo}>
                 <PdaSkuBlock
                   skuCode={l.skuCode}
-                  name={flow.skuName(l.skuCode)}
+                  name={flow.skuName(l.skuCode, move.customerId)}
                   batch={l.batchNo}
                   tags={<TagLabel meta={qualityMeta[l.qualityType]} />}
                 />

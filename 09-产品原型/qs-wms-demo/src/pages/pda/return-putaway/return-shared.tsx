@@ -28,6 +28,7 @@ export function ReturnContext({ flow, putback }: { flow: ReturnFlow; putback: Ou
 export function ReturnLineCard({
   flow,
   line,
+  customerId,
   active,
   counted,
   serialNos,
@@ -36,6 +37,7 @@ export function ReturnLineCard({
 }: {
   flow: ReturnFlow
   line: PutbackLine
+  customerId: string
   active: boolean
   counted: number
   serialNos: string[]
@@ -62,7 +64,7 @@ export function ReturnLineCard({
           <span className="font-mono text-base font-semibold">{line.skuCode}</span>
           <TagLabel meta={qualityMeta[line.qualityType]} />
         </div>
-        <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode)}</div>
+        <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode, customerId)}</div>
         {line.batchNo && <div className="mt-0.5 font-mono text-sm text-muted-foreground">{line.batchNo}</div>}
         {left.length > 0 && (
           <div className="mt-1 font-mono text-sm break-all">

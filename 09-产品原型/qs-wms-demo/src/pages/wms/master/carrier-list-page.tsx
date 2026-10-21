@@ -134,7 +134,7 @@ export function CarrierListPage() {
       }
     >
       <Panel className="p-4">
-        <FilterBar onSearch={applySearch} onReset={reset}>
+        <FilterBar columns={6} onSearch={applySearch} onReset={reset}>
           <FilterItem label={t('masterCarrier.code')}>
             <Input
               value={draft.code}

@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useState } from 'react'
+import { pdaToast as toast } from '@/lib/pda-toast'
 import { PdaButton, PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
-import { ScanInput } from '@/components/pda/scan-input'
+import { ScanInput, type ScanMessage } from '@/components/pda/scan-input'
 import { lineUnreceivedQty } from '@/lib/inbound-derive'
 import { beep } from '@/lib/scan-beep'
 import { QtyTriple, ReceiveContext } from './receive-shared'
@@ -11,6 +11,7 @@ import type { ReceiveFlow } from './use-receive-flow'
 /** 容器作业（PDA 收货 PRD §3、§5）：在当前容器里逐个扫商品；新增容器、提交收货 */
 export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
   const { t, nav, session, order, orderReceivable, isNewSkuInOrder } = flow
+  const [message, setMessage] = useState<ScanMessage>()
   const boxKey = nav.param('box')
   const box = session.boxes.find((b) => b.key === boxKey)
 
@@ -37,12 +38,12 @@ export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
   const onScan = (code: string) => {
     const skuCode = flow.resolveSku(code)
     if (!skuCode) {
-      toast.error(t('pda.notInOrder'))
+      setMessage({ tone: 'error', text: t('pda.notInOrder') })
       return false
     }
     const inBox = box.lines.some((l) => l.skuCode === skuCode)
     if (!inBox && flow.thisRemain(skuCode, box.key) <= 0) {
-      toast.error(t('pdaReceive.fullThisTime', { sku: skuCode }))
+      setMessage({ tone: 'error', text: t('pdaReceive.fullThisTime', { sku: skuCode }) })
       return false
     }
     openLine(skuCode, 'scan')
@@ -88,6 +89,7 @@ export function ReceiveBoxStep({ flow }: { flow: ReceiveFlow }) {
         <ScanInput
           label={t('pdaReceive.promptSku')}
           onScan={onScan}
+          message={message}
           candidates={openItems
             .filter((i) => flow.thisRemain(i.skuCode) > 0 || box.lines.some((l) => l.skuCode === i.skuCode))
             .map((i) => ({ value: flow.sku(i.skuCode)?.barcode ?? i.skuCode, label: i.skuCode }))}

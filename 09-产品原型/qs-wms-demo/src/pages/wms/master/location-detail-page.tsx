@@ -30,6 +30,17 @@ export function LocationDetailPage() {
       : undefined,
   )
   const warehouse = useDb((s) => s.warehouseMasters.find((w) => w.code === warehouseCode))
+  const occupants = useDb((s) =>
+    warehouseCode && code
+      ? [
+          ...new Set(
+            s.inventory
+              .filter((r) => r.warehouseCode === warehouseCode && r.locationCode === code && r.onHandQty > 0)
+              .map((r) => r.customerId),
+          ),
+        ]
+      : [],
+  )
   const zone = useDb((s) => s.zoneMasters.find((z) => z.code === location?.zoneCode))
 
   if (!code || !warehouseCode) return <Navigate to="/wms/master/locations" replace />
@@ -62,11 +73,12 @@ export function LocationDetailPage() {
       <Section title={t('masterLocation.sectionOccupancy')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterLocation.currentOccupancy')} className="col-span-full xl:col-span-3">
-            {location.occupyingCustomerId ? (
-              <CodeName
-                code={customerCode(location.occupyingCustomerId)}
-                name={customerName(location.occupyingCustomerId)}
-              />
+            {occupants.length ? (
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {occupants.map((id) => (
+                  <CodeName key={id} code={customerCode(id)} name={customerName(id)} />
+                ))}
+              </div>
             ) : (
               t('masterLocation.occupancyIdle')
             )}
@@ -90,17 +102,6 @@ export function LocationDetailPage() {
           </DescriptionItem>
           <DescriptionItem label={t('masterLocation.remark')} className="col-span-full xl:col-span-3">
             {location.remark || <Empty />}
-          </DescriptionItem>
-        </Descriptions>
-      </Section>
-
-      <Section title={t('masterLocation.sectionMix')}>
-        <Descriptions columns={4}>
-          <DescriptionItem label={t('masterLocation.allowMixSku')}>
-            {location.allowMixSku ? t('common.yes') : t('common.no')}
-          </DescriptionItem>
-          <DescriptionItem label={t('masterLocation.allowMixBatch')}>
-            {location.allowMixBatch ? t('common.yes') : t('common.no')}
           </DescriptionItem>
         </Descriptions>
       </Section>

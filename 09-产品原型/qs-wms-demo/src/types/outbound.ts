@@ -8,7 +8,6 @@ export type OutboundStatus =
   | 'PENDING_SHIPMENT'
   | 'SHIPPED'
   | 'CANCELLED'
-export type OutboundRole = 'ORGANIZER' | 'WORKER' | 'SUPERVISOR'
 export type PickStatus = 'PENDING_PICK' | 'PICKING' | 'COMPLETED' | 'CLOSED'
 /** 波次头状态（宏观架构 §3.4；不表达拣货任务拣货中） */
 export type WaveStatus = 'ALLOCATED' | 'RELEASED' | 'COMPLETED' | 'CANCELLED'
@@ -227,7 +226,6 @@ export interface OutboundData {
   skuAllocationControls: SkuAllocationControl[]
   outboundMessages: OutboundMessage[]
   outboundResults: OutboundResult[]
-  outboundRole: OutboundRole
 }
 export interface OutboundCreateInput {
   type: OutboundType

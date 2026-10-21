@@ -4,7 +4,7 @@ import { PdaFooter, PdaHeader } from '@/components/pda/pda-header'
 import { PdaFigure, PdaSkuBlock } from '@/components/pda/pda-stock'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { qualityMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { toneTextClass } from '@/lib/tone-styles'
 import { cn } from '@/lib/utils'
 import type { PdaCountDraft } from '@/stores/pda-stocktake-session'
@@ -64,13 +64,13 @@ function ReviewWorkspace({
         <PdaCard>
           <PdaSkuBlock
             skuCode={subject.skuCode}
-            name={flow.skuName(subject.skuCode)}
+            name={flow.skuName(subject.skuCode, subject.customerId)}
             owner={flow.ownerCode(subject.customerId)}
             batch={batch}
             tags={
               <>
                 <TagLabel meta={qualityMeta[subject.qualityType]} />
-                {!line && <TagLabel tone="orange">{t('inventory.stocktake.added')}</TagLabel>}
+                {!line && <TagLabel meta={inventoryFeatureMeta.added} />}
               </>
             }
           />

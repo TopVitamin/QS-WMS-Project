@@ -9,7 +9,7 @@ import { DetailOverview, DetailTitle, PageContainer, Section } from '@/component
 import { TagLabel } from '@/components/biz/status-badge'
 import { SummaryCard, SummaryMetrics, SummaryProgress } from '@/components/biz/summary-card'
 import { Button } from '@/components/ui/button'
-import { qualityMeta, stocktakeSourceMeta, stocktakeStatusMeta } from '@/config/status'
+import { inventoryFeatureMeta, qualityMeta, stocktakeSourceMeta, stocktakeStatusMeta } from '@/config/status'
 import { lineDiff, stocktakeSummary } from '@/lib/inventory-derive'
 import { ledgerNumbers } from '@/lib/inventory-ledger'
 import { cn } from '@/lib/utils'
@@ -81,7 +81,7 @@ export function StocktakeDetailPage() {
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-1.5">
             <LocationCode code={row.original.locationCode} usage={usageOf(row.original.locationCode)} />
-            {row.original.added && <TagLabel tone="orange">{t('inventory.stocktake.added')}</TagLabel>}
+            {row.original.added && <TagLabel meta={inventoryFeatureMeta.added} />}
           </span>
         ),
       }),

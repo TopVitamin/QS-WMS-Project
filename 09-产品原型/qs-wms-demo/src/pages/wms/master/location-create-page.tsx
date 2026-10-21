@@ -48,8 +48,6 @@ export function LocationCreatePage() {
         code: next.code.trim(),
         status: 'ENABLED',
         remark: next.remark?.trim() || undefined,
-        allowMixSku: next.allowMixSku,
-        allowMixBatch: next.allowMixBatch,
         putawaySequence: next.putawaySequence,
         pickSequence: next.pickSequence,
         aisle: next.aisle?.trim() || undefined,
