@@ -35,10 +35,11 @@
 
 ### 3. 查看（详情）页：主数据 **4 列**，业务单据 **概览卡 + 多页签**
 
-- **主数据**：分组 `Panel` + `Descriptions columns={4}`；长字段 `multiline` 或 `col-span-*`。维护信息：`MasterAuditPanel` 或等价，只读 **最后修改人、最后修改时间**（不要堆创建人除非主 PRD 要求）。
+- **主数据**：分组 `Panel` + `Descriptions columns={4}`；长字段 `multiline` 或 `col-span-*`。4 列指 1440 桌面断点，实现按 1 → 2 → 4 列响应，窄屏不按 4 列验收。状态只在 `DetailTitle` 显示一次，基础信息里不重复。维护信息：`MasterAuditPanel` 或等价，只读 **最后修改人、最后修改时间**（不要堆创建人除非主 PRD 要求）。
 - **业务单据**（有进度或多类子记录，如入库单、上架单）：标题 `DetailTitle`「固定文案 · 单号 [状态]」；上方 `DetailOverview` 两栏——左「基本信息」`Section` + `Descriptions columns={3}`（单号、状态不重复），右 320px `SummaryCard`（进度条 + 数量清单）；下方 `DetailTabs param="tab"`，明细放第一个页签，子记录与操作日志各一个页签，页签带条数。不要再上下堆多个分区 Panel 和子表。样板 `inbound-order-detail-page.tsx`、`putaway-detail-page.tsx`。
 - **只读记录抽屉**（新品维护、无主货登记等列表直接点开的记录）：`DetailSheet` 标题同样用 `DetailTitle`（有状态带状态）；字段按业务分组，每组一个 `Section` + `Descriptions`（880px 抽屉内 3～4 列）；不放业务按钮。样板 `new-sku-detail-sheet.tsx`、`unclaimed-detail-sheet.tsx`。
-- **管理端补录页**（如上架单「Web 端上架」）：与业务单据详情同一骨架，左侧多一张录入表单 `Section`，右侧汇总卡底部放写明数量的提交按钮，下方页签放待录明细与已录记录；管理端密度，不做扫码作业台。样板 `putaway-entry-page.tsx`。
+- **管理端补录页**（「Web 端拣货」「Web 端返库」）：与业务单据详情同一骨架，左侧多一张录入表单 `Section`，右侧汇总卡底部放写明数量的提交按钮，下方页签放待录明细与已录记录；管理端密度，不做扫码作业台（细则见《02-设计规范》5.6）。样板 `pick-entry-page.tsx`、`putback-entry-page.tsx`。
+- **作业台**（「收货作业」「Web 端上架」）：扫码优先的现场作业页——步骤提示条、一个扫码框、当前对象卡片、录入表、右侧「本次作业」汇总卡；商品列条码大字、SKU 小字放一列，名称单独一列放大；录入表全部左对齐。规范见[《04-作业台设计规范》](../../../09-产品原型/qs-wms-demo/docs/04-作业台设计规范.md)，样板 `inbound-order-receive-page.tsx`、`putaway-entry-page.tsx`。
 - 弹窗「查看」模式：字段只读；状态仅展示，不可编辑。
 
 ### 4. Placeholder（占位提示）
@@ -66,7 +67,7 @@ Demo 版 PRD 的 FilterBar 表须写清：每个筛选项控件类型及是否�
 
 1. FilterBar 是否 `columns={6}`？常显是否 ≤5？>5 项是否仅溢出进 `advanced`？
 2. 新增/编辑/Dialog 是否 4 列（或骨架约定）？是否未维护使用状态？
-3. 主数据详情是否 `Descriptions columns={4}`？业务单据详情是否「概览卡 + 多页签」、只读抽屉是否用 `DetailTitle` + 分组 `Section`？
+3. 主数据详情是否 `Descriptions columns={4}`（1440 断点）？状态是否只在 `DetailTitle` 显示一次？业务单据详情是否「概览卡 + 多页签」、只读抽屉是否用 `DetailTitle` + 分组 `Section`？
 4. 筛选与表单的可编辑控件是否写明 placeholder？
 5. 是否指向 `03-业务组件` 中的样板页（如 `warehouse-list-page`、`warehouse-form-fields`）？
 6. 是否与 [《WMS基础资料PRD转换说明》](1-基础资料/WMS基础资料PRD转换说明.md) 路由、三件制一致？

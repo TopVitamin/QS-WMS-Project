@@ -384,9 +384,6 @@ const actions = {
   HANDOVER: ['登记交接', 'Handover'],
   SAVE_PUTBACK: ['保存返库', 'Save put-back'],
   SUBMIT_PUTBACK: ['提交返库', 'Submit put-back'],
-  CREATE_COUNT: ['创建盘点', 'Create stocktake'],
-  CONFIRM_COUNT: ['确认盘点', 'Confirm stocktake'],
-  CANCEL_COUNT: ['取消盘点', 'Cancel stocktake'],
   RETRY_RESULT: ['重交出库结果', 'Resend result'],
 } as const
 /** 管理端出库页面文案（出库单／波次／拣货任务／返库上架单 Demo PRD 第五节），与 PDA 文案分开维护 */

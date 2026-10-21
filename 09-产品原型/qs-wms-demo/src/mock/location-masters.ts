@@ -11,7 +11,7 @@ export function createLocationMasters(): LocationMaster[] {
   }
   return [
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       zoneCode: 'Z-PICK',
       zoneType: 'PICK',
       code: 'P-B-01',
@@ -24,7 +24,7 @@ export function createLocationMasters(): LocationMaster[] {
       ...base,
     },
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       zoneCode: 'Z-STORE',
       zoneType: 'STORAGE',
       code: 'S-A-01',
@@ -36,7 +36,7 @@ export function createLocationMasters(): LocationMaster[] {
       ...base,
     },
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       zoneCode: 'Z-PICK',
       zoneType: 'PICK',
       code: 'P-B-OFF',

@@ -74,6 +74,9 @@ export function createOutboundSeed(
       batchEnabled: true,
       expiryEnabled: true,
       shelfLifeDays: 365,
+      // 剩余不足 90 天为临期，过了有效期为过期（库存查询按仓库当地日期计算效期等级）
+      nearExpiryDays: 90,
+      expiredDays: 0,
     })
   const seedCity: Record<string, string> = {
     'US-LA-01': 'Los Angeles, CA',
@@ -128,6 +131,26 @@ export function createOutboundSeed(
         firstInboundAt: SEED_DAY,
         ...extra,
       }
+      // 入库种子已有同一余额键（仓库＋货主＋SKU＋库位＋批次＋品质）时并成一行，库存明细不出现重复行
+      const dup = inventory.findIndex(
+        (r) =>
+          r.warehouseCode === row.warehouseCode &&
+          r.customerId === row.customerId &&
+          r.skuCode === row.skuCode &&
+          r.locationCode === row.locationCode &&
+          (r.batchNo ?? '') === (row.batchNo ?? '') &&
+          r.qualityType === row.qualityType,
+      )
+      if (dup >= 0) {
+        const old = inventory[dup]
+        row.onHandQty += old.onHandQty
+        row.lockedQty += old.lockedQty
+        if (old.serialNos?.length) row.serialNos = [...old.serialNos, ...(row.serialNos ?? [])]
+        if (old.firstInboundAt < row.firstInboundAt) row.firstInboundAt = old.firstInboundAt
+        // 原位替换：保持数组顺序，上架推荐（按顺序找同货主同商品库存）与原来一致
+        inventory[dup] = row
+        return row
+      }
       inventory.push(row)
       return row
     }
@@ -147,6 +170,8 @@ export function createOutboundSeed(
       lockedQty: 2,
     })
     add('CABLE-01', 6, 'B-01-02', { customerId: 'C10031' })
+    // 洛杉矶仓有两张 FBA 单（0003、0016）各预占 8 件 LOT-DEMO-01，补一库位同批次 8 件，避免预占超过正常品实际
+    if (warehouseCode === LA) add('LOT-DEMO-01', 8, 'C-01-01', { batchNo: 'LOT-202610', expiryDate: '2027-10-01' })
 
     let laOrderIndex = 0
     const order = (

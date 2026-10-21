@@ -136,10 +136,7 @@ export function SkuDetailPage() {
           <DescriptionItem label={t('masterSku.primaryBarcode')}>
             {master.primaryBarcode ? <BizCode>{master.primaryBarcode}</BizCode> : <Empty />}
           </DescriptionItem>
-          <DescriptionItem label={t('common.status')}>
-            <StatusBadge meta={usageStatusMeta[master.status]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('masterSku.upstreamSkuId')} className="col-span-2">
+          <DescriptionItem label={t('masterSku.upstreamSkuId')} className="col-span-full xl:col-span-2">
             <BizCode>{master.upstreamSkuId}</BizCode>
           </DescriptionItem>
           <DescriptionItem label={t('masterSku.spec')} className="col-span-4" multiline>

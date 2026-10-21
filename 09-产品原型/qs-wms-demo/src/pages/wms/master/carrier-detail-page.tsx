@@ -137,10 +137,7 @@ export function CarrierDetailPage() {
           </DescriptionItem>
           <DescriptionItem label={t('masterCarrier.name')}>{carrier.name}</DescriptionItem>
           <DescriptionItem label={t('masterCarrier.shortName')}>{carrierShortDisplay(carrier)}</DescriptionItem>
-          <DescriptionItem label={t('common.status')}>
-            <StatusBadge meta={usageStatusMeta[carrier.status]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('masterCarrier.remark')} className="col-span-3">
+          <DescriptionItem label={t('masterCarrier.remark')} className="col-span-full xl:col-span-3">
             {carrier.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
@@ -159,7 +156,7 @@ export function CarrierDetailPage() {
           <DescriptionItem label={t('masterCarrier.externalCarrierCode')}>
             {carrier.externalCarrierCode ? <BizCode>{carrier.externalCarrierCode}</BizCode> : <Empty />}
           </DescriptionItem>
-          <DescriptionItem label={t('masterCarrier.integrationPlaceholder')} className="col-span-3">
+          <DescriptionItem label={t('masterCarrier.integrationPlaceholder')} className="col-span-full xl:col-span-3">
             <span className="text-muted-foreground">{t('masterCarrier.integrationPlaceholderDesc')}</span>
           </DescriptionItem>
         </Descriptions>

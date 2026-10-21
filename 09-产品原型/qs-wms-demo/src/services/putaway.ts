@@ -34,3 +34,9 @@ export function removePutawayLine(input: Parameters<DbState['removePutawayLine']
 export function submitPutawayOrder(input: Parameters<DbState['submitPutawayOrder']>[0]): ActionResult {
   return useDb.getState().submitPutawayOrder(input)
 }
+
+export function confirmPutawayEntry(
+  input: Parameters<DbState['confirmPutawayEntry']>[0],
+): ActionResult & { failedIndex?: number } {
+  return useDb.getState().confirmPutawayEntry(input)
+}

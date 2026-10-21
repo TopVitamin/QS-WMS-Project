@@ -1,8 +1,10 @@
 import { format, parseISO } from 'date-fns'
+import { enUS, zhCN } from 'date-fns/locale'
 import type { DateRange } from 'react-day-picker'
 import { CalendarIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { FieldControlA11yProps } from '@/components/biz/field-a11y'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -13,7 +15,7 @@ export interface DateRangeValue {
   to: string
 }
 
-interface DateRangePickerFieldProps {
+interface DateRangePickerFieldProps extends FieldControlA11yProps {
   value: DateRangeValue
   onChange: (value: DateRangeValue) => void
   placeholder?: string
@@ -42,17 +44,39 @@ function formatRangeLabel(value: DateRangeValue): string | null {
 }
 
 /** 日期范围筛选：一个控件，Popover 内 range 日历；值为 `YYYY-MM-DD` 起止 */
-export function DateRangePickerField({ value, onChange, placeholder, className }: DateRangePickerFieldProps) {
-  const { t } = useTranslation()
+export function DateRangePickerField({
+  value,
+  onChange,
+  placeholder,
+  className,
+  id,
+  'aria-describedby': describedBy,
+  'aria-invalid': invalid,
+  'aria-required': required,
+}: DateRangePickerFieldProps) {
+  const { t, i18n } = useTranslation()
+  const [open, setOpen] = useState(false)
   const selected = useMemo(() => toRange(value), [value])
-  const text = formatRangeLabel(value) ?? (placeholder ?? t('common.dateRangePlaceholder'))
+  const text = formatRangeLabel(value) ?? placeholder ?? t('common.dateRangePlaceholder')
+  const locale = i18n.language.startsWith('zh') ? zhCN : enUS
+
+  const selectRange = (range: DateRange | undefined) => {
+    const next = fromRange(range)
+    onChange(next)
+    // 选满起止日期后自动收起；只选了一天时保持打开，方便继续选结束日
+    if (next.from && next.to) setOpen(false)
+  }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           variant="outline"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+          aria-required={required}
           className={cn(
             'h-8 w-full justify-start px-2.5 font-normal',
             !formatRangeLabel(value) && 'text-muted-foreground',
@@ -64,12 +88,7 @@ export function DateRangePickerField({ value, onChange, placeholder, className }
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="range"
-          numberOfMonths={2}
-          selected={selected}
-          onSelect={(range) => onChange(fromRange(range))}
-        />
+        <Calendar mode="range" numberOfMonths={2} locale={locale} selected={selected} onSelect={selectRange} />
         {(value.from || value.to) && (
           <div className="flex justify-end border-t p-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ from: '', to: '' })}>

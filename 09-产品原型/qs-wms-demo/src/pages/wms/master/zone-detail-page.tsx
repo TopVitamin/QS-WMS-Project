@@ -5,7 +5,6 @@ import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
 import { MasterDetailActions } from '@/components/biz/master-detail-actions'
 import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
-import { StatusBadge } from '@/components/biz/status-badge'
 import { usageStatusMeta } from '@/config/status'
 import { useZoneMasterStatusToggle } from '@/hooks/use-zone-master-status'
 import { parseZoneWarehouse, zoneEditPath, ZONE_TYPE_I18N } from '@/lib/zone-master'
@@ -53,10 +52,7 @@ export function ZoneDetailPage() {
           </DescriptionItem>
           <DescriptionItem label={t('masterZone.name')}>{zone.name}</DescriptionItem>
           <DescriptionItem label={t('masterZone.zoneType')}>{t(ZONE_TYPE_I18N[zone.zoneType as ZoneType])}</DescriptionItem>
-          <DescriptionItem label={t('common.status')}>
-            <StatusBadge meta={usageStatusMeta[zone.status]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('masterZone.remark')} className="col-span-3">
+          <DescriptionItem label={t('masterZone.remark')} className="col-span-full xl:col-span-3">
             {zone.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>

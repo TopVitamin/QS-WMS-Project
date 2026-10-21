@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { resetOutboundSeedInventory } from './outbound-seed'
 import { createSeedData, type SeedData } from './seed'
+import { applyInventoryAction } from './inventory-actions'
 import { applyOutboundAction, emptyOutboundData, outboundAvailable, orderAssignments } from './outbound-actions'
+import type { InventoryCommand } from '@/types/inventory'
 import type { OutboundCommand, OutboundCreateInput, OutboundType } from '@/types/outbound'
 
 const AT = '2026-10-15T09:00:00.000Z'
@@ -11,6 +13,8 @@ function fixture() {
   s.inventory = s.inventory.filter((r) => r.id.startsWith('INV-OUT-SEED-0-'))
   resetOutboundSeedInventory(s.inventory, 'US-LA-01', 0)
   s.inventoryLogs = []
+  s.inventoryCounts = []
+  s.stockMoves = []
   s.putawayOrders = []
   return s
 }
@@ -25,6 +29,15 @@ function ok(s: SeedData, c: OutboundCommand) {
   if (!r.ok) throw new Error(r.errorKey)
   return r.no!
 }
+/** 盘点走库内动作（盘点单主PRD），出库只读盘点冻结 */
+function inv(s: SeedData, c: InventoryCommand) {
+  const r = applyInventoryAction(s, c, 'tester', AT)
+  if (r.ok) Object.assign(s, r.patch)
+  expect(r.ok, !r.ok ? r.errorKey : '').toBe(true)
+  if (!r.ok) throw new Error(r.errorKey)
+  return r.no!
+}
+const CABLE = [{ customerId: 'C10028', skuCode: 'CABLE-01' }]
 function input(s: SeedData, type: OutboundType = 'B2C', sku = 'CABLE-01', qty = 3): OutboundCreateInput {
   return {
     type,
@@ -316,28 +329,24 @@ describe('outbound inventory contract', () => {
     ok(s, { type: 'SAVE_PUTBACK', no: pb, lineId: p.lines[0].id, location: 'A-01-01', qty: 1 })
     ok(s, { type: 'SUBMIT_PUTBACK', no: pb })
     expect(total(s)).toBe(n)
-    const c1 = ok(s, { type: 'CREATE_COUNT', warehouseCode: 'US-LA-01', customerId: 'C10028', skuCode: 'CABLE-01' })
-    ok(s, { type: 'CANCEL_COUNT', no: c1 })
+    const c1 = inv(s, { type: 'CREATE_STOCKTAKE', warehouseCode: 'US-LA-01', skus: CABLE })
+    inv(s, { type: 'CANCEL_STOCKTAKE', no: c1, reason: 'recount later' })
     expect(s.skuAllocationControls).toHaveLength(1)
-    const countNo = ok(s, {
-      type: 'CREATE_COUNT',
-      warehouseCode: 'US-LA-01',
-      customerId: 'C10028',
-      skuCode: 'CABLE-01',
-    })
+    const countNo = inv(s, { type: 'CREATE_STOCKTAKE', warehouseCode: 'US-LA-01', skus: CABLE })
     const count = s.inventoryCounts.find((c) => c.no === countNo)!
     const source = s.inventory.find(
       (r) => r.locationCode === 'A-01-01' && r.customerId === 'C10028' && r.skuCode === 'CABLE-01',
     )!
-    ok(s, {
-      type: 'CONFIRM_COUNT',
+    inv(s, {
+      type: 'SAVE_COUNTS',
       no: countNo,
-      lines: count.lines.map((l) => ({
-        inventoryId: l.inventoryId,
+      entries: count.lines.map((l) => ({
+        lineNo: l.lineNo,
         qty: l.bookQty - (l.inventoryId === source.id ? 1 : 0),
         serialNos: [],
       })),
     })
+    inv(s, { type: 'CONFIRM_STOCKTAKE', no: countNo })
     expect(total(s)).toBe(n - 1)
     expect(s.skuAllocationControls).toHaveLength(0)
     const supp = ok(s, { type: 'ALLOCATE', no })
@@ -470,22 +479,18 @@ describe('outbound inventory contract', () => {
     const no = create(s)
     pickAll(s, ok(s, { type: 'ALLOCATE', no }))
     verify(s, no)
-    const countNo = ok(s, {
-      type: 'CREATE_COUNT',
-      warehouseCode: 'US-LA-01',
-      customerId: 'C10028',
-      skuCode: 'CABLE-01',
-    })
+    const countNo = inv(s, { type: 'CREATE_STOCKTAKE', warehouseCode: 'US-LA-01', skus: CABLE })
     const count = s.inventoryCounts[0]
     expect(
       count.lines.every((l) => !s.inventory.find((r) => r.id === l.inventoryId)!.locationCode.startsWith('STAGE')),
     ).toBe(true)
     expect(act(s, { type: 'SHIP', no }).ok).toBe(false)
-    ok(s, {
-      type: 'CONFIRM_COUNT',
+    inv(s, {
+      type: 'SAVE_COUNTS',
       no: countNo,
-      lines: count.lines.map((l) => ({ inventoryId: l.inventoryId, qty: l.bookQty, serialNos: [] })),
+      entries: count.lines.map((l) => ({ lineNo: l.lineNo, qty: l.bookQty, serialNos: [] })),
     })
+    inv(s, { type: 'CONFIRM_STOCKTAKE', no: countNo })
     ok(s, { type: 'SHIP', no })
   })
   it('damaged picked goods convert to defective and return to isolation', () => {

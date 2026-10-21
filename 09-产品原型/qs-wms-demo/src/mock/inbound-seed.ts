@@ -678,7 +678,72 @@ export function createInboundDemoBundle(): InboundDemoBundle {
     submittedBy: 'pda.user',
   })
 
-  const core = [o0001, o0002, o0003, o0004, o0005, o0006, o0007, o0008, o0009, o0010].map((o) =>
+  /** 一个容器三种商品：推荐库位分两站（A-01-01 线材；B-01-03 两个新商品），PDA 上架按库位逐站走查 */
+  const o0011Lines = [
+    { lineNo: 1, skuCode: 'CABLE-01', qty: 2 },
+    { lineNo: 2, skuCode: 'ANKR-001', qty: 1 },
+    { lineNo: 3, skuCode: 'ANKR-002', qty: 6 },
+  ]
+  const o0011 = order(
+    '0011',
+    'OMS-IN-SEED-0011',
+    o0011Lines.map((l) =>
+      line({
+        lineNo: l.lineNo,
+        skuCode: l.skuCode,
+        plannedQty: l.qty,
+        receivedQty: l.qty,
+        rejectedQty: 0,
+        goodQty: l.qty,
+        defectQty: 0,
+        putawayQty: 0,
+      }),
+    ),
+    {
+      firstArrivalAt: '2026-10-11T08:00:00.000Z',
+      receiptCloseFlag: 'CONFIRMED',
+      receiptClosedBy: 'admin',
+      receiptClosedAt: '2026-10-11T09:00:00.000Z',
+      updatedAt: '2026-10-11T09:00:00.000Z',
+      remark: '演示：一个容器三种商品，PDA 上架按推荐库位分两站',
+    },
+  )
+  receiptRecords.push({
+    receiptNo: 'RC-20261011-0001',
+    inboundNo: o0011.inboundNo,
+    warehouseCode: WH,
+    customerId: ANKR,
+    containerNo: 'C-M01',
+    stagingLocationCode: 'STAGE-IN-01',
+    operator: 'pda.user',
+    receivedAt: '2026-10-11T08:30:00.000Z',
+    lines: o0011Lines.map((l) => ({
+      lineNo: l.lineNo,
+      skuCode: l.skuCode,
+      containerNo: 'C-M01',
+      receivedQty: l.qty,
+      rejectedQty: 0,
+      goodQty: l.qty,
+      defectQty: 0,
+    })),
+  })
+  putawayOrders.push({
+    putawayNo: 'PA-20261011-0001',
+    sourceType: 'INBOUND',
+    sourceNo: o0011.inboundNo,
+    stagingLocationCode: 'STAGE-IN-01',
+    warehouseCode: WH,
+    customerId: ANKR,
+    receiptNo: 'RC-20261011-0001',
+    containerNo: 'C-M01',
+    qualityType: 'GOOD',
+    status: 'PENDING',
+    planLines: o0011Lines.map((l) => ({ lineNo: l.lineNo, receiptLineNo: l.lineNo, skuCode: l.skuCode, planQty: l.qty })),
+    actualLines: [],
+    createdAt: '2026-10-11T09:00:00.000Z',
+  })
+
+  const core = [o0001, o0002, o0003, o0004, o0005, o0006, o0007, o0008, o0009, o0010, o0011].map((o) =>
     recomputeInboundOrder(o),
   )
   const filler = createFillerInboundsForOtherWarehouses()

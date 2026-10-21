@@ -225,7 +225,9 @@ export function DataTable<TData extends RowData>({
       return cn('sticky z-[1] shadow-[6px_0_8px_-6px_rgb(0_0_0/0.12)]', isHeader && 'z-20 bg-muted')
     return ''
   }
-  const selectPinStyle = selectable ? { left: 0, width: SELECT_WIDTH, minWidth: SELECT_WIDTH, maxWidth: SELECT_WIDTH } : undefined
+  const selectPinStyle = selectable
+    ? { left: 0, width: SELECT_WIDTH, minWidth: SELECT_WIDTH, maxWidth: SELECT_WIDTH }
+    : undefined
   const pinStyle = (columnId: string, meta: DataColumnMeta | undefined) => {
     if (columnId === '__select') return selectPinStyle
     if (meta?.pin === 'left') return { left: selectable ? SELECT_WIDTH : 0 }
@@ -284,6 +286,15 @@ export function DataTable<TData extends RowData>({
                       key={header.id}
                       colSpan={header.colSpan}
                       rowSpan={header.rowSpan}
+                      aria-sort={
+                        canSort
+                          ? sorted === 'asc'
+                            ? 'ascending'
+                            : sorted === 'desc'
+                              ? 'descending'
+                              : 'none'
+                          : undefined
+                      }
                       style={pinStyle(header.column.id, meta)}
                       className={cn(
                         'sticky top-0 z-10',
@@ -325,9 +336,22 @@ export function DataTable<TData extends RowData>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.target !== event.currentTarget) return
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onRowClick(row.original)
+                        }
+                      }
+                    : undefined
+                }
                 className={cn(
                   'group',
-                  onRowClick && 'cursor-pointer',
+                  onRowClick &&
+                    'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
                   // 底色统一由 tr 下发到每个 td，且必须不透明：固定列 td 是 sticky，半透明会透出横向滚动到下面的内容
                   'hover:bg-transparent hover:[&>td]:bg-row-hover',
                   'data-[state=selected]:bg-transparent data-[state=selected]:[&>td]:bg-muted',

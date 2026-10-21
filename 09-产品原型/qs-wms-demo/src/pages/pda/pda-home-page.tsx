@@ -52,9 +52,9 @@ const groups: { titleKey: string; tone: StatusTone; items: PdaFunction[] }[] = [
     titleKey: 'pda.inventoryGroup',
     tone: 'cyan',
     items: [
-      { key: 'query', titleKey: 'pda.query', icon: ScanSearch, to: '/pda/soon/query', ready: false },
-      { key: 'move', titleKey: 'pda.move', icon: ArrowRightLeft, to: '/pda/soon/move', ready: false },
-      { key: 'count', titleKey: 'pda.count', icon: ClipboardCheck, to: '/pda/soon/count', ready: false },
+      { key: 'query', titleKey: 'pda.query', icon: ScanSearch, to: '/pda/inventory', ready: true },
+      { key: 'move', titleKey: 'pda.move', icon: ArrowRightLeft, to: '/pda/move', ready: true },
+      { key: 'count', titleKey: 'pda.count', icon: ClipboardCheck, to: '/pda/stocktake', ready: true },
     ],
   },
   {
@@ -108,7 +108,10 @@ export function PdaHomePage() {
               <Globe className="size-4" />
               {language === 'zh-CN' ? 'EN' : '中' /* design-lint-ignore 语言切换按目标语言原文显示 */}
             </button>
-            <Link to="/wms/dashboard" className="flex h-9 items-center gap-1 rounded-lg px-2 text-sm active:bg-primary-foreground/15">
+            <Link
+              to="/wms/dashboard"
+              className="flex h-9 items-center gap-1 rounded-lg px-2 text-sm active:bg-primary-foreground/15"
+            >
               <Monitor className="size-4" />
               {t('pda.backToWms')}
             </Link>
@@ -157,7 +160,9 @@ export function PdaHomePage() {
                     <f.icon className="size-6" />
                   </div>
                   <span className="text-sm font-medium">{t(f.titleKey)}</span>
-                  {!f.ready && <span className="absolute top-1.5 right-2 text-xs text-muted-foreground">{t('pda.soon')}</span>}
+                  {!f.ready && (
+                    <span className="absolute top-1.5 right-2 text-xs text-muted-foreground">{t('pda.soon')}</span>
+                  )}
                 </Link>
               ))}
             </div>

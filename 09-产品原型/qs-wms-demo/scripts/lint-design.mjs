@@ -13,9 +13,6 @@ const SRC = join(ROOT, 'src')
 /** shadcn 源码、语言包、Mock 数据不检查 */
 const SKIP_DIRS = [join(SRC, 'components', 'ui'), join(SRC, 'i18n'), join(SRC, 'mock')]
 
-/** 打印标签：固定黑白、编码用等宽字，是规范允许的例外 */
-const PRINT_FILES = ['src/pages/wms/inbound/print-label-dialog.tsx']
-
 const PALETTE =
   'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
 
@@ -24,9 +21,9 @@ const rules = [
     id: 'raw-color',
     message: '用语义色 token（primary / success / warning-text / tone-cyan …），不要写 Tailwind 原始色',
     test: (code) =>
-      new RegExp(`\\b(bg|text|border|ring|fill|stroke|from|via|to|outline|divide|decoration)-(${PALETTE})-\\d{2,3}\\b`).test(code) ||
-      /\b(bg|text|border)-(white|black)\b/.test(code),
-    skip: (file) => PRINT_FILES.includes(file),
+      new RegExp(
+        `\\b(bg|text|border|ring|fill|stroke|from|via|to|outline|divide|decoration)-(${PALETTE})-\\d{2,3}\\b`,
+      ).test(code) || /\b(bg|text|border)-(white|black)\b/.test(code),
   },
   {
     id: 'arbitrary-font-size',
@@ -35,13 +32,13 @@ const rules = [
   },
   {
     id: 'admin-font-mono',
-    message: '管理端编码用 <BizCode> / <DocNo>（sans + tabular-nums），font-mono 只给 PDA、条码打印、kbd',
+    message: '管理端编码用 <BizCode> / <DocNo>（sans + tabular-nums），font-mono 只给 PDA、kbd',
     test: (code) => /\bfont-mono\b/.test(code) && !/<kbd\b/.test(code),
-    skip: (file) => file.startsWith('src/pages/pda/') || file.startsWith('src/components/pda/') || PRINT_FILES.includes(file),
+    skip: (file) => file.startsWith('src/pages/pda/') || file.startsWith('src/components/pda/'),
   },
   {
     id: 'cjk-literal',
-    message: '界面文字走 t(\'key\')，不要在代码里写死中文',
+    message: "界面文字走 t('key')，不要在代码里写死中文",
     test: (code) => /[一-鿿]/.test(code),
   },
   {
@@ -53,9 +50,7 @@ const rules = [
     id: 'empty-placeholder',
     message: '空值用 <Empty /> / EMPTY_TEXT（ASCII `-`），不要手写占位符；不要用中文破折号 `—`',
     test: (code) =>
-      /(\|\||\?\?|\?|:)\s*['"](-|—)['"]/.test(code) ||
-      />\s*(-|—)\s*</.test(code) ||
-      /['"]—['"]/.test(code),
+      /(\|\||\?\?|\?|:)\s*['"](-|—)['"]/.test(code) || />\s*(-|—)\s*</.test(code) || /['"]—['"]/.test(code),
   },
   {
     id: 'link-button',

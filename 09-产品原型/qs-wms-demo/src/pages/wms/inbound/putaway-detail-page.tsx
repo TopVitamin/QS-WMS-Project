@@ -136,7 +136,7 @@ export function PutawayDetailPage() {
             <DescriptionItem label={t('putaway.submittedAt')}>
               <DateTime value={order.submittedAt} />
             </DescriptionItem>
-            <DescriptionItem label={t('putaway.remark')} className="col-span-3" multiline>
+            <DescriptionItem label={t('putaway.remark')} className="col-span-full xl:col-span-3" multiline>
               {order.remark || <Empty />}
             </DescriptionItem>
           </Descriptions>

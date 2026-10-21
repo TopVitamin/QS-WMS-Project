@@ -1,7 +1,7 @@
 import { Download, Radio } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateRangePickerField } from '@/components/biz/date-range-picker-field'
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { inboundBizTypeMeta, inboundOrderStatusMeta } from '@/config/status'
 import { useInbound } from '@/hooks/use-inbound'
+import { useUrlListState } from '@/hooks/use-url-list-state'
 import {
   canConfirmReceiptClose,
   canReceiveInbound,
@@ -25,13 +26,7 @@ import {
   skuKindCount,
   sumLines,
 } from '@/lib/inbound-derive'
-import {
-  emptyInboundListFilters,
-  INBOUND_ARRIVAL_METHODS,
-  matchInboundListFilters,
-  type InboundListFilters,
-} from '@/lib/inbound-list-match'
-import { FILTER_ALL } from '@/lib/master-data'
+import { emptyInboundListFilters, INBOUND_ARRIVAL_METHODS, matchInboundListFilters } from '@/lib/inbound-list-match'
 import { codeNameText } from '@/lib/typography'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
@@ -40,53 +35,8 @@ import { InboundMockPushDialog } from './inbound-mock-push-dialog'
 import { ReceiptCloseDialog } from './receipt-close-dialog'
 
 type StatusTab = 'ALL' | InboundOrderStatus
-const statusTabs: StatusTab[] = [
-  'ALL',
-  'PENDING_RECEIVE',
-  'RECEIVING',
-  'PUTAWAYING',
-  'COMPLETED',
-  'CANCELLED',
-]
+const statusTabs: StatusTab[] = ['ALL', 'PENDING_RECEIVE', 'RECEIVING', 'PUTAWAYING', 'COMPLETED', 'CANCELLED']
 const bizTypes: InboundBizType[] = ['NORMAL', 'TRANSFER']
-
-function parseListState(params: URLSearchParams): { filters: InboundListFilters; tab: StatusTab } {
-  const status = params.get('status') ?? 'ALL'
-  const tab = statusTabs.includes(status as StatusTab) ? (status as StatusTab) : 'ALL'
-  return {
-    tab,
-    filters: {
-      inboundNo: params.get('inboundNo') ?? '',
-      customerId: params.get('customer') ?? FILTER_ALL,
-      bizType: params.get('bizType') ?? FILTER_ALL,
-      upstreamNo: params.get('upstream') ?? '',
-      arrivalMethod: params.get('arrivalMethod') ?? FILTER_ALL,
-      containerNo: params.get('container') ?? '',
-      trackingNo: params.get('tracking') ?? '',
-      createdFrom: params.get('createdFrom') ?? '',
-      createdTo: params.get('createdTo') ?? '',
-      completedFrom: params.get('completedFrom') ?? '',
-      completedTo: params.get('completedTo') ?? '',
-    },
-  }
-}
-
-function toSearchParams(filters: InboundListFilters, tab: StatusTab): URLSearchParams {
-  const params = new URLSearchParams()
-  if (tab !== 'ALL') params.set('status', tab)
-  if (filters.inboundNo) params.set('inboundNo', filters.inboundNo)
-  if (filters.customerId !== FILTER_ALL) params.set('customer', filters.customerId)
-  if (filters.bizType !== FILTER_ALL) params.set('bizType', filters.bizType)
-  if (filters.upstreamNo) params.set('upstream', filters.upstreamNo)
-  if (filters.arrivalMethod !== FILTER_ALL) params.set('arrivalMethod', filters.arrivalMethod)
-  if (filters.containerNo) params.set('container', filters.containerNo)
-  if (filters.trackingNo) params.set('tracking', filters.trackingNo)
-  if (filters.createdFrom) params.set('createdFrom', filters.createdFrom)
-  if (filters.createdTo) params.set('createdTo', filters.createdTo)
-  if (filters.completedFrom) params.set('completedFrom', filters.completedFrom)
-  if (filters.completedTo) params.set('completedTo', filters.completedTo)
-  return params
-}
 
 export function InboundOrderListPage() {
   const { t } = useTranslation()
@@ -95,26 +45,15 @@ export function InboundOrderListPage() {
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const { inbounds, customers, confirmReceiptClose, mockPushInboundInstruction } = useInbound()
   const { customerCode, customerName } = useLookups()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const { filters, tab } = useMemo(() => parseListState(searchParams), [searchParams])
-  const [draft, setDraft] = useState<InboundListFilters>(filters)
+  const list = useUrlListState(emptyInboundListFilters, statusTabs, {
+    customerId: 'customer',
+    upstreamNo: 'upstream',
+    containerNo: 'container',
+    trackingNo: 'tracking',
+  })
+  const { filters, tab, draft, setDraft } = list
   const [mockOpen, setMockOpen] = useState(false)
   const [closeOrder, setCloseOrder] = useState<InboundOrder>()
-
-  // URL 上的筛选变化（返回、分享链接）时同步草稿
-  const [syncedFilters, setSyncedFilters] = useState(filters)
-  if (syncedFilters !== filters) {
-    setSyncedFilters(filters)
-    setDraft(filters)
-  }
-
-  const updateListState = useCallback(
-    (nextFilters: InboundListFilters, nextTab: StatusTab) => {
-      setSearchParams(toSearchParams(nextFilters, nextTab), { replace: true })
-    },
-    [setSearchParams],
-  )
 
   const warehouseRows = useMemo(
     () => inbounds.filter((o) => o.warehouseCode === warehouseCode),
@@ -160,7 +99,9 @@ export function InboundOrderListPage() {
         enableSorting: true,
         meta: { pin: 'left' },
         cell: ({ getValue }) => (
-          <DocNo onClick={() => navigate(`/wms/inbound/orders/${getValue()}`, { state: { listSearch: searchParams.toString() } })}>
+          <DocNo
+            onClick={() => navigate(`/wms/inbound/orders/${getValue()}`, { state: { listSearch: list.listSearch } })}
+          >
             {getValue()}
           </DocNo>
         ),
@@ -240,7 +181,7 @@ export function InboundOrderListPage() {
         cell: ({ row }) => {
           const o = row.original
           const canReceive = canReceiveInbound(o)
-          const listSearch = searchParams.toString()
+          const listSearch = list.listSearch
           // 横排、最多露 2 个；三个都可用时「PDA 收货」收进「更多」
           return (
             <RowActions
@@ -269,7 +210,7 @@ export function InboundOrderListPage() {
         },
       }),
     ])
-  }, [t, customerCode, customerName, navigate, openReceiptClose, searchParams])
+  }, [t, customerCode, customerName, navigate, openReceiptClose, list.listSearch])
 
   return (
     <PageContainer
@@ -297,11 +238,8 @@ export function InboundOrderListPage() {
 
       <Panel className="p-4">
         <FilterBar
-          onSearch={() => updateListState(draft, tab)}
-          onReset={() => {
-            setDraft(emptyInboundListFilters)
-            updateListState(emptyInboundListFilters, tab)
-          }}
+          onSearch={list.search}
+          onReset={list.reset}
           advanced={
             <>
               <FilterItem label={t('inbound.arrivalMethod')}>
@@ -377,7 +315,7 @@ export function InboundOrderListPage() {
       </Panel>
 
       <Panel className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <StatusTabs items={tabItems} value={tab} onChange={(nextTab) => updateListState(filters, nextTab)} />
+        <StatusTabs items={tabItems} value={tab} onChange={list.setTab} />
         <DataTable
           className="flex-1"
           data={rows}
@@ -413,7 +351,6 @@ export function InboundOrderListPage() {
           setCloseOrder(undefined)
         }}
       />
-
     </PageContainer>
   )
 }

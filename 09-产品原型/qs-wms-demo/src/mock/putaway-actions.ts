@@ -1,4 +1,6 @@
 import { stagingLocationCode, syncInboundPutawayFromOrders } from '@/lib/inbound-derive'
+import { countingStocktake } from '@/lib/inventory-derive'
+import { balanceLog, pairLogs } from '@/lib/inventory-ledger'
 import { findLocation, isFullyRecorded, remainingQty, validatePutawayLocation } from '@/lib/putaway'
 import type { PutawayActualLine, PutawayOrder } from '@/types/inbound'
 import type { InventoryLog, InventoryRecord } from '@/types/wms'
@@ -73,21 +75,22 @@ export function applySavePutawayLine(
   return { ok: true, order: next, patch: { putawayOrders: replaceOrder(state, next) } }
 }
 
-/** 撤销一条未提交的落位；没有落位时回到待上架（删光明细仍保持上架中） */
+/**
+ * 撤销一条未提交的落位；删光落位时回到待上架（上架单主PRD 第二节）。
+ * 定位键是实际明细行号：SN 商品每次保存各追加一条，同库位同一应上架行可有多条，按「库位 + 应上架行」会删错。
+ */
 export function applyRemovePutawayLine(
   state: SeedData,
-  input: { putawayNo: string; locationCode: string; planLineNo: number },
-): PatchResult {
+  input: { putawayNo: string; actualLineNo: number },
+): PatchResult & { removed?: PutawayActualLine } {
   const found = findOpenOrder(state, input.putawayNo)
   if ('errorKey' in found) return { ok: false, errorKey: found.errorKey }
   const order = found
-  const idx = order.actualLines.findIndex(
-    (a) => !a.submitted && a.locationCode === input.locationCode && a.planLineNo === input.planLineNo,
-  )
-  if (idx < 0) return { ok: false, errorKey: 'pdaPutaway.error.lineNotFound' }
-  const actualLines = order.actualLines.filter((_, i) => i !== idx)
+  const removed = order.actualLines.find((a) => !a.submitted && a.lineNo === input.actualLineNo)
+  if (!removed) return { ok: false, errorKey: 'pdaPutaway.error.lineNotFound' }
+  const actualLines = order.actualLines.filter((a) => a !== removed)
   const next: PutawayOrder = { ...order, actualLines, status: actualLines.length > 0 ? 'PUTAWAYING' : 'PENDING' }
-  return { ok: true, order: next, patch: { putawayOrders: replaceOrder(state, next) } }
+  return { ok: true, order: next, removed, patch: { putawayOrders: replaceOrder(state, next) } }
 }
 
 /**
@@ -102,7 +105,8 @@ export function applySubmitPutawayOrder(
   if ('errorKey' in found) return { ok: false, errorKey: found.errorKey }
   const order = found
   if (order.actualLines.length === 0 || !isFullyRecorded(order)) return { ok: false, errorKey: 'pdaPutaway.error.planMismatch' }
-  if (state.inventoryCounts.some(p => p.status === 'COUNTING' && p.warehouseCode === order.warehouseCode && p.customerId === order.customerId && order.planLines.some(l => l.skuCode === p.skuCode))) return { ok: false, errorKey: 'outbound.error.countFrozen' }
+  if (order.planLines.some((l) => countingStocktake(state.inventoryCounts, order.warehouseCode, order.customerId, l.skuCode)))
+    return { ok: false, errorKey: 'outbound.error.countFrozen' }
   for (const line of order.actualLines) {
     const locationError = validatePutawayLocation(order, line.locationCode, state)
     if (locationError) return { ok: false, errorKey: locationError }
@@ -125,14 +129,18 @@ export function applySubmitPutawayOrder(
         r.skuCode === line.skuCode &&
         r.qualityType === order.qualityType && r.batchNo === plan.batchNo && r.expiryDate === plan.expiryDate,
     )
+    let stagingRow: InventoryRecord | undefined
+    let removed = 0
     if (stagingIdx >= 0) {
       const row = inventory[stagingIdx]
-      inventory[stagingIdx] = {
+      stagingRow = {
         ...row,
         onHandQty: Math.max(0, row.onHandQty - line.qty),
         lockedQty: Math.max(0, row.lockedQty - locked),
         serialNos: row.serialNos?.filter(sn => !line.serialNos?.includes(sn)),
       }
+      removed = row.onHandQty - stagingRow.onHandQty
+      inventory[stagingIdx] = stagingRow
     }
     const targetIdx = inventory.findIndex(
       (r) =>
@@ -142,11 +150,13 @@ export function applySubmitPutawayOrder(
         r.skuCode === line.skuCode &&
         r.qualityType === order.qualityType && r.batchNo === plan.batchNo && r.expiryDate === plan.expiryDate,
     )
+    let targetRow: InventoryRecord
     if (targetIdx >= 0) {
       const row = inventory[targetIdx]
-      inventory[targetIdx] = { ...row, onHandQty: row.onHandQty + line.qty, lockedQty: row.lockedQty + locked, serialNos: [...(row.serialNos ?? []), ...(line.serialNos ?? [])] }
+      targetRow = { ...row, onHandQty: row.onHandQty + line.qty, lockedQty: row.lockedQty + locked, serialNos: [...(row.serialNos ?? []), ...(line.serialNos ?? [])] }
+      inventory[targetIdx] = targetRow
     } else {
-      inventory.unshift({
+      targetRow = {
         id: uid('INV'),
         warehouseCode: order.warehouseCode,
         locationCode: line.locationCode,
@@ -159,20 +169,27 @@ export function applySubmitPutawayOrder(
         onHandQty: line.qty,
         lockedQty: locked,
         firstInboundAt: ts,
-      })
+      }
+      inventory.unshift(targetRow)
     }
-    logs.push({
-      id: uid('LOG'),
-      createdAt: ts,
-      warehouseCode: order.warehouseCode,
-      type: 'PUTAWAY',
+    /** 上架移库：收货暂存库位减、目标库位加两行流水，同一动作标识成对关联 */
+    const meta = {
+      type: 'PUTAWAY' as const,
       refNo: order.sourceNo,
-      skuCode: line.skuCode,
-      customerId: order.customerId,
-      locationCode: line.locationCode,
-      qtyChange: line.qty,
+      jobNo: order.putawayNo,
+      sourceType: order.sourceType === 'INBOUND' ? ('INBOUND' as const) : ('RETURN' as const),
+      sourceLineNo: plan.receiptLineNo || undefined,
+      serialNos: line.serialNos?.length ? line.serialNos : undefined,
       operator: input.operator,
-    })
+      createdAt: ts,
+    }
+    const plus = balanceLog(targetRow, line.qty, { ...meta, id: uid('LOG') })
+    if (stagingRow) {
+      const minus = balanceLog(stagingRow, -removed, { ...meta, id: uid('LOG') })
+      pairLogs(minus, plus, `${order.putawayNo}#${line.lineNo}`)
+      logs.push(minus)
+    }
+    logs.push(plus)
   }
 
   const next: PutawayOrder = {
@@ -193,8 +210,33 @@ export function applySubmitPutawayOrder(
   return {
     ok: true,
     order: next,
-    patch: { putawayOrders, inventory, inbounds, inventoryLogs: [...logs, ...state.inventoryLogs] },
+    patch: { putawayOrders, inventory, inbounds, inventoryLogs: [...state.inventoryLogs, ...logs] },
   }
+}
+
+export interface PutawayPlacementInput {
+  planLineNo: number
+  locationCode: string
+  qty: number
+  serialNos?: string[]
+}
+
+/**
+ * Web 端上架「确认上架」：本次录的落位逐条保存后整单提交，全部成功才生效（上架单主PRD 第四节）。
+ * 与 PDA 是同一组动作（保存、提交），只是在内存里连着做：任何一条落位或提交不过，什么都不写，
+ * `failedIndex` 指出第几条落位不过（提交不过时为空），已保存的落位和库存都不变。
+ */
+export function applyConfirmPutawayEntry(
+  state: SeedData,
+  input: { putawayNo: string; placements: PutawayPlacementInput[]; operator: string },
+): PatchResult & { failedIndex?: number } {
+  let next = state
+  for (const [index, placement] of input.placements.entries()) {
+    const saved = applySavePutawayLine(next, { putawayNo: input.putawayNo, ...placement })
+    if (!saved.ok) return { ...saved, failedIndex: index }
+    next = { ...next, ...saved.patch }
+  }
+  return applySubmitPutawayOrder(next, { putawayNo: input.putawayNo, operator: input.operator })
 }
 
 /** 供测试与 PDA 展示：某应上架行已保存的落位明细 */

@@ -7,7 +7,7 @@
 
 ## 一、路由与URL状态
 
-`/wms/inventory/logs`。筛选、排序、分页写入URL；从库存查询跳转时带入仓库、货主、SKU以及可用的库位、批次或SN条件。
+`/wms/inventory/logs`。筛选写入URL，排序和分页不写入；从库存查询跳转时带入仓库、货主、SKU以及可用的库位、批次或SN条件。
 
 ## 二、FilterBar
 

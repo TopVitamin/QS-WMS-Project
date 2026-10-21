@@ -12,7 +12,7 @@ export function createZoneMasters(): ZoneMaster[] {
   }
   return [
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       code: 'Z-STORE',
       name: '存储区 A',
       zoneType: 'STORAGE',
@@ -20,7 +20,7 @@ export function createZoneMasters(): ZoneMaster[] {
       ...base,
     },
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       code: 'Z-PICK',
       name: '拣货区 B',
       zoneType: 'PICK',
@@ -29,7 +29,7 @@ export function createZoneMasters(): ZoneMaster[] {
       ...base,
     },
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       code: 'Z-STAGE',
       name: '收货暂存',
       zoneType: 'STAGING',
@@ -37,7 +37,7 @@ export function createZoneMasters(): ZoneMaster[] {
       ...base,
     },
     {
-      warehouseCode: 'US-WH-LA',
+      warehouseCode: 'US-LA-01',
       code: 'Z-OFF',
       name: '已停用样例',
       zoneType: 'STORAGE',

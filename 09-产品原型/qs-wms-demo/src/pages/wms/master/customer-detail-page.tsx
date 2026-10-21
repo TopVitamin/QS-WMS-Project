@@ -7,12 +7,12 @@ import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
 import { MasterDetailActions } from '@/components/biz/master-detail-actions'
 import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
-import { StatusBadge } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import { usageStatusMeta } from '@/config/status'
 import { useCustomerMasterStatusToggle } from '@/hooks/use-customer-master-status'
 import { useMasterDiscardNavigate } from '@/hooks/use-master-discard-navigate'
 import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
+import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 import {
   customerDetailPath,
   formatCustomerFullAddress,
@@ -43,13 +43,15 @@ export function CustomerDetailPage() {
   const [errors, setErrors] = useState<CustomerMasterFormErrors>({})
 
   useEffect(() => {
-    if (customer) setForm({ ...customer })
-  }, [customer])
+    // 编辑中不跟随外部数据覆盖草稿；退出编辑后再同步
+    if (customer && !editing) setForm({ ...customer })
+  }, [customer, editing])
 
   const dirty = useMemo(() => {
     if (!customer || !form) return false
     return JSON.stringify(customer) !== JSON.stringify(form)
   }, [customer, form])
+  const guard = useUnsavedChangesGuard(editing && dirty, 'masterCustomer')
 
   if (!code) return <Navigate to="/wms/master/customers" replace />
   if (!customer || !form) return <Navigate to="/wms/master/customers" replace />
@@ -84,6 +86,7 @@ export function CustomerDetailPage() {
       return
     }
     toast.success(t('masterCustomer.saveSuccess'))
+    guard.markSaved()
     setSearchParams({})
   }
 
@@ -128,13 +131,10 @@ export function CustomerDetailPage() {
               <DescriptionItem label={t('masterCustomer.code')}><BizCode>{customer.code}</BizCode></DescriptionItem>
               <DescriptionItem label={t('masterCustomer.name')}>{customer.name}</DescriptionItem>
               <DescriptionItem label={t('masterCustomer.ownerType')}>{t(OWNER_TYPE_I18N[customer.ownerType])}</DescriptionItem>
-              <DescriptionItem label={t('common.status')}>
-                <StatusBadge meta={usageStatusMeta[customer.status]} />
-              </DescriptionItem>
               <DescriptionItem label={t('masterCustomer.putawayRecommendTiming')}>
                 {t(PUTAWAY_RECOMMEND_I18N[customer.putawayRecommendTiming as PutawayRecommendTiming])}
               </DescriptionItem>
-              <DescriptionItem label={t('masterCustomer.remark')} className="col-span-3">
+              <DescriptionItem label={t('masterCustomer.remark')} className="col-span-full xl:col-span-3">
                 {customer.remark || <Empty />}
               </DescriptionItem>
             </Descriptions>
@@ -153,7 +153,7 @@ export function CustomerDetailPage() {
             <Descriptions columns={4}>
               <DescriptionItem label={t('masterCustomer.countryCode')}>{t(countryLabel)}</DescriptionItem>
               <DescriptionItem label={t('masterCustomer.city')}>{customer.city || <Empty />}</DescriptionItem>
-              <DescriptionItem label={t('masterCustomer.fullAddress')} className="col-span-2">
+              <DescriptionItem label={t('masterCustomer.fullAddress')} className="col-span-full xl:col-span-2">
                 {formatCustomerFullAddress(customer, t(countryLabel)) || <Empty />}
               </DescriptionItem>
             </Descriptions>

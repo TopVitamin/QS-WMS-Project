@@ -1,5 +1,5 @@
 import { ImagePlus, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Empty } from '@/components/biz/display'
 import { Button } from '@/components/ui/button'
@@ -8,27 +8,39 @@ import { Button } from '@/components/ui/button'
  * Mock 照片上传（新品维护、无主货登记共用）：一期不接附件服务，
  * 只保留文件名并做本地预览，不校大小与张数。
  */
-export function MockPhotoField({
-  value,
-  onChange,
-}: {
-  value: string[]
-  onChange: (next: string[]) => void
-}) {
+export function MockPhotoField({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [previews, setPreviews] = useState<Record<string, string>>({})
+  // 预览用 object URL 必须手动释放，否则反复选图会一直占内存
+  const previewUrls = useRef<Record<string, string>>({})
+
+  useEffect(
+    () => () => {
+      Object.values(previewUrls.current).forEach((url) => URL.revokeObjectURL(url))
+    },
+    [],
+  )
 
   const add = (files: FileList | null) => {
     if (!files || files.length === 0) return
     const names: string[] = []
-    const nextPreviews = { ...previews }
     Array.from(files).forEach((file) => {
       names.push(file.name)
-      nextPreviews[file.name] = URL.createObjectURL(file)
+      const previous = previewUrls.current[file.name]
+      if (previous) URL.revokeObjectURL(previous)
+      previewUrls.current[file.name] = URL.createObjectURL(file)
     })
-    setPreviews(nextPreviews)
+    setPreviews({ ...previewUrls.current })
     onChange([...value, ...names])
+  }
+
+  const remove = (name: string) => {
+    const url = previewUrls.current[name]
+    if (url) URL.revokeObjectURL(url)
+    delete previewUrls.current[name]
+    setPreviews({ ...previewUrls.current })
+    onChange(value.filter((v) => v !== name))
   }
 
   return (
@@ -55,7 +67,7 @@ export function MockPhotoField({
           <button
             type="button"
             className="text-muted-foreground hover:text-foreground"
-            onClick={() => onChange(value.filter((v) => v !== name))}
+            onClick={() => remove(name)}
             aria-label={t('common.remove')}
           >
             <X className="size-3" />

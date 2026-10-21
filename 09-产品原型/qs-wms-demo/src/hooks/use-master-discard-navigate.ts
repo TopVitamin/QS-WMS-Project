@@ -21,7 +21,8 @@ export function useMasterDiscardNavigate(scope: MasterDataI18nScope) {
         })
         if (!ok) return
       }
-      navigate(to)
+      // 已经在这里确认过，useUnsavedChangesGuard 不再重复弹一次
+      navigate(to, { state: { skipUnsavedGuard: true } })
     },
     [confirm, navigate, scope, t],
   )

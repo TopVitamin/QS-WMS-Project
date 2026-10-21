@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { toast } from 'sonner'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
-import { useMasterDiscardNavigate } from '@/hooks/use-master-discard-navigate'
-import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
+import { useMasterForm } from '@/hooks/use-master-form'
 import {
+  createEmptyLocationForm,
   isLocationOccupied,
   locationDetailPath,
   parseLocationWarehouse,
@@ -19,13 +17,9 @@ import { LocationFormFields } from './location-form-fields'
 
 export function LocationEditPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { code } = useParams<{ code: string }>()
   const [search] = useSearchParams()
-  const warehouseCode = parseLocationWarehouse(search.toString())
-  const leave = useMasterDiscardNavigate('masterLocation')
-  const fieldError = useMasterFormFieldError('masterLocation')
-
+  const warehouseCode = parseLocationWarehouse(search.toString()) ?? ''
   const location = useDb((s) =>
     warehouseCode && code
       ? s.locationMasters.find((l) => l.warehouseCode === warehouseCode && l.code === code)
@@ -33,59 +27,41 @@ export function LocationEditPage() {
   )
   const inventory = useDb((s) => s.inventory)
   const updateLocationMaster = useDb((s) => s.updateLocationMaster)
+  const occupied = location ? isLocationOccupied(location, inventory) : false
 
-  const [form, setForm] = useState<LocationMaster | null>(null)
-  const [errors, setErrors] = useState<LocationMasterFormErrors>({})
-
-  useEffect(() => {
-    if (location) setForm({ ...location })
-  }, [location])
-
-  const snapshot = useMemo(() => (location ? JSON.stringify(location) : ''), [location])
+  const { form, setForm, errors, fieldError, onSave, onCancel } = useMasterForm<
+    LocationMaster,
+    LocationMasterFormErrors
+  >({
+    scope: 'masterLocation',
+    initial: location ?? createEmptyLocationForm(warehouseCode),
+    validate: validateLocationMasterForm,
+    save: (next) =>
+      updateLocationMaster(warehouseCode, code ?? '', {
+        ...(occupied ? {} : { zoneCode: next.zoneCode }),
+        remark: next.remark?.trim() || undefined,
+        allowMixSku: next.allowMixSku,
+        allowMixBatch: next.allowMixBatch,
+        putawaySequence: next.putawaySequence,
+        pickSequence: next.pickSequence,
+        aisle: next.aisle?.trim() || undefined,
+        bay: next.bay?.trim() || undefined,
+        level: next.level?.trim() || undefined,
+        productForms: next.productForms,
+        occupyingCustomerId: location?.occupyingCustomerId,
+      }),
+    backTo: () => locationDetailPath(warehouseCode, code ?? ''),
+  })
 
   if (!code || !warehouseCode) return <Navigate to="/wms/master/locations" replace />
   if (!location) return <Navigate to="/wms/master/locations" replace />
-  if (!form) return null
-
-  const occupied = isLocationOccupied(location, inventory)
-  const dirty = JSON.stringify(form) !== snapshot
-
-  const onSave = () => {
-    const nextErrors = validateLocationMasterForm(form)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0) {
-      toast.error(t('masterLocation.saveValidationFailed'))
-      return
-    }
-    const res = updateLocationMaster(warehouseCode, code, {
-      ...(occupied ? {} : { zoneCode: form.zoneCode }),
-      remark: form.remark?.trim() || undefined,
-      allowMixSku: form.allowMixSku,
-      allowMixBatch: form.allowMixBatch,
-      putawaySequence: form.putawaySequence,
-      pickSequence: form.pickSequence,
-      aisle: form.aisle?.trim() || undefined,
-      bay: form.bay?.trim() || undefined,
-      level: form.level?.trim() || undefined,
-      productForms: form.productForms,
-      occupyingCustomerId: location.occupyingCustomerId,
-    })
-    if (!res.ok) {
-      toast.error(t(res.errorKey))
-      return
-    }
-    toast.success(t('masterLocation.saveSuccess'))
-    navigate(locationDetailPath(warehouseCode, code))
-  }
-
-  const showFieldError = (key: keyof LocationMasterFormErrors) => fieldError(errors, key)
 
   return (
     <PageContainer
       title={t('masterLocation.editTitle')}
       actions={
         <>
-          <Button variant="outline" onClick={() => leave(locationDetailPath(warehouseCode, code), dirty)}>
+          <Button variant="outline" onClick={onCancel}>
             {t('common.cancel')}
           </Button>
           <Button onClick={onSave}>{t('common.save')}</Button>
@@ -97,7 +73,7 @@ export function LocationEditPage() {
         form={form}
         setForm={setForm}
         errors={errors}
-        fieldError={showFieldError}
+        fieldError={fieldError}
         zoneReadOnly={occupied}
       />
     </PageContainer>

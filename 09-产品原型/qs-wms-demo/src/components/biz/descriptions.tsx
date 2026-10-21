@@ -11,10 +11,10 @@ export function Descriptions({ columns = 3, className, children }: DescriptionsP
   return (
     <div
       className={cn(
-        'grid gap-x-6 gap-y-3',
-        columns === 2 && 'grid-cols-2',
-        columns === 3 && 'grid-cols-3',
-        columns === 4 && 'grid-cols-4',
+        'grid grid-cols-1 gap-x-6 gap-y-3',
+        columns === 2 && 'sm:grid-cols-2',
+        columns === 3 && 'sm:grid-cols-2 xl:grid-cols-3',
+        columns === 4 && 'sm:grid-cols-2 xl:grid-cols-4',
         className,
       )}
     >

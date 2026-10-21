@@ -28,7 +28,7 @@ export function createWarehouseMasters(): WarehouseMaster[] {
       updatedBy: 'system',
     },
     {
-      code: 'US-WH-LA',
+      code: 'US-LA-01',
       name: '美西仓',
       timezone: 'America/Los_Angeles',
       currency: 'USD',
@@ -47,7 +47,7 @@ export function createWarehouseMasters(): WarehouseMaster[] {
       updatedBy: 'system',
     },
     {
-      code: 'US-WH-NY',
+      code: 'US-NJ-01',
       name: '美东仓',
       timezone: 'America/New_York',
       currency: 'USD',
@@ -65,7 +65,7 @@ export function createWarehouseMasters(): WarehouseMaster[] {
       updatedBy: 'system',
     },
     {
-      code: 'DE-WH-FRA',
+      code: 'DE-FRA-01',
       name: '德国仓',
       timezone: 'Europe/Berlin',
       currency: 'EUR',

@@ -1,4 +1,5 @@
 import { FormFieldLabel } from '@/components/biz/form-field-label'
+import { connectFieldControl, useFieldA11y } from '@/components/biz/field-a11y'
 import { cn } from '@/lib/utils'
 
 /**
@@ -55,12 +56,23 @@ export function FormField({
   className?: string
   children: React.ReactNode
 }) {
+  const a11y = useFieldA11y(error, required, hint)
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', span && spanClass[span], className)}>
-      <FormFieldLabel required={required}>{label}</FormFieldLabel>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error}
+      <FormFieldLabel htmlFor={a11y.controlId} required={required}>
+        {label}
+      </FormFieldLabel>
+      {connectFieldControl(children, a11y)}
+      {hint && (
+        <p id={a11y.hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
+      {error ? (
+        <div id={a11y.errorId} role="alert">
+          {error}
+        </div>
+      ) : null}
     </div>
   )
 }

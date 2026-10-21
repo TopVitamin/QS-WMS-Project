@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateRangePickerField } from '@/components/biz/date-range-picker-field'
@@ -15,15 +15,10 @@ import { StatusTabs } from '@/components/biz/status-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { putawayOrderStatusMeta, qualityMeta } from '@/config/status'
-import { FILTER_ALL } from '@/lib/master-data'
 import { planQty, skuKindCount, submittedQty } from '@/lib/putaway'
-import {
-  emptyPutawayListFilters,
-  matchPutawayListFilters,
-  PUTAWAY_SOURCE_TYPES,
-  type PutawayListFilters,
-} from '@/lib/putaway-list-match'
+import { emptyPutawayListFilters, matchPutawayListFilters, PUTAWAY_SOURCE_TYPES } from '@/lib/putaway-list-match'
 import { codeNameText } from '@/lib/typography'
+import { useUrlListState } from '@/hooks/use-url-list-state'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { PutawayOrder, PutawayOrderStatus } from '@/types/inbound'
@@ -33,41 +28,6 @@ type StatusTab = 'ALL' | PutawayOrderStatus
 const statusTabs: StatusTab[] = ['ALL', 'PENDING', 'PUTAWAYING', 'COMPLETED']
 const qualityTypes: QualityType[] = ['GOOD', 'DEFECTIVE']
 
-function parseListState(params: URLSearchParams): { filters: PutawayListFilters; tab: StatusTab } {
-  const status = params.get('status') ?? 'ALL'
-  return {
-    tab: statusTabs.includes(status as StatusTab) ? (status as StatusTab) : 'ALL',
-    filters: {
-      putawayNo: params.get('putawayNo') ?? '',
-      sourceNo: params.get('sourceNo') ?? '',
-      containerNo: params.get('container') ?? '',
-      customerId: params.get('customer') ?? FILTER_ALL,
-      qualityType: params.get('quality') ?? FILTER_ALL,
-      sourceType: params.get('sourceType') ?? FILTER_ALL,
-      createdFrom: params.get('createdFrom') ?? '',
-      createdTo: params.get('createdTo') ?? '',
-      submittedFrom: params.get('submittedFrom') ?? '',
-      submittedTo: params.get('submittedTo') ?? '',
-    },
-  }
-}
-
-function toSearchParams(filters: PutawayListFilters, tab: StatusTab): URLSearchParams {
-  const params = new URLSearchParams()
-  if (tab !== 'ALL') params.set('status', tab)
-  if (filters.putawayNo) params.set('putawayNo', filters.putawayNo)
-  if (filters.sourceNo) params.set('sourceNo', filters.sourceNo)
-  if (filters.containerNo) params.set('container', filters.containerNo)
-  if (filters.customerId !== FILTER_ALL) params.set('customer', filters.customerId)
-  if (filters.qualityType !== FILTER_ALL) params.set('quality', filters.qualityType)
-  if (filters.sourceType !== FILTER_ALL) params.set('sourceType', filters.sourceType)
-  if (filters.createdFrom) params.set('createdFrom', filters.createdFrom)
-  if (filters.createdTo) params.set('createdTo', filters.createdTo)
-  if (filters.submittedFrom) params.set('submittedFrom', filters.submittedFrom)
-  if (filters.submittedTo) params.set('submittedTo', filters.submittedTo)
-  return params
-}
-
 /** 上架单列表：管理端查询入口（上架单主PRD 第四节）；保存与提交只在 PDA */
 export function PutawayListPage() {
   const { t } = useTranslation()
@@ -76,23 +36,12 @@ export function PutawayListPage() {
   const putawayOrders = useDb((s) => s.putawayOrders)
   const customers = useDb((s) => s.customers)
   const { customerCode, customerName } = useLookups()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const { filters, tab } = useMemo(() => parseListState(searchParams), [searchParams])
-  const [draft, setDraft] = useState<PutawayListFilters>(filters)
-
-  const [syncedFilters, setSyncedFilters] = useState(filters)
-  if (syncedFilters !== filters) {
-    setSyncedFilters(filters)
-    setDraft(filters)
-  }
-
-  const updateListState = useCallback(
-    (nextFilters: PutawayListFilters, nextTab: StatusTab) => {
-      setSearchParams(toSearchParams(nextFilters, nextTab), { replace: true })
-    },
-    [setSearchParams],
-  )
+  const list = useUrlListState(emptyPutawayListFilters, statusTabs, {
+    containerNo: 'container',
+    customerId: 'customer',
+    qualityType: 'quality',
+  })
+  const { filters, tab, draft, setDraft } = list
 
   const filtered = useMemo(
     () => putawayOrders.filter((p) => matchPutawayListFilters(p, warehouseCode, filters)),
@@ -119,9 +68,7 @@ export function PutawayListPage() {
         meta: { pin: 'left' },
         cell: ({ getValue }) => (
           <DocNo
-            onClick={() =>
-              navigate(`/wms/inbound/putaway/${getValue()}`, { state: { listSearch: searchParams.toString() } })
-            }
+            onClick={() => navigate(`/wms/inbound/putaway/${getValue()}`, { state: { listSearch: list.listSearch } })}
           >
             {getValue()}
           </DocNo>
@@ -147,7 +94,9 @@ export function PutawayListPage() {
         header: t('putaway.sourceNo'),
         cell: ({ row }) =>
           row.original.sourceType === 'INBOUND' ? (
-            <DocNo onClick={() => navigate(`/wms/inbound/orders/${row.original.sourceNo}`)}>{row.original.sourceNo}</DocNo>
+            <DocNo onClick={() => navigate(`/wms/inbound/orders/${row.original.sourceNo}`)}>
+              {row.original.sourceNo}
+            </DocNo>
           ) : (
             row.original.sourceNo
           ),
@@ -158,7 +107,9 @@ export function PutawayListPage() {
       }),
       col.accessor('customerId', {
         header: t('common.customer'),
-        cell: ({ getValue }) => <CodeName code={customerCode(getValue())} name={customerName(getValue())} className="max-w-52" />,
+        cell: ({ getValue }) => (
+          <CodeName code={customerCode(getValue())} name={customerName(getValue())} className="max-w-52" />
+        ),
       }),
       col.accessor((p) => skuKindCount(p), {
         id: 'skuCount',
@@ -204,7 +155,7 @@ export function PutawayListPage() {
                 hidden: row.original.status === 'COMPLETED',
                 onClick: () =>
                   navigate(`/wms/inbound/putaway/${row.original.putawayNo}/entry`, {
-                    state: { listSearch: searchParams.toString() },
+                    state: { listSearch: list.listSearch },
                   }),
               },
               {
@@ -218,7 +169,7 @@ export function PutawayListPage() {
         ),
       }),
     ])
-  }, [customerCode, customerName, navigate, searchParams, t])
+  }, [customerCode, customerName, navigate, list.listSearch, t])
 
   return (
     <PageContainer
@@ -233,11 +184,8 @@ export function PutawayListPage() {
     >
       <Panel className="p-4">
         <FilterBar
-          onSearch={() => updateListState(draft, tab)}
-          onReset={() => {
-            setDraft(emptyPutawayListFilters)
-            updateListState(emptyPutawayListFilters, tab)
-          }}
+          onSearch={list.search}
+          onReset={list.reset}
           advanced={
             <>
               <FilterItem label={t('putaway.sourceType')}>
@@ -306,7 +254,7 @@ export function PutawayListPage() {
       </Panel>
 
       <Panel className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <StatusTabs items={tabItems} value={tab} onChange={(nextTab) => updateListState(filters, nextTab)} />
+        <StatusTabs items={tabItems} value={tab} onChange={list.setTab} />
         <DataTable
           className="flex-1"
           data={rows}

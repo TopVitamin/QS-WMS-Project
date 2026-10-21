@@ -30,6 +30,10 @@ npm run dev
 - `docs/01-项目规划.md`：范围、技术栈、菜单与里程碑
 - `docs/02-设计规范.md`：设计 token、状态色、显示规则、页面模板、交互、国际化与数据规则（让 AI 生成新页面前先读）
 - `docs/03-业务组件与主数据页面.md`：业务组件、hooks 清单与主数据页面约定
+- `docs/04-作业台设计规范.md`：管理端扫码作业台的骨架、字号、反馈与自检
+- `docs/05-UI与工程改造记录.md`：2026-10-19 的 UI/工程改造、取舍和遗留项
 
-改完代码跑 `npm run lint`：oxlint 之外还会跑设计规范检查（`npm run lint:design`，拦截原始色、任意字号、写死的中文等，规则见设计规范第 9 节）。
+改完代码跑 `npm run check`：类型检查、oxlint、设计规范检查、测试和构建一次跑完。只想跑静态检查用 `npm run lint`（含 `npm run lint:design`）。
+
+格式化用 `npm run format`（Prettier，配置见 `.prettierrc.json`）；`npm run format:check` 只检查不改文件。存量文件尚未一次性全量格式化，改动某个文件时顺手格式化即可。
 - PDA 的产品规范与作业 PRD：`05-应用设计方案/20261002-MVP版本/需求文档PRD/7-PDA作业端/`

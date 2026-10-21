@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useDb } from '@/mock/db'
 import {
+  confirmPutawayEntry,
   listLocationsByWarehouse,
   listPendingPutawayOrders,
   removePutawayLine,
@@ -28,5 +29,6 @@ export function usePutaway(warehouseCode: string) {
     savePutawayLine,
     removePutawayLine,
     submitPutawayOrder,
+    confirmPutawayEntry,
   }
 }

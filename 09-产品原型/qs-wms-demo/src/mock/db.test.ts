@@ -279,7 +279,8 @@ describe('useDb actions', () => {
         useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: po.planLines[0].planQty, operator: 'test' }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.overRemain' })
 
-      expect(useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, operator: 'test' })).toEqual({ ok: true })
+      const [placed] = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.actualLines
+      expect(useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: placed.lineNo, operator: 'test' })).toEqual({ ok: true })
       expect(useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.status).toBe('PENDING')
     })
 
@@ -393,29 +394,15 @@ describe('上架单按应上架行落位（上架单主PRD 第三节）', () => 
     expect(recordedOfPlanLine(afterFirst, second.lineNo)).toBe(10)
 
     expect(
-      useDb.getState().removePutawayLine({
-        putawayNo: po.putawayNo,
-        locationCode: 'B-01-01',
-        planLineNo: second.lineNo,
-        operator: 'test',
-      }),
+      useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: secondLine.lineNo, operator: 'test' }),
     ).toEqual({ ok: true })
     const afterRemove = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
     expect(recordedOfPlanLine(afterRemove, second.lineNo)).toBe(0)
     expect(recordedOfPlanLine(afterRemove, first.lineNo)).toBe(320)
-    /** 删光落位仍保持上架中（上架单主PRD 第二节） */
-    useDb.getState().removePutawayLine({
-      putawayNo: po.putawayNo,
-      locationCode: 'B-01-01',
-      planLineNo: first.lineNo,
-      operator: 'test',
-    })
-    useDb.getState().removePutawayLine({
-      putawayNo: po.putawayNo,
-      locationCode: 'A-02-01',
-      planLineNo: first.lineNo,
-      operator: 'test',
-    })
+    /** 删光落位回到待上架（上架单主PRD 第二节） */
+    afterRemove.actualLines.forEach((a) =>
+      useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: a.lineNo, operator: 'test' }),
+    )
     const emptied = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
     expect(emptied.actualLines).toHaveLength(0)
     expect(emptied.status).toBe('PENDING')
@@ -426,6 +413,48 @@ describe('上架单按应上架行落位（上架单主PRD 第三节）', () => 
     expect(po.status).toBe('COMPLETED')
     expect(po.actualLines.map((a) => a.serialNos)).toEqual([['SN00000001'], ['SN00000002']])
     expect(new Set(po.actualLines.map((a) => a.locationCode)).size).toBe(2)
+  })
+
+  it('同一库位同一行两条SN落位，撤销第二条后剩下第一条的SN', () => {
+    /** 种子里的 SN 上架单已提交（新 SN 商品收货要先量方）：照它放一张待上架的 SN-DEMO-01 × 2 */
+    const seeded = useDb.getState().putawayOrders.find((p) => p.putawayNo === 'PA-20261010-0001')!
+    const po: PutawayOrder = {
+      ...seeded,
+      putawayNo: 'PA-TEST-SN-UNDO',
+      status: 'PENDING',
+      actualLines: [],
+      submittedAt: undefined,
+      submittedBy: undefined,
+    }
+    useDb.setState((s) => ({ putawayOrders: [...s.putawayOrders, po] }))
+    const target = suggestPutawayLocation(po, 'SN-DEMO-01', useDb.getState())!
+    const save = (sn: string) =>
+      useDb.getState().savePutawayLine({
+        putawayNo: po.putawayNo,
+        locationCode: target,
+        planLineNo: po.planLines[0].lineNo,
+        qty: 1,
+        serialNos: [sn],
+        operator: 'test',
+      })
+    expect(save('SN00000101')).toEqual({ ok: true })
+    expect(save('SN00000102')).toEqual({ ok: true })
+    /** SN 每次保存各追加一条，同库位同一应上架行有两条 */
+    const placed = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.actualLines
+    expect(placed.map((a) => [a.locationCode, a.planLineNo, a.serialNos])).toEqual([
+      [target, po.planLines[0].lineNo, ['SN00000101']],
+      [target, po.planLines[0].lineNo, ['SN00000102']],
+    ])
+
+    expect(
+      useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: placed[1].lineNo, operator: 'test' }),
+    ).toEqual({ ok: true })
+    const left = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.actualLines
+    expect(left.map((a) => a.serialNos)).toEqual([['SN00000101']])
+    /** 已撤销的行再撤销报找不到，不会顺手删掉剩下那条 */
+    expect(
+      useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: placed[1].lineNo, operator: 'test' }),
+    ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.lineNotFound' })
   })
 })
 

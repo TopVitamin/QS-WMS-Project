@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { Empty } from '@/components/biz/display'
 import { cn } from '@/lib/utils'
 
 /**
@@ -67,7 +68,46 @@ export function WorkbenchCurrent({
           <div className="truncate text-2xl leading-tight font-bold">{children}</div>
         </div>
       </div>
-      {extra && <div className="flex shrink-0 items-center gap-2">{extra}</div>}
+      {extra && <div className="flex min-w-0 items-center gap-2">{extra}</div>}
     </div>
+  )
+}
+
+/**
+ * 作业台商品列（上架、收货共用；列宽、表格样式见 lib/workbench-styles.ts）：
+ * 条码大字在上（扫码对实物看它），SKU 小字在下；批次、新品标记等放 children。
+ * 编码类不截断、不缩小：放得下就一行，特别长的按字符折行。没有条码时 SKU 当大字显示。名称单独一列，见 WorkbenchProductName。
+ */
+export function WorkbenchProductCode({
+  barcode,
+  sku,
+  children,
+}: {
+  barcode?: string
+  sku: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-xl leading-tight font-semibold tabular-nums [overflow-wrap:anywhere]">
+        {barcode || sku}
+      </span>
+      {barcode && (
+        <span className="text-base leading-snug text-muted-foreground tabular-nums [overflow-wrap:anywhere]">
+          {sku}
+        </span>
+      )}
+      {children}
+    </div>
+  )
+}
+
+/** 作业台名称列：18px 正文色；最多两行，再长省略，悬停看全称 */
+export function WorkbenchProductName({ name }: { name?: string }) {
+  if (!name) return <Empty className="text-lg" />
+  return (
+    <span className="line-clamp-2 text-lg leading-snug [overflow-wrap:anywhere]" title={name}>
+      {name}
+    </span>
   )
 }

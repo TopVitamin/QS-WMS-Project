@@ -167,7 +167,7 @@ export function OutboundPutbackDetailPage() {
             <DescriptionItem label={t('outbound.ui.submittedAt')}>
               <DateTime value={putback.completedAt} />
             </DescriptionItem>
-            <DescriptionItem label={t('outbound.ui.remark')} className="col-span-3" multiline>
+            <DescriptionItem label={t('outbound.ui.remark')} className="col-span-full xl:col-span-3" multiline>
               {putback.remark || <Empty />}
             </DescriptionItem>
           </Descriptions>

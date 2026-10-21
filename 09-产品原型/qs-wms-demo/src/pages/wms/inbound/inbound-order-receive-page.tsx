@@ -25,6 +25,7 @@ import {
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { isNewSku } from '@/lib/new-sku'
 import { cn } from '@/lib/utils'
+import { workbenchLayout as wl } from '@/lib/workbench-styles'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import {
@@ -119,6 +120,8 @@ export function InboundOrderReceivePage() {
   }, [session])
 
   const boxLabel = (box: WebReceiveBox) => (box.bulkPiece ? t('inbound.bulkPiece') : (box.containerNo ?? ''))
+  /** 提示里用商品名称指认商品（作业员认名称和条码，SKU 编码是辅助） */
+  const skuLabel = (code: string) => sku(code)?.name ?? code
 
   /** 作业后把焦点拉回扫码框，扫描枪的下一枪不丢 */
   const refocusScan = () => requestAnimationFrame(() => scanRef.current?.focus())
@@ -156,7 +159,7 @@ export function InboundOrderReceivePage() {
 
   const overPrompt = (skuCode: string, max: number): WorkbenchPromptState => ({
     tone: 'error',
-    title: t('inbound.receive.prompt.overTitle', { sku: skuCode }),
+    title: t('inbound.receive.prompt.overTitle', { sku: skuLabel(skuCode) }),
     detail: t('inbound.receive.prompt.overDetail', {
       max,
       remain: lineUnreceivedQty(openLines.find((l) => l.skuCode === skuCode)!),
@@ -304,7 +307,7 @@ export function InboundOrderReceivePage() {
     setActiveEdit(hit, res.draft)
     scanResult(true, {
       tone: 'success',
-      title: t('inbound.receive.prompt.bumpTitle', { sku: hit }),
+      title: t('inbound.receive.prompt.bumpTitle', { sku: skuLabel(hit) }),
       detail: t('inbound.receive.prompt.bumpDetail', {
         qty: boxQty(activeBox) + 1,
         left: limit - receiveDraftActivity(res.draft),
@@ -339,7 +342,11 @@ export function InboundOrderReceivePage() {
         setActiveSku(code)
         scanResult(false, {
           tone: 'error',
-          title: t('inbound.receive.prompt.reasonTitle', { box: boxLabel(box), sku: code, qty: edit.rejectedQty }),
+          title: t('inbound.receive.prompt.reasonTitle', {
+            box: boxLabel(box),
+            sku: skuLabel(code),
+            qty: edit.rejectedQty,
+          }),
           detail: t('inbound.receive.prompt.reasonDetail'),
         })
         return
@@ -412,170 +419,172 @@ export function InboundOrderReceivePage() {
         </Button>
       }
     >
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Panel className="flex min-h-0 min-w-0 flex-col gap-3 p-4">
-          {/* 单头上下文：作业只需要知道货主和还剩多少，柜号、运单号等去详情看 */}
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-1 text-base">
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t('common.customer')}</span>
-              <CodeName code={customerCode(order.customerId)} name={customerName(order.customerId)} />
-            </span>
-            <span className="flex items-baseline gap-2">
-              <span className="text-sm text-muted-foreground">{t('inbound.receive.summarySkuKinds')}</span>
-              <Num value={openLines.length} className="text-xl font-semibold" />
-            </span>
-            <span className="flex items-baseline gap-2">
-              <span className="text-sm text-muted-foreground">{t('inbound.receive.summaryRemainTotal')}</span>
-              <Num value={remainTotal} className="text-xl font-semibold" />
-            </span>
-          </div>
-
-          <WorkbenchPrompt prompt={feedback ?? defaultPrompt} />
-
-          {activeBox && (
-            <WorkbenchCurrent
-              icon={activeBox.bulkPiece ? Package : Box}
-              label={t('inbound.receive.currentContainer')}
-              extra={
-                <Button variant="outline" className="h-10 px-4 text-base" onClick={startNextContainer}>
-                  <Plus data-icon="inline-start" />
-                  {t('inbound.receive.addContainer')}
-                </Button>
-              }
-            >
-              {activeBox.bulkPiece ? (
-                t('inbound.bulkPiece')
-              ) : (
-                <BizCode className="text-2xl">{activeBox.containerNo}</BizCode>
-              )}
-              <span className="ml-3 text-base font-normal text-muted-foreground">
-                {t('inbound.receive.boxSummary', { skus: activeEdits(activeBox).length, qty: boxQty(activeBox) })}
+      <div className={wl.root}>
+        <div className={wl.grid}>
+          <Panel className={wl.main}>
+            {/* 单头上下文：作业只需要知道货主和还剩多少，柜号、运单号等去详情看 */}
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-1 text-base">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t('common.customer')}</span>
+                <CodeName code={customerCode(order.customerId)} name={customerName(order.customerId)} />
               </span>
-            </WorkbenchCurrent>
-          )}
+              <span className="flex items-baseline gap-2">
+                <span className="text-sm text-muted-foreground">{t('inbound.receive.summarySkuKinds')}</span>
+                <Num value={openLines.length} className="text-xl font-semibold" />
+              </span>
+              <span className="flex items-baseline gap-2">
+                <span className="text-sm text-muted-foreground">{t('inbound.receive.summaryRemainTotal')}</span>
+                <Num value={remainTotal} className="text-xl font-semibold" />
+              </span>
+            </div>
 
-          <div className="flex items-center gap-3">
-            <ScanField
-              inputRef={scanRef}
-              flash={flash}
-              className="min-w-0 flex-1"
-              placeholder={activeBox ? t('inbound.receive.scanSku') : t('inbound.receive.containerPlaceholder')}
-              value={scanValue}
-              onChange={setScanValue}
-              onEnter={onScan}
-            />
-            {!activeBox && (
-              <>
-                <Button className="h-14 px-6 text-base" onClick={onScan}>
-                  {t('inbound.receive.bindAction')}
-                </Button>
-                {!hasBulkBox && (
-                  <Button
-                    variant="outline"
-                    className="h-14 px-4 text-base"
-                    onClick={() => openBox({ bulkPiece: true })}
-                  >
-                    <Package data-icon="inline-start" />
-                    {t('inbound.bulkPiece')}
+            <WorkbenchPrompt prompt={feedback ?? defaultPrompt} />
+
+            {activeBox && (
+              <WorkbenchCurrent
+                icon={activeBox.bulkPiece ? Package : Box}
+                label={t('inbound.receive.currentContainer')}
+                extra={
+                  <Button variant="outline" className="h-10 px-4 text-base" onClick={startNextContainer}>
+                    <Plus data-icon="inline-start" />
+                    {t('inbound.receive.addContainer')}
                   </Button>
+                }
+              >
+                {activeBox.bulkPiece ? (
+                  t('inbound.bulkPiece')
+                ) : (
+                  <BizCode className="text-2xl">{activeBox.containerNo}</BizCode>
                 )}
-              </>
+                <span className="ml-3 text-base font-normal text-muted-foreground">
+                  {t('inbound.receive.boxSummary', { skus: activeEdits(activeBox).length, qty: boxQty(activeBox) })}
+                </span>
+              </WorkbenchCurrent>
             )}
-          </div>
 
-          <InboundReceiveLineForm
-            lines={openLines}
-            edits={activeBox?.edits ?? {}}
-            limits={limits}
-            activeSku={activeSku}
-            containerReady={containerReady}
-            onSelectSku={selectSku}
-            onQtyChange={changeQty}
-            onReasonChange={(code, reason) => {
-              if (!activeBox) return
-              setActiveEdit(code, { ...(activeBox.edits[code] ?? emptyReceiveDraft()), rejectReason: reason })
-              setFeedback(undefined)
-            }}
-            onClear={(code) => setActiveEdit(code, undefined)}
-            onEnterDone={refocusScan}
-            skuName={(code) => sku(code)?.name}
-            skuBarcode={(code) => sku(code)?.barcode}
-            isNewSku={(code) => isNewSku(newSkuRecords, order?.customerId ?? '', code)}
-            onGoMeasure={(code) => setMeasureSku(code)}
-          />
-
-          <NewSkuMeasureDialog
-            open={!!measureSku}
-            mode='receive'
-            customerId={order?.customerId}
-            skuCode={measureSku}
-            sourceInboundNo={inboundNo}
-            onClose={() => setMeasureSku(undefined)}
-          />
-        </Panel>
-
-        {/* 本次收货：已录的容器一目了然，最后一起提交成一条收货记录 */}
-        <SummaryCard
-          size="lg"
-          className="min-h-0"
-          title={
-            <span className="flex items-center gap-2">
-              {t('inbound.receive.sessionTitle')}
-              <TagLabel tone={session.boxes.length ? 'blue' : 'gray'}>{session.boxes.length}</TagLabel>
-            </span>
-          }
-          description={t('inbound.receive.sessionHint')}
-        >
-          <div className="-mx-1 flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-1">
-            {session.boxes.length === 0 && (
-              <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
-                <Box className="size-8 opacity-40" />
-                <p className="text-sm">{t('inbound.receive.sessionEmpty')}</p>
-              </div>
-            )}
-            {session.boxes.map((box) => (
-              <ContainerItem
-                key={box.key}
-                box={box}
-                label={boxLabel(box)}
-                active={box.key === session.activeKey}
-                onOpen={() => openBox({ containerNo: box.containerNo, bulkPiece: box.bulkPiece })}
-                onRemove={() => void removeBox(box)}
+            <div className="flex flex-wrap items-center gap-3">
+              <ScanField
+                inputRef={scanRef}
+                flash={flash}
+                className="min-w-64 flex-1"
+                placeholder={activeBox ? t('inbound.receive.scanSku') : t('inbound.receive.containerPlaceholder')}
+                value={scanValue}
+                onChange={setScanValue}
+                onEnter={onScan}
               />
-            ))}
-          </div>
+              {!activeBox && (
+                <>
+                  <Button className="h-14 px-6 text-base" onClick={onScan}>
+                    {t('inbound.receive.bindAction')}
+                  </Button>
+                  {!hasBulkBox && (
+                    <Button
+                      variant="outline"
+                      className="h-14 px-4 text-base"
+                      onClick={() => openBox({ bulkPiece: true })}
+                    >
+                      <Package data-icon="inline-start" />
+                      {t('inbound.bulkPiece')}
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
 
-          <SummaryMetrics
+            <InboundReceiveLineForm
+              lines={openLines}
+              edits={activeBox?.edits ?? {}}
+              limits={limits}
+              activeSku={activeSku}
+              containerReady={containerReady}
+              onSelectSku={selectSku}
+              onQtyChange={changeQty}
+              onReasonChange={(code, reason) => {
+                if (!activeBox) return
+                setActiveEdit(code, { ...(activeBox.edits[code] ?? emptyReceiveDraft()), rejectReason: reason })
+                setFeedback(undefined)
+              }}
+              onClear={(code) => setActiveEdit(code, undefined)}
+              onEnterDone={refocusScan}
+              skuName={(code) => sku(code)?.name}
+              skuBarcode={(code) => sku(code)?.barcode}
+              isNewSku={(code) => isNewSku(newSkuRecords, order?.customerId ?? '', code)}
+              onGoMeasure={(code) => setMeasureSku(code)}
+            />
+
+            <NewSkuMeasureDialog
+              open={!!measureSku}
+              mode="receive"
+              customerId={order?.customerId}
+              skuCode={measureSku}
+              sourceInboundNo={inboundNo}
+              onClose={() => setMeasureSku(undefined)}
+            />
+          </Panel>
+
+          {/* 本次收货：已录的容器一目了然，最后一起提交成一条收货记录 */}
+          <SummaryCard
             size="lg"
-            items={[
-              { label: t('inbound.receive.sessionContainers'), value: totals.containers },
-              { label: t('inbound.receive.sessionGoodQty'), value: totals.good, tone: 'green' },
-              {
-                label: t('inbound.receive.sessionDefectQty'),
-                value: totals.defect,
-                tone: 'orange',
-                hidden: totals.defect === 0,
-              },
-              {
-                label: t('inbound.receive.totalRejected'),
-                value: totals.rejected,
-                tone: 'red',
-                hidden: totals.rejected === 0,
-              },
-            ]}
-          />
+            className={wl.aside}
+            title={
+              <span className="flex items-center gap-2">
+                {t('inbound.receive.sessionTitle')}
+                <TagLabel tone={session.boxes.length ? 'blue' : 'gray'}>{session.boxes.length}</TagLabel>
+              </span>
+            }
+            description={t('inbound.receive.sessionHint')}
+          >
+            <div className="-mx-1 flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-1">
+              {session.boxes.length === 0 && (
+                <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
+                  <Box className="size-8 opacity-40" />
+                  <p className="text-sm">{t('inbound.receive.sessionEmpty')}</p>
+                </div>
+              )}
+              {session.boxes.map((box) => (
+                <ContainerItem
+                  key={box.key}
+                  box={box}
+                  label={boxLabel(box)}
+                  active={box.key === session.activeKey}
+                  onOpen={() => openBox({ containerNo: box.containerNo, bulkPiece: box.bulkPiece })}
+                  onRemove={() => void removeBox(box)}
+                />
+              ))}
+            </div>
 
-          <div className="flex flex-col gap-2">
-            <Button className="h-12 w-full text-base" disabled={totals.containers === 0} onClick={submit}>
-              {t('inbound.receive.submitMany', { count: totals.containers })}
-            </Button>
-            {session.boxes.length > 0 && (
-              <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => void onClearSession()}>
-                {t('inbound.receive.clearSession')}
+            <SummaryMetrics
+              size="lg"
+              items={[
+                { label: t('inbound.receive.sessionContainers'), value: totals.containers },
+                { label: t('inbound.receive.sessionGoodQty'), value: totals.good, tone: 'green' },
+                {
+                  label: t('inbound.receive.sessionDefectQty'),
+                  value: totals.defect,
+                  tone: 'orange',
+                  hidden: totals.defect === 0,
+                },
+                {
+                  label: t('inbound.receive.totalRejected'),
+                  value: totals.rejected,
+                  tone: 'red',
+                  hidden: totals.rejected === 0,
+                },
+              ]}
+            />
+
+            <div className="flex flex-col gap-2">
+              <Button className="h-12 w-full text-base" disabled={totals.containers === 0} onClick={submit}>
+                {t('inbound.receive.submitMany', { count: totals.containers })}
               </Button>
-            )}
-          </div>
-        </SummaryCard>
+              {session.boxes.length > 0 && (
+                <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => void onClearSession()}>
+                  {t('inbound.receive.clearSession')}
+                </Button>
+              )}
+            </div>
+          </SummaryCard>
+        </div>
       </div>
     </PageContainer>
   )

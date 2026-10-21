@@ -206,7 +206,7 @@ export function OutboundPickTaskDetailPage() {
             <DescriptionItem label={t('outbound.ui.submittedAt')}>
               <DateTime value={task.completedAt} />
             </DescriptionItem>
-            <DescriptionItem label={t('outbound.ui.taskRemark')} className="col-span-3" multiline>
+            <DescriptionItem label={t('outbound.ui.taskRemark')} className="col-span-full xl:col-span-3" multiline>
               {task.remark || <Empty />}
             </DescriptionItem>
           </Descriptions>

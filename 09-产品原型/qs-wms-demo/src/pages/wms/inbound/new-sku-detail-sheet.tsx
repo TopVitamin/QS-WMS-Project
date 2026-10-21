@@ -90,7 +90,7 @@ export function NewSkuDetailSheet({
               <DescriptionItem label={t('newSku.remark')} multiline>
                 {record.remark || <Empty />}
               </DescriptionItem>
-              <DescriptionItem label={t('unclaimed.photo')} className="col-span-3" multiline>
+              <DescriptionItem label={t('unclaimed.photo')} className="col-span-full xl:col-span-3" multiline>
                 <MockPhotoList value={record.photos} />
               </DescriptionItem>
             </Descriptions>

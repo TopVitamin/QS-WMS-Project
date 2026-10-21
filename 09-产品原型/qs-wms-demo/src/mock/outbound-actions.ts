@@ -1,7 +1,9 @@
 import { nextDocNo } from '@/lib/doc-no'
+import { countingStocktake, isLiveOutbound, stockKey } from '@/lib/inventory-derive'
+import { balanceLog, pairLogs, reservedLog } from '@/lib/inventory-ledger'
 import { deriveOutboundOrderStatus } from '@/lib/outbound-derive'
 import type { SeedData } from './seed'
-import type { AuditRefType, InventoryRecord } from '@/types/wms'
+import type { AuditRefType, InventoryLog, InventoryRecord } from '@/types/wms'
 import type {
   OutboundCommand,
   OutboundData,
@@ -22,7 +24,6 @@ export const outboundDataKeys = [
   'skuAllocationControls',
   'outboundMessages',
   'outboundResults',
-  'inventoryCounts',
   'outboundRole',
 ] as const
 export function emptyOutboundData(): OutboundData {
@@ -36,7 +37,6 @@ export function emptyOutboundData(): OutboundData {
     skuAllocationControls: [],
     outboundMessages: [],
     outboundResults: [],
-    inventoryCounts: [],
     outboundRole: 'SUPERVISOR',
   }
 }
@@ -71,7 +71,7 @@ export function allocationBlocked(
 ): boolean {
   return (
     s.skuAllocationControls.some((r) => sameSku(r, warehouse, owner, sku)) ||
-    s.inventoryCounts.some((r) => sameSku(r, warehouse, owner, sku) && r.status === 'COUNTING')
+    Boolean(countingStocktake(s.inventoryCounts, warehouse, owner, sku))
   )
 }
 export function openTask(t: OutboundPickTask) {
@@ -127,8 +127,6 @@ export function applyOutboundAction(
   const patch: Patch = structuredClone({ ...data, inventory: state.inventory, inventoryLogs: state.inventoryLogs })
   const s = { ...state, ...patch }
   const finish = (no?: string): OutboundActionResult => ({ ok: true, no, patch })
-  const supervisor = () => {}
-  const role = (_r: 'ORGANIZER' | 'WORKER') => {}
   const order = (no: string) => s.outboundOrders.find((o) => o.no === no) ?? reject('notFound')
   const task = (no: string) => s.outboundPickTasks.find((t) => t.no === no) ?? reject('notFound')
   const inventory = (id: string) => s.inventory.find((r) => r.id === id) ?? reject('notFound')
@@ -137,7 +135,7 @@ export function applyOutboundAction(
     if (o.status === 'SHIPPED' || o.status === 'CANCELLED') reject('terminal')
   }
   const frozen = (warehouse: string, owner: string, sku: string) =>
-    s.inventoryCounts.some((r) => sameSku(r, warehouse, owner, sku) && r.status === 'COUNTING')
+    Boolean(countingStocktake(s.inventoryCounts, warehouse, owner, sku))
   const block = (warehouse: string, owner: string, sku: string) => {
     if (allocationBlocked(s, warehouse, owner, sku)) reject('pending', { sku })
   }
@@ -154,31 +152,28 @@ export function applyOutboundAction(
     const legacy = s.locations.find((l) => l.warehouseCode === warehouse && l.code === code)
     return legacy ? { type: legacy.type, enabled: true, master: undefined } : undefined
   }
-  const stockLog = (
-    r: InventoryRecord,
-    qty: number,
-    ref: string,
-    type: 'PICK' | 'RETURN' | 'SHIP' | 'ADJUST' | 'MOVE',
-  ) =>
-    s.inventoryLogs.push({
+  /** 出库各环节的流水来源：refNo 为出库单，jobNo 为拣货任务或返库上架单 */
+  type StockLogMeta = Pick<InventoryLog, 'type' | 'refNo'> &
+    Partial<Pick<InventoryLog, 'jobNo' | 'sourceLineNo' | 'reasonCode' | 'serialNos'>>
+  /** 实际数量流水：在库存明细行变化之后调用 */
+  const stockLog = (r: InventoryRecord, qty: number, meta: StockLogMeta) => {
+    const log = balanceLog(r, qty, {
       id: `LOG-OB-${at}-${s.inventoryLogs.length}`,
-      warehouseCode: r.warehouseCode,
-      customerId: r.customerId,
-      skuCode: r.skuCode,
-      locationCode: r.locationCode,
-      qtyChange: qty,
-      type,
-      refNo: ref,
       operator,
       createdAt: at,
+      sourceType: 'OUTBOUND',
+      ...meta,
+      serialNos: meta.serialNos?.length ? meta.serialNos : undefined,
     })
+    s.inventoryLogs.push(log)
+    return log
+  }
   const move = (
     id: string,
     target: string,
     qty: number,
     serialNos: string[],
-    ref: string,
-    type: 'PICK' | 'RETURN' | 'MOVE',
+    meta: StockLogMeta & { type: 'PICK' | 'RETURN' | 'QUALITY' },
     quality?: InventoryRecord['qualityType'],
   ) => {
     const from = inventory(id)
@@ -213,8 +208,10 @@ export function applyOutboundAction(
     to.onHandQty += qty
     to.lockedQty = q === 'DEFECTIVE' ? to.onHandQty : 0
     to.serialNos = [...(to.serialNos ?? []), ...serialNos]
-    stockLog(from, -qty, ref, type)
-    stockLog(to, qty, ref, type)
+    const actionId = `ACT-${at}-${s.inventoryLogs.length}`
+    const minus = stockLog(from, -qty, { ...meta, serialNos })
+    const plus = stockLog(to, qty, { ...meta, serialNos })
+    pairLogs(minus, plus, actionId)
     return to.id
   }
   const recompute = () => {
@@ -380,8 +377,16 @@ export function applyOutboundAction(
             }),
         )
       let stagingInventoryId = a.stagingInventoryId
+      // 复核发现已拣残损：在出库暂存库位转不良后退拣，写成对品质转换流水
       if (reason === 'DAMAGED')
-        stagingInventoryId = move(stagingInventoryId, t.stagingCode, qty, serialNos, no, 'MOVE', 'DEFECTIVE')
+        stagingInventoryId = move(
+          stagingInventoryId,
+          t.stagingCode,
+          qty,
+          serialNos,
+          { type: 'QUALITY', refNo: o.no, jobNo: no, sourceLineNo: a.itemNo, reasonCode: 'DAMAGED' },
+          'DEFECTIVE',
+        )
       if (reason === 'MISSING') markPending(o.warehouseCode, o.customerId, l.skuCode, no)
       return {
         id: `${no}-${idx + 1}`,
@@ -502,7 +507,6 @@ export function applyOutboundAction(
         }
         if (p.source === 'OMS' && (p.version ?? 0) !== 0) reject('version')
         if (p.source === 'MANUAL') {
-          supervisor()
           if (p.type !== 'OTHER' || !p.emailBasis?.trim()) reject('basis')
         }
         if (
@@ -635,12 +639,10 @@ export function applyOutboundAction(
         break
       }
       case 'ALLOCATE': {
-        role('ORGANIZER')
         resultNo = allocate([order(c.no)]).no
         break
       }
       case 'WAVE': {
-        role('ORGANIZER')
         const orders = [...new Set(c.orderNos)].map(order)
         if (
           orders.length < 2 ||
@@ -673,7 +675,6 @@ export function applyOutboundAction(
         break
       }
       case 'PICK': {
-        role('WORKER')
         const t = task(c.no)
         if (t.confirmations.includes(c.confirmationId)) return finish(t.no)
         if (!openTask(t)) reject('terminal')
@@ -724,7 +725,12 @@ export function applyOutboundAction(
             )
           )
             reject('serial')
-          const stageId = move(r.id, t.stagingCode, qty, sns, t.no, 'PICK')
+          const stageId = move(r.id, t.stagingCode, qty, sns, {
+            type: 'PICK',
+            refNo: p.orderNo,
+            jobNo: t.no,
+            sourceLineNo: p.itemNo,
+          })
           t.assignments.push({
             id: `${t.no}-A${t.assignments.length + 1}`,
             lineId: l.id,
@@ -749,7 +755,6 @@ export function applyOutboundAction(
         break
       }
       case 'SHORTAGE': {
-        role('WORKER')
         const t = task(c.no)
         if (!openTask(t)) reject('terminal')
         const l = t.lines.find((l) => l.id === c.lineId) ?? reject('notFound')
@@ -790,7 +795,6 @@ export function applyOutboundAction(
         break
       }
       case 'FINISH_PICK': {
-        role('WORKER')
         const t = task(c.no)
         if (!openTask(t)) reject('terminal')
         if (t.lines.some((l) => l.plannedQty !== l.pickedQty + l.shortageQty)) reject('unfinished')
@@ -801,7 +805,6 @@ export function applyOutboundAction(
         break
       }
       case 'VERIFY': {
-        role('WORKER')
         const o = order(c.no)
         ensureLive(o)
         if (
@@ -861,7 +864,6 @@ export function applyOutboundAction(
         break
       }
       case 'DELETE_VERIFY': {
-        role('WORKER')
         const v = s.outboundVerifications.find((v) => v.no === c.no) ?? reject('notFound')
         ensureLive(order(v.orderNo))
         if (v.deleted) reject('terminal')
@@ -873,7 +875,6 @@ export function applyOutboundAction(
         break
       }
       case 'PACK_VERIFY': {
-        role('WORKER')
         const v = s.outboundVerifications.find((v) => v.no === c.no) ?? reject('notFound')
         ensureLive(order(v.orderNo))
         if (v.deleted || !c.containerNo.trim() || !Number.isFinite(c.weightKg) || c.weightKg <= 0)
@@ -886,8 +887,6 @@ export function applyOutboundAction(
         break
       }
       case 'UNPICK': {
-        role('WORKER')
-        if (c.reason === 'DAMAGED') supervisor()
         const o = order(c.no)
         ensureLive(o)
         const t =
@@ -908,7 +907,6 @@ export function applyOutboundAction(
         }
         ensureLive(o)
         if (o.source === 'OMS' && !message) reject('message')
-        if (o.source === 'MANUAL') supervisor()
         if (message && message.version !== o.version) reject('version')
         s.outboundPickTasks
           .filter((t) => taskOrderNos(t).includes(o.no))
@@ -958,7 +956,6 @@ export function applyOutboundAction(
         break
       }
       case 'SHIP': {
-        supervisor()
         const o = order(c.no)
         ensureLive(o)
         o.items.forEach((i) => {
@@ -987,7 +984,13 @@ export function applyOutboundAction(
             r.onHandQty -= a.activeQty
             r.lockedQty = r.qualityType === 'DEFECTIVE' ? r.onHandQty : 0
             r.serialNos = r.serialNos?.filter((sn) => !a.activeSerialNos.includes(sn))
-            stockLog(r, -a.activeQty, o.no, 'SHIP')
+            stockLog(r, -a.activeQty, {
+              type: 'SHIP',
+              refNo: o.no,
+              jobNo: a.taskNo,
+              sourceLineNo: a.itemNo,
+              serialNos: a.activeSerialNos,
+            })
           })
         o.items.forEach((i) => {
           i.shippedQty = i.verifiedQty
@@ -1025,14 +1028,12 @@ export function applyOutboundAction(
         break
       }
       case 'HANDOVER': {
-        role('WORKER')
         const o = order(c.no)
         if (o.status !== 'SHIPPED') reject('handover')
         resultNo = addHandover(o, c)
         break
       }
       case 'SAVE_PUTBACK': {
-        role('WORKER')
         const p = s.outboundPutbacks.find((p) => p.no === c.no) ?? reject('notFound')
         if (p.status === 'COMPLETED') reject('terminal')
         const l = p.lines.find((l) => l.id === c.lineId) ?? reject('notFound')
@@ -1064,7 +1065,6 @@ export function applyOutboundAction(
         break
       }
       case 'RESET_PUTBACK_LINE': {
-        role('WORKER')
         const p = s.outboundPutbacks.find((p) => p.no === c.no) ?? reject('notFound')
         if (p.status === 'COMPLETED') reject('terminal')
         const l = p.lines.find((l) => l.id === c.lineId) ?? reject('notFound')
@@ -1075,7 +1075,6 @@ export function applyOutboundAction(
         break
       }
       case 'SUBMIT_PUTBACK': {
-        role('WORKER')
         const p = s.outboundPutbacks.find((p) => p.no === c.no) ?? reject('notFound')
         if (p.status === 'COMPLETED') reject('terminal')
         if (p.lines.some((l) => l.savedQty !== l.qty || !l.targetLocation)) reject('unfinished')
@@ -1083,7 +1082,12 @@ export function applyOutboundAction(
           const placements = l.placements ?? [{ location: l.targetLocation!, qty: l.qty, serialNos: l.serialNos }]
           for (const actual of placements) {
             validateReturnTarget(p, l, actual.location)
-            move(l.stagingInventoryId, actual.location, actual.qty, actual.serialNos, p.no, 'RETURN')
+            move(l.stagingInventoryId, actual.location, actual.qty, actual.serialNos, {
+              type: 'RETURN',
+              refNo: p.orderNo,
+              jobNo: p.no,
+              sourceLineNo: l.itemNo,
+            })
           }
         })
         p.status = 'COMPLETED'
@@ -1092,141 +1096,57 @@ export function applyOutboundAction(
         resultNo = p.no
         break
       }
-      case 'CREATE_COUNT': {
-        role('WORKER')
-        const { warehouseCode: w, customerId: owner, skuCode: sku } = c
-        if (
-          frozen(w, owner, sku) ||
-          s.outboundPickTasks.some(
-            (t) =>
-              t.warehouseCode === w && t.customerId === owner && openTask(t) && t.lines.some((l) => l.skuCode === sku),
-          ) ||
-          s.outboundPutbacks.some(
-            (p) =>
-              p.warehouseCode === w &&
-              p.customerId === owner &&
-              p.status !== 'COMPLETED' &&
-              p.lines.some((l) => l.skuCode === sku),
-          ) ||
-          s.putawayOrders.some(
-            (p) =>
-              p.warehouseCode === w &&
-              p.customerId === owner &&
-              p.status !== 'COMPLETED' &&
-              p.planLines.some((l) => l.skuCode === sku),
-          )
-        )
-          reject('countBusy')
-        const rows = s.inventory.filter(
-          (r) =>
-            sameSku(r, w, owner, sku) &&
-            r.onHandQty > 0 &&
-            ['PICK', 'STORAGE', 'DEFECT'].includes(loc(w, r.locationCode)?.type ?? ''),
-        )
-        if (!rows.length || rows.some((r) => (r.allocatedQty ?? 0) > 0)) reject('countBusy')
-        const no = nextDocNo(
-          'ST',
-          s.inventoryCounts.map((p) => p.no),
-          at,
-        )
-        s.inventoryCounts.push({
-          no,
-          warehouseCode: w,
-          customerId: owner,
-          skuCode: sku,
-          status: 'COUNTING',
-          lines: rows.map((r) => ({ inventoryId: r.id, bookQty: r.onHandQty })),
-          createdAt: at,
-        })
-        resultNo = no
-        break
-      }
-      case 'CONFIRM_COUNT': {
-        supervisor()
-        const p = s.inventoryCounts.find((p) => p.no === c.no) ?? reject('notFound')
-        if (p.status !== 'COUNTING') reject('terminal')
-        if (c.lines.length !== p.lines.length || new Set(c.lines.map((l) => l.inventoryId)).size !== p.lines.length)
-          reject('quantity')
-        p.lines.forEach((l) => {
-          const actual = c.lines.find((a) => a.inventoryId === l.inventoryId) ?? reject('quantity')
-          const r = inventory(l.inventoryId)
-          if (!nonnegative(actual.qty)) reject('quantity')
-          if (
-            skuMaster(p.customerId, p.skuCode)?.snEnabled &&
-            (actual.serialNos.length !== actual.qty || new Set(actual.serialNos).size !== actual.qty)
-          )
-            reject('serial')
-          const diff = actual.qty - r.onHandQty
-          r.onHandQty = actual.qty
-          r.lockedQty = r.qualityType === 'DEFECTIVE' ? actual.qty : 0
-          r.serialNos = actual.serialNos
-          l.actualQty = actual.qty
-          l.serialNos = actual.serialNos
-          if (diff) stockLog(r, diff, p.no, 'ADJUST')
-        })
-        const sns = s.inventory
-          .filter((r) => r.customerId === p.customerId && r.skuCode === p.skuCode)
-          .flatMap((r) => r.serialNos ?? [])
-        if (new Set(sns).size !== sns.length) reject('serial')
-        p.status = 'COMPLETED'
-        p.completedAt = at
-        const idx = s.skuAllocationControls.findIndex((r) => sameSku(r, p.warehouseCode, p.customerId, p.skuCode))
-        if (idx >= 0) s.skuAllocationControls.splice(idx, 1)
-        resultNo = p.no
-        break
-      }
-      case 'CANCEL_COUNT': {
-        role('WORKER')
-        const p = s.inventoryCounts.find((p) => p.no === c.no) ?? reject('notFound')
-        if (p.status !== 'COUNTING') reject('terminal')
-        p.status = 'CANCELLED'
-        resultNo = p.no
-        break
-      }
     }
     recompute()
-    // 订单占用和库位分配同样写既有库存流水，实际变动为0，避免把它们当成实物移动。
+    // 订单占用变化记在 SKU 层（库存流水主PRD 第一节）：接单与补占记预占，取消记释放，
+    // 确认出库扣掉实发对应的占用并释放剩余。分配与其他出库指定只改库存明细的已分配，不写流水。
+    const liveReserved = (o: OutboundOrder | undefined, sku: string) =>
+      o && isLiveOutbound(o.status)
+        ? o.items.filter((i) => i.skuCode === sku).reduce((n, i) => n + i.reservedQty, 0)
+        : 0
+    const running = new Map<string, number>()
+    const reservedBefore = (key: string, warehouse: string, owner: string, sku: string) => {
+      if (!running.has(key))
+        running.set(
+          key,
+          state.outboundOrders
+            .filter((o) => o.warehouseCode === warehouse && o.customerId === owner)
+            .reduce((n, o) => n + liveReserved(o, sku), 0),
+        )
+      return running.get(key)!
+    }
     for (const o of s.outboundOrders) {
       const before = state.outboundOrders.find((old) => old.no === o.no)
       const skus = new Set([...o.items.map((i) => i.skuCode), ...(before?.items.map((i) => i.skuCode) ?? [])])
       for (const sku of skus) {
-        const delta =
-          o.items.filter((i) => i.skuCode === sku).reduce((n, i) => n + i.reservedQty, 0) -
-          (before?.items.filter((i) => i.skuCode === sku).reduce((n, i) => n + i.reservedQty, 0) ?? 0)
-        if (delta)
-          s.inventoryLogs.push({
-            id: `LOG-RES-${at}-${s.inventoryLogs.length}`,
-            warehouseCode: o.warehouseCode,
-            customerId: o.customerId,
-            skuCode: sku,
-            locationCode: '',
-            type: 'RESERVE',
-            level: 'SKU',
-            qtyChange: 0,
-            reservedChange: delta,
-            refNo: o.no,
-            operator,
-            createdAt: at,
-          })
-      }
-    }
-    for (const r of s.inventory) {
-      const delta = (r.allocatedQty ?? 0) - (state.inventory.find((old) => old.id === r.id)?.allocatedQty ?? 0)
-      if (delta)
-        s.inventoryLogs.push({
-          id: `LOG-ALLOC-${at}-${s.inventoryLogs.length}`,
-          warehouseCode: r.warehouseCode,
-          customerId: r.customerId,
-          skuCode: r.skuCode,
-          locationCode: r.locationCode,
-          type: 'ALLOCATE',
-          level: 'DETAIL',
-          qtyChange: 0,
-          allocatedChange: delta,
-          refNo: resultNo ?? '',
-          operator,
-          createdAt: at,
+        const prev = liveReserved(before, sku)
+        const next = liveReserved(o, sku)
+        if (prev === next) continue
+        const changes: { type: 'RESERVE' | 'RELEASE' | 'SHIP'; qty: number }[] = []
+        if (o.status === 'SHIPPED' && next === 0) {
+          const shipped = Math.min(
+            prev,
+            o.items.filter((i) => i.skuCode === sku).reduce((n, i) => n + i.shippedQty, 0),
+          )
+          if (shipped) changes.push({ type: 'SHIP', qty: -shipped })
+          if (prev > shipped) changes.push({ type: 'RELEASE', qty: shipped - prev })
+        } else changes.push({ type: next > prev ? 'RESERVE' : 'RELEASE', qty: next - prev })
+        const key = stockKey(o.warehouseCode, o.customerId, sku)
+        changes.forEach((change) => {
+          const total = reservedBefore(key, o.warehouseCode, o.customerId, sku)
+          s.inventoryLogs.push(
+            reservedLog({ warehouseCode: o.warehouseCode, customerId: o.customerId, skuCode: sku }, change.qty, total, {
+              id: `LOG-RES-${at}-${s.inventoryLogs.length}`,
+              type: change.type,
+              refNo: o.no,
+              sourceType: 'OUTBOUND',
+              operator,
+              createdAt: at,
+            }),
+          )
+          running.set(key, total + change.qty)
         })
+      }
     }
     if (message)
       s.outboundMessages.push({
@@ -1285,10 +1205,6 @@ export function outboundAuditRef(
       }
     case 'CREATE':
       return { ...base, refType: 'OUTBOUND', refNo: resultNo ?? '-' }
-    case 'CREATE_COUNT':
-    case 'CONFIRM_COUNT':
-    case 'CANCEL_COUNT':
-      return { ...base, refType: 'OUTBOUND', refNo: 'no' in c ? c.no : (resultNo ?? '-') }
     default:
       return { ...base, refType: 'OUTBOUND', refNo: c.no, detail: resultNo && resultNo !== c.no ? resultNo : undefined }
   }

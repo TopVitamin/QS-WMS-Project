@@ -217,16 +217,6 @@ export interface OutboundResult {
   items: { skuCode: string; shippedQty: number; unshippedQty: number }[]
   at: string
 }
-export interface InventoryCount {
-  no: string
-  warehouseCode: string
-  customerId: string
-  skuCode: string
-  status: 'COUNTING' | 'COMPLETED' | 'CANCELLED'
-  lines: { inventoryId: string; bookQty: number; actualQty?: number; serialNos?: string[] }[]
-  createdAt: string
-  completedAt?: string
-}
 export interface OutboundData {
   outboundOrders: OutboundOrder[]
   outboundWaves: OutboundWave[]
@@ -237,7 +227,6 @@ export interface OutboundData {
   skuAllocationControls: SkuAllocationControl[]
   outboundMessages: OutboundMessage[]
   outboundResults: OutboundResult[]
-  inventoryCounts: InventoryCount[]
   outboundRole: OutboundRole
 }
 export interface OutboundCreateInput {
@@ -311,6 +300,3 @@ export type OutboundCommand =
     }
   | { type: 'RESET_PUTBACK_LINE'; no: string; lineId: string }
   | { type: 'SUBMIT_PUTBACK'; no: string }
-  | { type: 'CREATE_COUNT'; warehouseCode: string; customerId: string; skuCode: string }
-  | { type: 'CONFIRM_COUNT'; no: string; lines: { inventoryId: string; qty: number; serialNos: string[] }[] }
-  | { type: 'CANCEL_COUNT'; no: string }

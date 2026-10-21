@@ -234,7 +234,7 @@ export function InboundOrderDetailPage() {
                 t('inbound.receiptClosePending')
               )}
             </DescriptionItem>
-            <DescriptionItem label={t('common.remark')} className="col-span-3" multiline>
+            <DescriptionItem label={t('common.remark')} className="col-span-full xl:col-span-3" multiline>
               {order.remark ?? <Empty />}
             </DescriptionItem>
           </Descriptions>

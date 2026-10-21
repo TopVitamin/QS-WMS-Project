@@ -5,7 +5,6 @@ import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
 import { MasterDetailActions } from '@/components/biz/master-detail-actions'
 import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
-import { StatusBadge } from '@/components/biz/status-badge'
 import { WarehouseFullAddressPreview } from '@/components/biz/warehouse-full-address-preview'
 import { usageStatusMeta } from '@/config/status'
 import { useWarehouseMasterStatusToggle } from '@/hooks/use-warehouse-master-status'
@@ -53,10 +52,7 @@ export function WarehouseDetailPage() {
             <BizCode>{warehouse.timezone}</BizCode>
           </DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.currency')}>{warehouse.currency}</DescriptionItem>
-          <DescriptionItem label={t('common.status')}>
-            <StatusBadge meta={usageStatusMeta[warehouse.status]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.remark')} className="col-span-3">
+          <DescriptionItem label={t('masterWarehouse.remark')} className="col-span-full xl:col-span-3">
             {warehouse.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
@@ -68,12 +64,12 @@ export function WarehouseDetailPage() {
           <DescriptionItem label={t('masterWarehouse.state')}>{warehouse.state || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.city')}>{warehouse.city}</DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.district')}>{warehouse.district || <Empty />}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.address1')} className="col-span-2">{warehouse.address1}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.address2')} className="col-span-2">
+          <DescriptionItem label={t('masterWarehouse.address1')} className="col-span-full xl:col-span-2">{warehouse.address1}</DescriptionItem>
+          <DescriptionItem label={t('masterWarehouse.address2')} className="col-span-full xl:col-span-2">
             {warehouse.address2 || <Empty />}
           </DescriptionItem>
           <DescriptionItem label={t('masterWarehouse.postalCode')}>{warehouse.postalCode || <Empty />}</DescriptionItem>
-          <DescriptionItem label={t('masterWarehouse.fullAddress')} className="col-span-3" multiline>
+          <DescriptionItem label={t('masterWarehouse.fullAddress')} className="col-span-full xl:col-span-3" multiline>
             <WarehouseFullAddressPreview data={warehouse} countryLabel={t(countryLabel)} />
           </DescriptionItem>
         </Descriptions>

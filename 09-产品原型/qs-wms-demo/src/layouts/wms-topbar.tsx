@@ -1,5 +1,5 @@
 import { Bell, Check, ChevronDown, Clock, Globe, PanelLeftClose, PanelLeftOpen, Search, Smartphone, Warehouse } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { BizCode } from '@/components/biz/display'
@@ -18,6 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { findMenuGroup, findMenuLeaf } from '@/config/menu'
 import { formatDateTime, formatTzOffset } from '@/lib/format'
+import { useNow } from '@/hooks/use-now'
 import { useResetDemo } from '@/hooks/use-reset-demo'
 import { warehouses } from '@/mock/seed'
 import {
@@ -35,15 +36,6 @@ const languages: { value: Language; label: string }[] = [
   { value: 'zh-CN', label: '简体中文' }, // design-lint-ignore 语言名称按原文显示
   { value: 'en-US', label: 'English' },
 ]
-
-function useNow(intervalMs = 30_000) {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs)
-    return () => clearInterval(id)
-  }, [intervalMs])
-  return now
-}
 
 export function WmsTopbar() {
   const { t } = useTranslation()

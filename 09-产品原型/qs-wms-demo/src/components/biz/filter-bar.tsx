@@ -1,14 +1,14 @@
 import { ChevronDown, RotateCcw, Search } from 'lucide-react'
 import { Children, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { connectFieldControl, useFieldA11y } from '@/components/biz/field-a11y'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
 interface FilterBarProps {
   /**
-   * 栅格固定 6 列，可省略；保留参数是为了与 PRD 的 `FilterBar columns={6}` 写法一致。
-   * 只接受 6：写成 4 会类型报错（PRD 禁止列表用 4 列）。
+   * PRD 统一写 `columns={6}`。布局固定 6 列，只接受 6，参数用于类型约束和文档对齐。
    */
   columns?: 6
   /** 常显筛选项，最多 5 个 */
@@ -76,10 +76,13 @@ export function FilterBar({ children, advanced, onSearch, onReset }: FilterBarPr
 }
 
 export function FilterItem({ label, children }: { label: string; children: React.ReactNode }) {
+  const a11y = useFieldA11y()
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <Label className="text-xs font-normal text-muted-foreground">{label}</Label>
-      {children}
+      <Label htmlFor={a11y.controlId} className="text-xs font-normal text-muted-foreground">
+        {label}
+      </Label>
+      {connectFieldControl(children, a11y)}
     </div>
   )
 }

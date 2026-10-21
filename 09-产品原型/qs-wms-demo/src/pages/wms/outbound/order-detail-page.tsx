@@ -484,20 +484,20 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
                 <DescriptionItem label={t('outbound.ui.shippedBy')}>{o.shippedBy || <Empty />}</DescriptionItem>
               </>
             )}
-            <DescriptionItem label={t('outbound.ui.address')} className="col-span-3" multiline>
+            <DescriptionItem label={t('outbound.ui.address')} className="col-span-full xl:col-span-3" multiline>
               {o.address || <Empty />}
             </DescriptionItem>
             {o.source === 'MANUAL' && (
-              <DescriptionItem label={t('outbound.ui.emailBasis')} className="col-span-3" multiline>
+              <DescriptionItem label={t('outbound.ui.emailBasis')} className="col-span-full xl:col-span-3" multiline>
                 {o.emailBasis || <Empty />}
               </DescriptionItem>
             )}
             {o.status === 'CANCELLED' && (
-              <DescriptionItem label={t('outbound.ui.cancelReason')} className="col-span-3" multiline>
+              <DescriptionItem label={t('outbound.ui.cancelReason')} className="col-span-full xl:col-span-3" multiline>
                 {o.cancelReason || <Empty />}
               </DescriptionItem>
             )}
-            <DescriptionItem label={t('outbound.ui.orderRemark')} className="col-span-3" multiline>
+            <DescriptionItem label={t('outbound.ui.orderRemark')} className="col-span-full xl:col-span-3" multiline>
               {o.remark || <Empty />}
             </DescriptionItem>
           </Descriptions>

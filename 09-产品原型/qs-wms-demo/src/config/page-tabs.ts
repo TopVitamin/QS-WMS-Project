@@ -14,6 +14,9 @@ export function resolvePageTab(pathname: string): PageTab | undefined {
     }
   const outbound = pathname.match(/^\/wms\/outbound\/(orders|waves|pick-tasks|return-putaway)\/[^/]+$/)
   if (outbound) return { path: pathname, titleKey: `outbound.ui.${({ orders: 'order', waves: 'wave', 'pick-tasks': 'task', 'return-putaway': 'putback' } as const)[outbound[1] as 'orders']}Title` }
+  const inventoryDetail = pathname.match(/^\/wms\/inventory\/(moves|counts)\/[^/]+$/)
+  if (inventoryDetail)
+    return { path: pathname, titleKey: inventoryDetail[1] === 'moves' ? 'inventory.move.title' : 'inventory.stocktake.title' }
   if (pathname === '/wms/master/warehouses/new') {
     return { path: pathname, titleKey: 'masterWarehouse.tabCreate' }
   }

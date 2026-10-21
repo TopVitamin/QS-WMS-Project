@@ -4,7 +4,7 @@
 > 布局真源：[《物流渠道资料页面骨架》](物流渠道资料页面骨架.md)。字段真源：[《物流渠道（详细稿）》](../../../字段清单合集/01-基础资料/物流渠道/物流渠道（详细稿）.tsv)。
 > 版本：WMS-V1.1｜日期：2026-10-11
 
-**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `inbound-list-page.tsx`（去掉 `StatusTabs`、`selectable`）；筛选项状态用 `useMasterListFilters`（见 03 文档 §3.1）。承运商主档弹窗命名与行为对齐 [《物流承运商资料前端Demo版PRD》](../物流承运商资料/物流承运商资料前端Demo版PRD.md) 的 **`CarrierFormDialog`**；本对象为 **`ChannelFormDialog`**。
+**样式与组件**：[《QS-WMS 前端设计与开发规范》](../../../../../09-产品原型/qs-wms-demo/docs/02-设计规范.md)、[《业务组件与主数据页面》](../../../../../09-产品原型/qs-wms-demo/docs/03-业务组件与主数据页面.md)。列表模式参考 `inbound-order-list-page.tsx`（去掉 `StatusTabs`、`selectable`）；筛选项状态用 `useListFilters`（见 03 文档 §3.1）。承运商主档弹窗命名与行为对齐 [《物流承运商资料前端Demo版PRD》](../物流承运商资料/物流承运商资料前端Demo版PRD.md) 的 **`CarrierFormDialog`**；本对象为 **`ChannelFormDialog`**。
 
 **验收**：主 PRD §6.1（AC01～AC07）。
 

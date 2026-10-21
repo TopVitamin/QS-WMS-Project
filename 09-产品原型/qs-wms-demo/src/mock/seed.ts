@@ -1,5 +1,7 @@
 import { createCarrierMasters } from './carrier-masters'
 import { createOutboundSeed, playOutboundSeedFlows } from './outbound-seed'
+import { playInventorySeedFlows } from './inventory-seed'
+import type { InventoryCount, StockMove } from '@/types/inventory'
 import type { OutboundData } from '@/types/outbound'
 import { createChannelMasters } from './channel-masters'
 import { createCustomerMasters, customerMastersToLegacy } from './customer-masters'
@@ -154,6 +156,10 @@ export interface SeedData extends OutboundData {
   unclaimedRecords: UnclaimedRecord[]
   inventory: InventoryRecord[]
   inventoryLogs: InventoryLog[]
+  /** 盘点单 */
+  inventoryCounts: InventoryCount[]
+  /** 移库作业 */
+  stockMoves: StockMove[]
   packages: OutboundPackage[]
   auditLogs: AuditLog[]
 }
@@ -323,7 +329,7 @@ export function createSeedData(now = Date.now()): SeedData {
       )
     })
 
-  return playOutboundSeedFlows({
+  const withOutbound = playOutboundSeedFlows({
     ...createOutboundSeed(inventory, locations, skuMasters, warehouses.map(w => w.code)),
     warehouses,
     warehouseMasters: createWarehouseMasters(),
@@ -345,7 +351,10 @@ export function createSeedData(now = Date.now()): SeedData {
     unclaimedRecords,
     inventory,
     inventoryLogs,
+    inventoryCounts: [],
+    stockMoves: [],
     packages,
     auditLogs,
   })
+  return playInventorySeedFlows(withOutbound)
 }

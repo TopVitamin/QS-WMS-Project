@@ -9,7 +9,7 @@
 
 **布局与占位须符合 [需求文档 PRD / AGENTS.md](../../../AGENTS.md) 「布局硬规则」一节**（`FilterBar columns={6}`）。
 
-**实现参照**：`warehouse-list-page.tsx`（FilterBar 6 列、draft/filters）；`inbound-list-page.tsx` 仅借鉴 **StatusTabs + 双 Panel** 结构，删除 M0 的签收/取消/新增/勾选。
+**实现参照**：`warehouse-list-page.tsx`（FilterBar 6 列、draft/filters）；`inbound-order-list-page.tsx` 仅借鉴 **StatusTabs + 双 Panel** 结构，本页不保留 M0 的签收/取消/新增/勾选。
 
 ---
 

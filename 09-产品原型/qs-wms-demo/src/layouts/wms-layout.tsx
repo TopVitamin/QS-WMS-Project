@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
+import { PageLoading } from '@/components/biz/page-loading'
 import { resolvePageTab } from '@/config/page-tabs'
 import { useTabs } from '@/stores/tabs'
 import { WmsSidebar } from './wms-sidebar'
@@ -21,8 +22,10 @@ export function WmsLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <WmsTopbar />
         <WmsTabsBar />
-        <main className="min-h-0 flex-1 overflow-auto">
-          <Outlet />
+        <main className="flex min-h-0 flex-1 flex-col overflow-auto">
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

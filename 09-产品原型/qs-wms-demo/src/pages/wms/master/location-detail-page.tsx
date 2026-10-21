@@ -5,7 +5,6 @@ import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { MasterAuditPanel } from '@/components/biz/master-audit-panel'
 import { MasterDetailActions } from '@/components/biz/master-detail-actions'
 import { DetailTitle, PageContainer, Section } from '@/components/biz/page-container'
-import { StatusBadge } from '@/components/biz/status-badge'
 import { usageStatusMeta } from '@/config/status'
 import { useLocationMasterStatusToggle } from '@/hooks/use-location-master-status'
 import {
@@ -62,7 +61,7 @@ export function LocationDetailPage() {
     >
       <Section title={t('masterLocation.sectionOccupancy')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterLocation.currentOccupancy')} className="col-span-3">
+          <DescriptionItem label={t('masterLocation.currentOccupancy')} className="col-span-full xl:col-span-3">
             {location.occupyingCustomerId ? (
               <CodeName
                 code={customerCode(location.occupyingCustomerId)}
@@ -89,10 +88,7 @@ export function LocationDetailPage() {
           <DescriptionItem label={t('masterLocation.code')}>
             <BizCode>{location.code}</BizCode>
           </DescriptionItem>
-          <DescriptionItem label={t('common.status')}>
-            <StatusBadge meta={usageStatusMeta[location.status]} />
-          </DescriptionItem>
-          <DescriptionItem label={t('masterLocation.remark')} className="col-span-3">
+          <DescriptionItem label={t('masterLocation.remark')} className="col-span-full xl:col-span-3">
             {location.remark || <Empty />}
           </DescriptionItem>
         </Descriptions>
@@ -130,7 +126,7 @@ export function LocationDetailPage() {
 
       <Section title={t('masterLocation.sectionAdapt')}>
         <Descriptions columns={4}>
-          <DescriptionItem label={t('masterLocation.productForms')} className="col-span-3">
+          <DescriptionItem label={t('masterLocation.productForms')} className="col-span-full xl:col-span-3">
             {productFormsLabel}
           </DescriptionItem>
         </Descriptions>

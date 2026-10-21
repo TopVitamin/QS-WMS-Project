@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint && node scripts/lint-design.mjs",
     "lint:design": "node scripts/lint-design.mjs",
+    "check": "tsc -b && oxlint && node scripts/lint-design.mjs && vitest run && vite build",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/*.mjs\"",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -22,9 +25,7 @@
     "date-fns": "^4.4.0",
     "dayjs": "^1.11.23",
     "i18next": "^26.4.2",
-    "jsbarcode": "^3.12.3",
     "lucide-react": "^1.47.0",
-    "next-themes": "^0.4.6",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-day-picker": "^10.0.1",
@@ -45,6 +46,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.1",
     "oxlint": "^1.81.0",
+    "prettier": "^3.9.10",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

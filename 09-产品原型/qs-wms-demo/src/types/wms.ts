@@ -279,22 +279,63 @@ export interface InventoryRecord {
   firstInboundAt: string
 }
 
-export type InventoryLogType = 'RECEIVE' | 'PUTAWAY' | 'PICK' | 'MOVE' | 'ADJUST' | 'SHIP' | 'RETURN' | 'RESERVE' | 'ALLOCATE'
+/**
+ * 库存流水类型闭集（库存流水主PRD 第一节）：收货入暂存库位、上架移库、拣货移入出库暂存库位、返库上架、
+ * 品质转换、移库、盘点调整、确认出库扣减、预占、释放。分配与其他出库指定不写流水。
+ */
+export type InventoryLogType =
+  | 'RECEIVE'
+  | 'PUTAWAY'
+  | 'PICK'
+  | 'RETURN'
+  | 'QUALITY'
+  | 'MOVE'
+  | 'ADJUST'
+  | 'SHIP'
+  | 'RESERVE'
+  | 'RELEASE'
+
+/** 来源单据类型：入库单、退货单、出库单、盘点单、移库作业、其他业务记录、无独立单据 */
+export type InventoryLogSource = 'INBOUND' | 'RETURN' | 'OUTBOUND' | 'STOCKTAKE' | 'MOVE' | 'OTHER' | 'NONE'
 
 export interface InventoryLog {
+  /** SKU：订单占用变化（库位、批次、品质为空）；DETAIL 或缺省：库存明细的实际数量变化 */
   level?: 'SKU' | 'DETAIL'
+  /** 订单占用变化量；实际数量类为空 */
   reservedChange?: number
-  allocatedChange?: number
   id: string
   warehouseCode: string
   type: InventoryLogType
+  /** 来源单号；品质转换等无独立单据的动作为空串 */
   refNo: string
   skuCode: string
   customerId: string
   locationCode: string
+  /** 实际数量变化量；订单占用类为 0 */
   qtyChange: number
   operator: string
+  /** 业务发生时间 */
   createdAt: string
+  inventoryId?: string
+  batchNo?: string
+  expiryDate?: string
+  qualityType?: QualityType
+  /** 变动对象（实际或订单占用）变化前后的余额 */
+  beforeQty?: number
+  afterQty?: number
+  serialNos?: string[]
+  /** 同一次业务动作的流水共用，成对流水互相指向 */
+  actionId?: string
+  pairedLogId?: string
+  sourceType?: InventoryLogSource
+  sourceLineNo?: number
+  /** 关联作业记录号：上架单、拣货任务、返库上架单等 */
+  jobNo?: string
+  reasonCode?: 'DAMAGED' | 'EXPIRED'
+  reasonNote?: string
+  evidence?: string
+  ownerNotice?: 'NOTIFIED' | 'PENDING' | 'NOT_REQUIRED'
+  terminal?: 'WEB' | 'PDA' | 'SYSTEM'
 }
 
 /** 附录B 3.2 出库包裹状态 */
@@ -351,10 +392,21 @@ export interface PickTask {
 }
 
 /** PUTAWAY：上架单自身的保存、撤销与提交；入库单详情按来源单一并列出 */
-export type AuditRefType = 'INBOUND' | 'PUTAWAY' | 'SYSTEM' | 'OUTBOUND' | 'WAVE' | 'PICK_TASK' | 'PUTBACK'
+export type AuditRefType =
+  | 'INBOUND'
+  | 'PUTAWAY'
+  | 'SYSTEM'
+  | 'OUTBOUND'
+  | 'WAVE'
+  | 'PICK_TASK'
+  | 'PUTBACK'
+  | 'STOCKTAKE'
+  | 'STOCK_MOVE'
+  | 'INVENTORY'
 
 export type AuditAction =
   | 'OUTBOUND_ACTION'
+  | 'INVENTORY_ACTION'
   | 'INBOUND_RECEIPT_CLOSE'
   | 'INBOUND_MOCK_PUSH'
   | 'INBOUND_RECEIVE'

@@ -199,7 +199,7 @@ export function OutboundWaveDetailPage() {
             <DescriptionItem label={t('outbound.ui.createdAt')}>
               <DateTime value={wave.createdAt} />
             </DescriptionItem>
-            <DescriptionItem label={t('outbound.ui.waveRemark')} className="col-span-3" multiline>
+            <DescriptionItem label={t('outbound.ui.waveRemark')} className="col-span-full xl:col-span-3" multiline>
               {wave.remark || <Empty />}
             </DescriptionItem>
           </Descriptions>

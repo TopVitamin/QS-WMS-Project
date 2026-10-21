@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { useConfirm } from '@/hooks/use-confirm'
 import { FormField, FormGrid } from '@/components/biz/form-field'
 import { OptionSelect } from '@/components/biz/option-select'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -22,9 +17,7 @@ import type { SkuBarcode, UsageStatus } from '@/types/wms'
 const USAGE_STATUSES: UsageStatus[] = ['ENABLED', 'DISABLED']
 
 export type SkuBarcodeDialogState =
-  | { mode: 'create'; ownerCode: string; skuCode: string }
-  | { mode: 'edit'; row: SkuBarcode }
-  | null
+  { mode: 'create'; ownerCode: string; skuCode: string } | { mode: 'edit'; row: SkuBarcode } | null
 
 interface SkuBarcodeDialogProps {
   state: SkuBarcodeDialogState
@@ -33,26 +26,42 @@ interface SkuBarcodeDialogProps {
 
 export function SkuBarcodeDialog({ state, onClose }: SkuBarcodeDialogProps) {
   const { t } = useTranslation()
+  const { confirm } = useConfirm()
   const saveSkuBarcode = useDb((s) => s.saveSkuBarcode)
 
   const [barcode, setBarcode] = useState('')
   const [isPrimary, setIsPrimary] = useState(true)
   const [status, setStatus] = useState<UsageStatus>('ENABLED')
+  const [baseline, setBaseline] = useState('')
 
   useEffect(() => {
     if (!state) return
-    if (state.mode === 'edit') {
-      setBarcode(state.row.barcode)
-      setIsPrimary(state.row.isPrimary)
-      setStatus(state.row.status)
-    } else {
-      setBarcode('')
-      setIsPrimary(false)
-      setStatus('ENABLED')
-    }
+    const next =
+      state.mode === 'edit'
+        ? { barcode: state.row.barcode, isPrimary: state.row.isPrimary, status: state.row.status }
+        : { barcode: '', isPrimary: false, status: 'ENABLED' as UsageStatus }
+    setBarcode(next.barcode)
+    setIsPrimary(next.isPrimary)
+    setStatus(next.status)
+    setBaseline(JSON.stringify(next))
   }, [state])
 
   if (!state) return null
+
+  const dirty = JSON.stringify({ barcode, isPrimary, status }) !== baseline
+  const requestClose = async () => {
+    if (dirty) {
+      const ok = await confirm({
+        title: t('masterSku.discardTitle'),
+        description: t('masterSku.discardDesc'),
+        confirmText: t('masterSku.discardConfirm'),
+        cancelText: t('masterSku.keepEditing'),
+        variant: 'destructive',
+      })
+      if (!ok) return
+    }
+    onClose()
+  }
 
   const ownerCode = state.mode === 'edit' ? state.row.ownerCode : state.ownerCode
   const skuCode = state.mode === 'edit' ? state.row.skuCode : state.skuCode
@@ -76,7 +85,7 @@ export function SkuBarcodeDialog({ state, onClose }: SkuBarcodeDialogProps) {
   }
 
   return (
-    <Dialog open={!!state} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={!!state} onOpenChange={(open) => !open && void requestClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -124,7 +133,9 @@ export function SkuBarcodeDialog({ state, onClose }: SkuBarcodeDialogProps) {
           </FormField>
         </FormGrid>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="outline" onClick={() => void requestClose()}>
+            {t('common.cancel')}
+          </Button>
           <Button onClick={onSave}>{t('common.save')}</Button>
         </DialogFooter>
       </DialogContent>

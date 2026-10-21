@@ -1,12 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { FieldControlA11yProps } from '@/components/biz/field-a11y'
 import { usageStatusMeta } from '@/config/status'
 import { FILTER_ALL, FILTER_NO, FILTER_YES } from '@/lib/master-data'
 import { cn } from '@/lib/utils'
 import type { UsageStatus } from '@/types/wms'
 
-export interface SelectOption {
-  value: string
+export interface SelectOption<T extends string = string> {
+  value: T
   label: React.ReactNode
 }
 
@@ -16,7 +17,7 @@ export interface SelectOption {
  * - invalid：表单校验失败时标红
  * 编码类选项的文案用 codeNameText(code, name)。
  */
-export function OptionSelect({
+export function OptionSelect<T extends string>({
   value,
   onValueChange,
   options,
@@ -25,10 +26,14 @@ export function OptionSelect({
   disabled,
   invalid,
   className,
-}: {
-  value: string | undefined
-  onValueChange: (value: string) => void
-  options: SelectOption[]
+  id,
+  'aria-describedby': describedBy,
+  'aria-invalid': ariaInvalid,
+  'aria-required': ariaRequired,
+}: FieldControlA11yProps & {
+  value: T | undefined
+  onValueChange: (value: T) => void
+  options: SelectOption<T>[]
   allOption?: boolean
   placeholder?: string
   disabled?: boolean
@@ -37,8 +42,14 @@ export function OptionSelect({
 }) {
   const { t } = useTranslation()
   return (
-    <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className={cn('w-full', className)} aria-invalid={invalid || undefined}>
+    <Select value={value || undefined} onValueChange={(next) => onValueChange(next as T)} disabled={disabled}>
+      <SelectTrigger
+        id={id}
+        aria-describedby={describedBy}
+        aria-invalid={ariaInvalid ?? (invalid || undefined)}
+        aria-required={ariaRequired}
+        className={cn('w-full', className)}
+      >
         <SelectValue placeholder={placeholder ?? t('common.selectPlaceholder')} />
       </SelectTrigger>
       <SelectContent>
@@ -56,10 +67,15 @@ export function OptionSelect({
 const USAGE_STATUSES: UsageStatus[] = ['ENABLED', 'DISABLED']
 
 /** 筛选区「使用状态」：全部 / 启用 / 停用 */
-export function UsageStatusFilter({ value, onValueChange }: { value: string; onValueChange: (value: string) => void }) {
+export function UsageStatusFilter({
+  value,
+  onValueChange,
+  ...a11y
+}: FieldControlA11yProps & { value: string; onValueChange: (value: string) => void }) {
   const { t } = useTranslation()
   return (
-    <OptionSelect
+    <OptionSelect<string>
+      {...a11y}
       allOption
       value={value}
       onValueChange={onValueChange}
@@ -69,10 +85,15 @@ export function UsageStatusFilter({ value, onValueChange }: { value: string; onV
 }
 
 /** 筛选区布尔字段：全部 / 是 / 否（配合 lib/master-data 的 matchYesNo） */
-export function YesNoFilter({ value, onValueChange }: { value: string; onValueChange: (value: string) => void }) {
+export function YesNoFilter({
+  value,
+  onValueChange,
+  ...a11y
+}: FieldControlA11yProps & { value: string; onValueChange: (value: string) => void }) {
   const { t } = useTranslation()
   return (
-    <OptionSelect
+    <OptionSelect<string>
+      {...a11y}
       allOption
       value={value}
       onValueChange={onValueChange}
@@ -89,14 +110,16 @@ export function YesNoSelect({
   value,
   onChange,
   disabled,
-}: {
+  ...a11y
+}: FieldControlA11yProps & {
   value: boolean
   onChange: (value: boolean) => void
   disabled?: boolean
 }) {
   const { t } = useTranslation()
   return (
-    <OptionSelect
+    <OptionSelect<string>
+      {...a11y}
       value={value ? FILTER_YES : FILTER_NO}
       onValueChange={(v) => onChange(v === FILTER_YES)}
       disabled={disabled}

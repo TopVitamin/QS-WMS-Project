@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { DEFAULT_PDA_DEVICE, pdaDevices, type PdaDeviceKey } from '@/config/pda-devices'
 import { warehouses } from '@/mock/seed'
 import type { CurrencyCode, UnitSystem, Warehouse } from '@/types/wms'
 
@@ -21,12 +22,15 @@ interface SettingsState {
   unitMode: UnitMode
   sidebarCollapsed: boolean
   operator: string
+  /** 电脑上演示 PDA 时的模拟机型（真机上不画机框） */
+  pdaDevice: PdaDeviceKey
   setLanguage: (v: Language) => void
   setWarehouse: (code: string) => void
   setDisplayCurrency: (v: CurrencyCode) => void
   setTimeMode: (v: TimeMode) => void
   setUnitMode: (v: UnitMode) => void
   toggleSidebar: () => void
+  setPdaDevice: (v: PdaDeviceKey) => void
 }
 
 export const useSettings = create<SettingsState>()(
@@ -40,6 +44,7 @@ export const useSettings = create<SettingsState>()(
       unitMode: 'auto',
       sidebarCollapsed: false,
       operator: 'Lily Chen',
+      pdaDevice: DEFAULT_PDA_DEVICE,
       setLanguage: (language) =>
         set((s) => ({
           language,
@@ -50,11 +55,13 @@ export const useSettings = create<SettingsState>()(
       setTimeMode: (timeMode) => set({ timeMode }),
       setUnitMode: (unitMode) => set({ unitMode }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setPdaDevice: (pdaDevice) => set({ pdaDevice }),
     }),
     {
       name: 'qs-wms-demo-settings',
       onRehydrateStorage: () => (state) => {
         if (state && !warehouses.some(w => w.code === state.warehouseCode)) state.warehouseCode = warehouses[0].code
+        if (state && !pdaDevices.some((d) => d.key === state.pdaDevice)) state.pdaDevice = DEFAULT_PDA_DEVICE
         if (state && !state.currencyManuallySet && state.displayCurrency !== languageDefaultCurrency[state.language]) {
           state.displayCurrency = languageDefaultCurrency[state.language]
         }

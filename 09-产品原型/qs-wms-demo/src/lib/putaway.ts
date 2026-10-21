@@ -1,5 +1,6 @@
-import type { PutawayOrder } from '@/types/inbound'
+import type { PutawayOrder, PutawayPlanLine } from '@/types/inbound'
 import type { InventoryRecord, Location } from '@/types/wms'
+import { compareLocation } from './outbound-pick-route'
 
 /** 上架单是否还在作业中（未提交） */
 export function isPutawayOrderOpen(order: PutawayOrder): boolean {
@@ -154,4 +155,32 @@ export function suggestPutawayLocation(
       !ctx.inventory.some((r) => r.warehouseCode === order.warehouseCode && r.locationCode === l.code && r.onHandQty > 0),
   )
   return empty?.code
+}
+
+/** 没有推荐库位的应上架行归到最后一站，用这个键表示（路由参数 `at` 也用它）；到站时扫任一可用库位 */
+export const NO_SUGGESTED_STOP = '*'
+
+export interface PutawayStop {
+  /** 推荐库位，或 `NO_SUGGESTED_STOP` */
+  location: string
+  lines: PutawayPlanLine[]
+}
+
+/**
+ * PDA 上架路径（《PDA作业端设计规范》§4.6）：还没落满的应上架行按推荐库位分组，按库位编号自然顺序排
+ * （A-01-02 在 A-01-10 前）；没有推荐库位的行排在最后一站。保存不动库存，推荐在作业中保持不变。
+ */
+export function putawayStops(order: PutawayOrder, ctx: PutawayLocationContext): PutawayStop[] {
+  const map = new Map<string, PutawayPlanLine[]>()
+  for (const line of order.planLines) {
+    if (remainingQty(order, line.lineNo) <= 0) continue
+    const location = suggestPutawayLocation(order, line.skuCode, ctx) ?? NO_SUGGESTED_STOP
+    map.set(location, [...(map.get(location) ?? []), line])
+  }
+  return [...map.entries()]
+    .sort(
+      ([a], [b]) =>
+        Number(a === NO_SUGGESTED_STOP) - Number(b === NO_SUGGESTED_STOP) || compareLocation(a, b),
+    )
+    .map(([location, lines]) => ({ location, lines }))
 }

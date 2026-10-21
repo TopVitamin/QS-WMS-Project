@@ -1,9 +1,9 @@
-import { PackageCheck, PackageOpen, X } from 'lucide-react'
+import { PackageCheck, PackageOpen } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
-import { createDataColumns, DataTable } from '@/components/biz/data-table'
-import { BizCode, CodeName, DocNoTail, Empty, Num } from '@/components/biz/display'
+import { DataTable } from '@/components/biz/data-table'
+import { BizCode, CodeName, DocNoTail, Num } from '@/components/biz/display'
 import { DetailTitle, PageContainer, Panel } from '@/components/biz/page-container'
 import { ScanField, type ScanFlash } from '@/components/biz/scan-field'
 import { TagLabel } from '@/components/biz/status-badge'
@@ -22,10 +22,13 @@ import {
   type VerifyRow as StationRow,
 } from '@/lib/outbound-verify'
 import { cn } from '@/lib/utils'
+import { useShallow } from 'zustand/react/shallow'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import { useWebVerifySession, webVerifyKey, type WebVerifySession } from '@/stores/web-verify-session'
 import type { OutboundOrder, OutboundVerification } from '@/types/outbound'
+import { VerifyCandidateTable } from './verify-candidate-table'
+import { useVerifyRowColumns } from './verify-station-columns'
 
 const live = (o: OutboundOrder) => o.status !== 'SHIPPED' && o.status !== 'CANCELLED'
 
@@ -36,7 +39,16 @@ const live = (o: OutboundOrder) => o.status !== 'SHIPPED' && o.status !== 'CANCE
  */
 export function OutboundVerifyStationPage() {
   const { t, i18n } = useTranslation()
-  const db = useDb()
+  const db = useDb(
+    useShallow((s) => ({
+      outboundOrders: s.outboundOrders,
+      outboundPickTasks: s.outboundPickTasks,
+      outboundVerifications: s.outboundVerifications,
+      skuMasters: s.skuMasters,
+      skuBarcodes: s.skuBarcodes,
+      outboundAction: s.outboundAction,
+    })),
+  )
   const warehouse = useSettings((s) => s.warehouseCode)
   const operator = useSettings((s) => s.operator)
   const { customerCode, customerName, sku } = useLookups()
@@ -179,7 +191,11 @@ export function OutboundVerifyStationPage() {
         title: t('outbound.ui.stationBumpTitle', { sku: snRow.skuCode }),
         detail: t('outbound.ui.stationBumpDetail', {
           count: draftTotal + 1,
-          left: sum(rows.filter((r) => r.skuCode === snRow.skuCode), (r) => r.remaining - r.qty) - 1,
+          left:
+            sum(
+              rows.filter((r) => r.skuCode === snRow.skuCode),
+              (r) => r.remaining - r.qty,
+            ) - 1,
         }),
       })
       return
@@ -216,7 +232,10 @@ export function OutboundVerifyStationPage() {
         tone: 'error',
         title: t('outbound.ui.stationFullTitle', { sku: hit }),
         detail: t('outbound.ui.stationFullDetail', {
-          count: sum(rows.filter((r) => r.skuCode === hit), (r) => r.qty),
+          count: sum(
+            rows.filter((r) => r.skuCode === hit),
+            (r) => r.qty,
+          ),
         }),
       })
       return
@@ -227,7 +246,11 @@ export function OutboundVerifyStationPage() {
       title: t('outbound.ui.stationBumpTitle', { sku: hit }),
       detail: t('outbound.ui.stationBumpDetail', {
         count: draftTotal + 1,
-        left: sum(rows.filter((r) => r.skuCode === hit), (r) => r.remaining - r.qty) - 1,
+        left:
+          sum(
+            rows.filter((r) => r.skuCode === hit),
+            (r) => r.remaining - r.qty,
+          ) - 1,
       }),
     })
   }
@@ -250,7 +273,11 @@ export function OutboundVerifyStationPage() {
   const changeMethod = (method: OutboundVerification['method']) => {
     if (!order) return
     if (method === 'PACK' && order.type === 'B2C')
-      update({ method, containerType: 'PACKAGE', containerNo: session?.containerNo || defaultPackageNo(order, records) })
+      update({
+        method,
+        containerType: 'PACKAGE',
+        containerNo: session?.containerNo || defaultPackageNo(order, records),
+      })
     else if (method === 'PACK' && session?.containerType === 'NONE') update({ method, containerType: 'BOX' })
     else update({ method })
     refocusScan()
@@ -355,128 +382,39 @@ export function OutboundVerifyStationPage() {
 
   const defaultPrompt: WorkbenchPromptState = !order
     ? no
-      ? { tone: 'error', title: t('outbound.ui.stationOrderMissTitle', { code: no }), detail: t(unavailableReason(found, warehouse)) }
-      : { tone: 'warning', title: t('outbound.ui.stationScanOrderTitle'), detail: t('outbound.ui.stationScanOrderDetail') }
+      ? {
+          tone: 'error',
+          title: t('outbound.ui.stationOrderMissTitle', { code: no }),
+          detail: t(unavailableReason(found, warehouse)),
+        }
+      : {
+          tone: 'warning',
+          title: t('outbound.ui.stationScanOrderTitle'),
+          detail: t('outbound.ui.stationScanOrderDetail'),
+        }
     : draftTotal > 0 && draftTotal === toVerify
-        ? { tone: 'info', title: t('outbound.ui.stationAllScannedTitle', { count: draftTotal }), detail: t('outbound.ui.stationAllScannedDetail') }
-        : {
-            tone: 'info',
-            title: t('outbound.ui.stationScanItemTitle'),
-            detail: t('outbound.ui.stationScanItemDetail', { count: draftTotal, left: toVerify - draftTotal }),
-          }
+      ? {
+          tone: 'info',
+          title: t('outbound.ui.stationAllScannedTitle', { count: draftTotal }),
+          detail: t('outbound.ui.stationAllScannedDetail'),
+        }
+      : {
+          tone: 'info',
+          title: t('outbound.ui.stationScanItemTitle'),
+          detail: t('outbound.ui.stationScanItemDetail', { count: draftTotal, left: toVerify - draftTotal }),
+        }
 
-  const candidateColumns = useMemo(() => {
-    const col = createDataColumns<OutboundOrder>()
-    return col.columns([
-      col.accessor('no', {
-        header: t('outbound.ui.no'),
-        meta: { pin: 'left' },
-        cell: ({ getValue }) => <DocNoTail value={getValue()} tail={4} className="text-base" />,
-      }),
-      col.accessor('type', {
-        header: t('outbound.ui.type'),
-        cell: ({ getValue }) => <TagLabel meta={outboundTypeMeta[getValue()]} />,
-      }),
-      col.accessor('customerId', {
-        header: t('outbound.ui.owner'),
-        cell: ({ getValue }) => <CodeName code={customerCode(getValue())} name={customerName(getValue())} />,
-      }),
-      col.accessor((o) => sum(o.items, (i) => i.pickedQty), {
-        id: 'picked',
-        header: t('outbound.ui.picked'),
-        meta: { align: 'right' },
-        cell: ({ getValue }) => <Num value={getValue()} />,
-      }),
-      col.accessor(toVerifyQty, {
-        id: 'toVerify',
-        header: t('outbound.ui.stationToVerify'),
-        meta: { align: 'right' },
-        cell: ({ getValue }) => <Num value={getValue()} className="text-lg font-semibold" />,
-      }),
-    ])
-  }, [customerCode, customerName, t])
-
-  const rowColumns = useMemo(() => {
-    const col = createDataColumns<StationRow>()
-    return col.columns([
-      col.accessor('skuCode', {
-        header: t('outbound.ui.sku'),
-        meta: { pin: 'left' },
-        cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col">
-            <BizCode className="text-base font-semibold">{row.original.skuCode}</BizCode>
-            <span className="truncate text-sm text-muted-foreground">
-              {[sku(row.original.skuCode)?.name, sku(row.original.skuCode)?.barcode].filter(Boolean).join(' · ')}
-            </span>
-          </div>
-        ),
-      }),
-      col.accessor('batchNo', {
-        header: t('outbound.ui.batch'),
-        cell: ({ getValue }) => (getValue() ? <BizCode className="text-base">{getValue()}</BizCode> : <Empty />),
-      }),
-      col.accessor('remaining', {
-        header: t('outbound.ui.stationToVerify'),
-        meta: { align: 'right' },
-        cell: ({ getValue }) => <Num value={getValue()} className="text-lg font-semibold" />,
-      }),
-      col.accessor('qty', {
-        header: t('outbound.ui.stationThisTime'),
-        meta: { align: 'right' },
-        cell: ({ row }) =>
-          row.original.sn ? (
-            <Num value={row.original.qty} className="text-lg font-semibold" />
-          ) : (
-            <QtyCell row={row.original} onCommit={changeQty} onDone={refocusScan} />
-          ),
-      }),
-      col.accessor((r) => r.serialNos.join(', '), {
-        id: 'serials',
-        header: t('outbound.ui.serial'),
-        cell: ({ row }) =>
-          row.original.sn ? (
-            row.original.serialNos.length ? (
-              <span className="text-base">{row.original.serialNos.join(', ')}</span>
-            ) : (
-              <span className="text-sm text-muted-foreground">{t('outbound.ui.stationScanSnHint')}</span>
-            )
-          ) : (
-            <Empty />
-          ),
-      }),
-      col.display({
-        id: 'actions',
-        header: t('common.actions'),
-        meta: { pin: 'right' },
-        cell: ({ row }) =>
-          row.original.qty > 0 ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={t('outbound.ui.stationClearLine')}
-              title={t('outbound.ui.stationClearLine')}
-              className="text-muted-foreground hover:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation()
-                setLine(row.original.id, 0, [])
-                refocusScan()
-              }}
-            >
-              <X />
-            </Button>
-          ) : null,
-      }),
-    ])
-    // changeQty、setLine 每次渲染重建，只依赖本次草稿与 t
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sku, t, session])
+  const rowColumns = useVerifyRowColumns({ sku, changeQty, setLine, refocusScan })
 
   const itemProgress = order
     ? order.items
         .filter((i) => i.pickedQty > 0)
         .map((i) => ({
           ...i,
-          thisTime: sum(rows.filter((r) => r.itemNo === i.lineNo), (r) => r.qty),
+          thisTime: sum(
+            rows.filter((r) => r.itemNo === i.lineNo),
+            (r) => r.qty,
+          ),
         }))
     : []
 
@@ -548,15 +486,7 @@ export function OutboundVerifyStationPage() {
           {!order ? (
             <>
               <h2 className="text-base font-medium">{t('outbound.ui.stationCandidates')}</h2>
-              <DataTable
-                data={candidates}
-                columns={candidateColumns}
-                getRowId={(o) => o.no}
-                paginate={false}
-                showColumnSettings={false}
-                onRowClick={(o) => openOrder(o.no)}
-                emptyText={t('outbound.ui.stationNoCandidates')}
-              />
+              <VerifyCandidateTable orders={candidates} onOpen={openOrder} />
             </>
           ) : (
             session && (
@@ -579,7 +509,10 @@ export function OutboundVerifyStationPage() {
                     <ChoiceRow
                       label={t('outbound.ui.method')}
                       value={session.method}
-                      options={(['SORT', 'PACK'] as const).map((v) => ({ value: v, label: t(`outbound.verifyMethods.${v}`) }))}
+                      options={(['SORT', 'PACK'] as const).map((v) => ({
+                        value: v,
+                        label: t(`outbound.verifyMethods.${v}`),
+                      }))}
                       onChange={changeMethod}
                     />
                     <ChoiceRow
@@ -674,7 +607,11 @@ export function OutboundVerifyStationPage() {
                 { label: t('outbound.ui.picked'), value: sum(order.items, (i) => i.pickedQty) },
                 { label: t('outbound.ui.verified'), value: sum(order.items, (i) => i.verifiedQty) },
                 { label: t('outbound.ui.stationThisTime'), value: draftTotal, tone: 'blue' },
-                { label: t('outbound.ui.stationLeftAfter'), value: toVerify - draftTotal, tone: toVerify - draftTotal ? 'orange' : 'green' },
+                {
+                  label: t('outbound.ui.stationLeftAfter'),
+                  value: toVerify - draftTotal,
+                  tone: toVerify - draftTotal ? 'orange' : 'green',
+                },
               ]}
             />
           )}
@@ -733,42 +670,5 @@ function ChoiceRow<T extends string>({
         ))}
       </div>
     </div>
-  )
-}
-
-/** 普通商品「本次」数量：回车或失焦提交；被拒时回到原值 */
-function QtyCell({
-  row,
-  onCommit,
-  onDone,
-}: {
-  row: StationRow
-  onCommit: (row: StationRow, qty: number) => boolean
-  onDone: () => void
-}) {
-  const { t } = useTranslation()
-  const [draft, setDraft] = useState<string | null>(null)
-  const commit = () => {
-    if (draft === null) return
-    const qty = draft.trim() === '' ? 0 : Number(draft)
-    setDraft(null)
-    if (qty !== row.qty) onCommit(row, qty)
-  }
-  return (
-    <Input
-      className="ml-auto h-10 w-24 text-right text-lg font-semibold tabular-nums"
-      inputMode="numeric"
-      aria-label={t('outbound.ui.stationThisTime')}
-      value={draft ?? (row.qty ? String(row.qty) : '')}
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          commit()
-          onDone()
-        }
-      }}
-    />
   )
 }

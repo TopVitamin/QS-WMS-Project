@@ -1,16 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { toast } from 'sonner'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
-import { useMasterDiscardNavigate } from '@/hooks/use-master-discard-navigate'
-import { useMasterFormFieldError } from '@/hooks/use-master-form-field-error'
+import { useMasterForm } from '@/hooks/use-master-form'
 import {
   blockingLocationCodes,
+  createEmptyZoneForm,
   parseZoneWarehouse,
-  zoneDetailPath,
   validateZoneMasterForm,
+  zoneDetailPath,
   type ZoneMasterFormErrors,
 } from '@/lib/zone-master'
 import { useDb } from '@/mock/db'
@@ -19,72 +18,46 @@ import { ZoneFormFields } from './zone-form-fields'
 
 export function ZoneEditPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { code } = useParams<{ code: string }>()
   const [search] = useSearchParams()
-  const warehouseCode = parseZoneWarehouse(search.toString())
-  const leave = useMasterDiscardNavigate('masterZone')
-  const fieldError = useMasterFormFieldError('masterZone')
+  const warehouseCode = parseZoneWarehouse(search.toString()) ?? ''
   const updateZoneMaster = useDb((s) => s.updateZoneMaster)
   const locationMasters = useDb((s) => s.locationMasters)
   const inventory = useDb((s) => s.inventory)
-
   const zone = useDb((s) =>
-    warehouseCode && code
-      ? s.zoneMasters.find((z) => z.warehouseCode === warehouseCode && z.code === code)
-      : undefined,
+    warehouseCode && code ? s.zoneMasters.find((z) => z.warehouseCode === warehouseCode && z.code === code) : undefined,
   )
 
-  const [form, setForm] = useState<ZoneMaster | null>(null)
-  const [errors, setErrors] = useState<ZoneMasterFormErrors>({})
+  const warehouseReadOnly = useMemo(
+    () => (zone ? blockingLocationCodes(zone, locationMasters, inventory).length > 0 : false),
+    [zone, locationMasters, inventory],
+  )
 
-  useEffect(() => {
-    if (zone) setForm({ ...zone })
-  }, [zone])
-
-  const warehouseReadOnly = useMemo(() => {
-    if (!zone) return false
-    return blockingLocationCodes(zone, locationMasters, inventory).length > 0
-  }, [zone, locationMasters, inventory])
-
-  const dirty = useMemo(() => {
-    if (!zone || !form) return false
-    return JSON.stringify(form) !== JSON.stringify(zone)
-  }, [form, zone])
+  const { form, setForm, errors, fieldError, onSave, onCancel } = useMasterForm<ZoneMaster, ZoneMasterFormErrors>({
+    scope: 'masterZone',
+    initial: zone ?? createEmptyZoneForm(warehouseCode),
+    validate: validateZoneMasterForm,
+    save: (next) =>
+      updateZoneMaster(warehouseCode, code ?? '', {
+        name: next.name.trim(),
+        zoneType: next.zoneType,
+        remark: next.remark?.trim() || undefined,
+        warehouseCode: warehouseReadOnly ? warehouseCode : next.warehouseCode,
+      }),
+    backTo: (next) => zoneDetailPath(warehouseReadOnly ? warehouseCode : next.warehouseCode, code ?? ''),
+  })
 
   if (!code || !warehouseCode) return <Navigate to="/wms/master/zones" replace />
   if (!zone) return <Navigate to="/wms/master/zones" replace />
-  if (!form) return null
-
-  const onSave = () => {
-    const nextErrors = validateZoneMasterForm(form)
-    setErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0) {
-      toast.error(t('masterZone.saveValidationFailed'))
-      return
-    }
-    const res = updateZoneMaster(warehouseCode, code, {
-      name: form.name.trim(),
-      zoneType: form.zoneType,
-      remark: form.remark?.trim() || undefined,
-      warehouseCode: warehouseReadOnly ? warehouseCode : form.warehouseCode,
-    })
-    if (!res.ok) {
-      toast.error(t(res.errorKey))
-      return
-    }
-    toast.success(t('masterZone.saveSuccess'))
-    navigate(zoneDetailPath(form.warehouseCode, code))
-  }
-
-  const showFieldError = (key: keyof ZoneMasterFormErrors) => fieldError(errors, key)
 
   return (
     <PageContainer
       title={t('masterZone.editTitle')}
       actions={
         <>
-          <Button variant="outline" onClick={() => leave(zoneDetailPath(warehouseCode, code), dirty)}>{t('common.cancel')}</Button>
+          <Button variant="outline" onClick={onCancel}>
+            {t('common.cancel')}
+          </Button>
           <Button onClick={onSave}>{t('common.save')}</Button>
         </>
       }
@@ -94,7 +67,7 @@ export function ZoneEditPage() {
         form={form}
         setForm={setForm}
         errors={errors}
-        fieldError={showFieldError}
+        fieldError={fieldError}
         warehouseReadOnly={warehouseReadOnly}
       />
     </PageContainer>

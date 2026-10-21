@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router'
 import { DocNoTail } from '@/components/biz/display'
 import { StatusBadge } from '@/components/biz/status-badge'
 import { PdaListItem, PdaSection } from '@/components/pda/pda-card'
 import { PdaHeader } from '@/components/pda/pda-header'
-import { ScanInput } from '@/components/pda/scan-input'
+import { ScanInput, type ScanMessage } from '@/components/pda/scan-input'
 import { putawayOrderStatusMeta } from '@/config/status'
 import { planQty, recordedQty } from '@/lib/putaway'
 import { QualityTag } from './putaway-shared'
@@ -13,30 +13,45 @@ import type { PutawayFlow } from './use-putaway-flow'
 /** 选上架单（PDA 上架 PRD §3）：扫上架单号、容器号或商品条码定位；命中多张时只列命中的 */
 export function PutawayListStep({ flow }: { flow: PutawayFlow }) {
   const { t, nav, pendingOrders } = flow
+  const location = useLocation()
+  const presetNo = (location.state as { putawayNo?: string } | null)?.putawayNo
+  const presetHandled = useRef(false)
   const [matched, setMatched] = useState<string[]>()
+  const [message, setMessage] = useState<ScanMessage>()
   const shown = matched ? pendingOrders.filter((p) => matched.includes(p.putawayNo)) : pendingOrders
 
   const open = (putawayNo: string) => nav.go('work', { po: putawayNo })
+
+  // 管理端「PDA上架」带单号进入：直达作业；先清掉一次性的入口参数，返回到这里时不再自动跳转
+  useEffect(() => {
+    if (!presetNo || presetHandled.current) return
+    presetHandled.current = true
+    nav.replace('list')
+    if (pendingOrders.some((p) => p.putawayNo === presetNo)) open(presetNo)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetNo])
 
   const onScan = (code: string) => {
     const key = code.trim().toUpperCase()
     const byNo = pendingOrders.find((p) => p.putawayNo.toUpperCase() === key)
     if (byNo) {
+      setMessage(undefined)
       open(byNo.putawayNo)
       return true
     }
     const byContainer = pendingOrders.filter((p) => p.containerNo?.toUpperCase() === key)
     const hits = byContainer.length > 0 ? byContainer : pendingOrders.filter((p) => flow.resolveSkuIn(p, code))
     if (hits.length === 1) {
+      setMessage(undefined)
       open(hits[0].putawayNo)
       return true
     }
     if (hits.length > 1) {
       setMatched(hits.map((h) => h.putawayNo))
-      toast.info(t('pdaPutaway.multiMatch', { count: hits.length }))
+      setMessage({ tone: 'info', text: t('pdaPutaway.multiMatch', { count: hits.length }) })
       return true
     }
-    toast.error(t('pdaPutaway.orderNotFound', { code: code.trim() }))
+    setMessage({ tone: 'error', text: t('pdaPutaway.orderNotFound', { code: code.trim() }) })
     return false
   }
 
@@ -50,12 +65,19 @@ export function PutawayListStep({ flow }: { flow: PutawayFlow }) {
     <>
       <PdaHeader title={t('pda.putaway')} onBack={() => nav.back('home')} />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
-        <ScanInput label={t('pdaPutaway.promptOrder')} onScan={onScan} candidates={candidates} />
+        <ScanInput label={t('pdaPutaway.promptOrder')} onScan={onScan} message={message} candidates={candidates} />
         <PdaSection
           title={t('pdaPutaway.pendingList', { count: shown.length })}
           extra={
             matched && (
-              <button type="button" className="min-h-8 px-1 text-primary" onClick={() => setMatched(undefined)}>
+              <button
+                type="button"
+                className="min-h-8 px-1 text-primary"
+                onClick={() => {
+                  setMatched(undefined)
+                  setMessage(undefined)
+                }}
+              >
                 {t('pdaPutaway.showAll')}
               </button>
             )

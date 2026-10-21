@@ -1,5 +1,7 @@
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { lineUnreceivedQty, recomputeInboundOrder, stagingLocationCode } from '@/lib/inbound-derive'
+import { countingStocktake } from '@/lib/inventory-derive'
+import { balanceLog } from '@/lib/inventory-ledger'
 import { isNewSku } from '@/lib/new-sku'
 import { nextDocNo } from '@/lib/doc-no'
 import type {
@@ -10,7 +12,7 @@ import type {
   ReceiptRecord,
   ReceiptRecordLine,
 } from '@/types/inbound'
-import type { InboundOrder, InventoryLog } from '@/types/wms'
+import type { InboundOrder, InventoryLog, InventoryRecord } from '@/types/wms'
 import type { SeedData } from './seed'
 
 type ActionResult =
@@ -19,10 +21,6 @@ type ActionResult =
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
-}
-
-function log(entry: Omit<InventoryLog, 'id' | 'createdAt'>): InventoryLog {
-  return { id: uid('IL'), createdAt: new Date().toISOString(), ...entry }
 }
 
 const sum = (lines: ReceiptRecordLine[], pick: (l: ReceiptRecordLine) => number) =>
@@ -141,7 +139,8 @@ export function applyReceipt(
   const activityBySku = new Map<string, number>()
   for (const c of containers) {
     for (const line of c.lines) {
-      if (state.inventoryCounts.some(p => p.status === 'COUNTING' && p.warehouseCode === order.warehouseCode && p.customerId === order.customerId && p.skuCode === line.skuCode)) return { ok: false, errorKey: 'outbound.error.countFrozen' }
+      if (countingStocktake(state.inventoryCounts, order.warehouseCode, order.customerId, line.skuCode))
+        return { ok: false, errorKey: 'outbound.error.countFrozen' }
       if (!order.items.some((i) => i.skuCode === line.skuCode)) return { ok: false, errorKey: 'error.skuNotInOrder' }
       if (isNewSku(state.newSkuRecords ?? [], order.customerId, line.skuCode)) {
         return { ok: false, errorKey: 'inbound.receive.newSkuBlocked', params: { skuCode: line.skuCode } }
@@ -238,8 +237,15 @@ export function applyReceipt(
   const inventory = [...state.inventory]
   const inventoryLogs: InventoryLog[] = [...state.inventoryLogs]
 
-  const upsertStagingStock = (skuCode: string, qualityType: 'GOOD' | 'DEFECTIVE', qty: number, batchNo?: string, expiryDate?: string) => {
-    if (qty <= 0) return
+  /** 收货确认按品质记入收货暂存库位，返回变化后的库存明细行，用来写流水 */
+  const upsertStagingStock = (
+    skuCode: string,
+    qualityType: 'GOOD' | 'DEFECTIVE',
+    qty: number,
+    batchNo?: string,
+    expiryDate?: string,
+  ): InventoryRecord | undefined => {
+    if (qty <= 0) return undefined
     const locked = qualityType === 'DEFECTIVE' ? qty : 0
     const idx = inventory.findIndex(
       (r) =>
@@ -255,8 +261,9 @@ export function applyReceipt(
         onHandQty: inventory[idx].onHandQty + qty,
         lockedQty: inventory[idx].lockedQty + locked,
       }
-    } else {
-      inventory.push({
+      return inventory[idx]
+    }
+    inventory.push({
         id: uid('INV'),
         warehouseCode: order.warehouseCode,
         locationCode: stagingCode,
@@ -269,13 +276,31 @@ export function applyReceipt(
         lockedQty: locked,
         firstInboundAt: ts,
       })
-    }
+    return inventory[inventory.length - 1]
   }
 
   for (const line of receiptLines) {
-    /** 收货确认即按实收、按品质进入收货暂存库位库存（不良品品质锁定） */
-    upsertStagingStock(line.skuCode, 'GOOD', line.goodQty, line.batchNo, line.expiryDate)
-    upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty, line.batchNo, line.expiryDate)
+    /** 收货确认即按实收、按品质进入收货暂存库位库存；正常品、不良品各记一行收货流水 */
+    const receiveLog = (row: InventoryRecord | undefined, qty: number) => {
+      if (!row) return
+      inventoryLogs.push(
+        balanceLog(row, qty, {
+          id: uid('IL'),
+          type: 'RECEIVE',
+          refNo: inboundNo,
+          jobNo: receiptNo,
+          sourceType: 'INBOUND',
+          sourceLineNo: line.lineNo,
+          operator,
+          createdAt: ts,
+        }),
+      )
+    }
+    receiveLog(upsertStagingStock(line.skuCode, 'GOOD', line.goodQty, line.batchNo, line.expiryDate), line.goodQty)
+    receiveLog(
+      upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty, line.batchNo, line.expiryDate),
+      line.defectQty,
+    )
 
     const plan = {
       inboundNo,
@@ -294,20 +319,6 @@ export function applyReceipt(
     putawayOrders = appendPutawayPlan(putawayOrders, { ...plan, qualityType: 'GOOD', qty: line.goodQty })
     putawayOrders = appendPutawayPlan(putawayOrders, { ...plan, qualityType: 'DEFECTIVE', qty: line.defectQty })
 
-    if (line.receivedQty > 0) {
-      inventoryLogs.unshift(
-        log({
-          warehouseCode: order.warehouseCode,
-          type: 'RECEIVE',
-          refNo: inboundNo,
-          skuCode: line.skuCode,
-          customerId: order.customerId,
-          locationCode: stagingCode,
-          qtyChange: line.receivedQty,
-          operator,
-        }),
-      )
-    }
   }
 
   return {

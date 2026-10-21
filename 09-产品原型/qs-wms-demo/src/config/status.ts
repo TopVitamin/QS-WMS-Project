@@ -2,6 +2,8 @@ import type { InboundBizType, InboundOrderStatus, PackageStatus, QualityType, Us
 import type { PutawayOrderStatus, UnclaimedStatus } from '@/types/inbound'
 import type { OrderComposition } from '@/lib/outbound-derive'
 import type { OutboundPickTask, OutboundPutback, OutboundStatus, OutboundType, PickStatus, WaveStatus } from '@/types/outbound'
+import type { StocktakeSource, StocktakeStatus } from '@/types/inventory'
+import type { ExpiryLevel, SerialStatus } from '@/lib/inventory-derive'
 
 export const outboundStatusMeta: Record<OutboundStatus, StatusMeta> = {
   PENDING_HANDLE: { tone: 'gray', labelKey: 'outbound.status.PENDING_HANDLE' },
@@ -125,6 +127,33 @@ export const unpickReasonMeta: Record<OutboundPutback['reason'], StatusMeta> = {
   CANCEL: { tone: 'gray', labelKey: 'outbound.unpickReasons.CANCEL' },
   MISSING: { tone: 'orange', labelKey: 'outbound.unpickReasons.MISSING' },
   DAMAGED: { tone: 'red', labelKey: 'outbound.unpickReasons.DAMAGED' },
+}
+/** 盘点单状态：盘点中是作业进行中，完成与取消为终态 */
+export const stocktakeStatusMeta: Record<StocktakeStatus, StatusMeta> = {
+  COUNTING: { tone: 'blue', labelKey: 'inventory.stocktakeStatus.COUNTING' },
+  COMPLETED: { tone: 'green', labelKey: 'inventory.stocktakeStatus.COMPLETED' },
+  CANCELLED: { tone: 'gray', labelKey: 'inventory.stocktakeStatus.CANCELLED' },
+}
+export const stocktakeSourceMeta: Record<StocktakeSource, StatusMeta> = {
+  PLAN: { tone: 'gray', labelKey: 'inventory.stocktakeSource.PLAN' },
+  DISCREPANCY: { tone: 'orange', labelKey: 'inventory.stocktakeSource.DISCREPANCY' },
+}
+/** 库存枚举标签：待核对为拦截（red），盘点中与盘点单状态同色（blue），可用为负为异常（red） */
+export const inventoryTagMeta = {
+  pending: { tone: 'red', labelKey: 'inventory.pending' },
+  counting: { tone: 'blue', labelKey: 'inventory.counting' },
+  negative: { tone: 'red', labelKey: 'inventory.negativeAvailable' },
+  notAllocatable: { tone: 'gray', labelKey: 'inventory.notAllocatable' },
+} satisfies Record<string, StatusMeta>
+export const expiryLevelMeta: Record<ExpiryLevel, StatusMeta> = {
+  NORMAL: { tone: 'gray', labelKey: 'inventory.expiryLevel.NORMAL' },
+  NEAR: { tone: 'orange', labelKey: 'inventory.expiryLevel.NEAR' },
+  EXPIRED: { tone: 'red', labelKey: 'inventory.expiryLevel.EXPIRED' },
+}
+export const serialStatusMeta: Record<SerialStatus, StatusMeta> = {
+  IN_STOCK: { tone: 'green', labelKey: 'inventory.serialStatus.IN_STOCK' },
+  SHIPPED: { tone: 'gray', labelKey: 'inventory.serialStatus.SHIPPED' },
+  LOST: { tone: 'red', labelKey: 'inventory.serialStatus.LOST' },
 }
 export const waveMemberStatusMeta: Record<'ACTIVE' | 'CANCELLED', StatusMeta> = {
   ACTIVE: { tone: 'blue', labelKey: 'outbound.ui.memberActive' },

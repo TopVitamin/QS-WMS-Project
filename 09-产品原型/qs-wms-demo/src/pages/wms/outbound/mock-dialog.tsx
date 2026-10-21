@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FormField, FormGrid } from '@/components/biz/form-field'
 import { OptionSelect } from '@/components/biz/option-select'
+import { useShallow } from 'zustand/react/shallow'
 import { useDb } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { OutboundOrder, OutboundType } from '@/types/outbound'
@@ -33,7 +34,15 @@ export function OutboundMockDialog({
   onCreated?: (no: string) => void
 }) {
   const { t } = useTranslation()
-  const db = useDb()
+  const db = useDb(
+    useShallow((s) => ({
+      warehouses: s.warehouses,
+      customerMasters: s.customerMasters,
+      channelMasters: s.channelMasters,
+      skuMasters: s.skuMasters,
+      inventory: s.inventory,
+    })),
+  )
   const currentWarehouse = useSettings((s) => s.warehouseCode)
   const [warehouse, setWarehouse] = useState(order?.warehouseCode ?? currentWarehouse)
   const [owner, setOwner] = useState(order?.customerId ?? 'C10028')
@@ -177,7 +186,7 @@ export function OutboundMockDialog({
               </>
             )}
             {mode === 'MANUAL' && (
-              <FormField label={t('outbound.ui.emailBasis')} required className="col-span-2">
+              <FormField label={t('outbound.ui.emailBasis')} required className="col-span-full xl:col-span-2">
                 <Textarea
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
