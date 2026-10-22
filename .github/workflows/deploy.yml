@@ -28,6 +28,7 @@ jobs:
         run: npm run build
 
       - name: Deploy via webhook
+        # 需要仓库 secret: DEPLOY_TOKEN（Bearer 认证，缺失会导致 curl exit 22）
         env:
           DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
