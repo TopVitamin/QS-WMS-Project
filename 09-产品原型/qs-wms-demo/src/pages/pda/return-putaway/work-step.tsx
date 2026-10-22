@@ -145,7 +145,7 @@ function ReturnStopWorkspace({
       lineId: line.id,
       location,
       qty,
-      serialNos: flow.isSn(line) ? serialNos : undefined,
+      serialNos: serialNos.length === qty ? serialNos : undefined,
     })
     if (!res.ok) {
       void flow.notice(t('outbound.pdaReturn.saveFailed'), t(res.errorKey, res.params))
@@ -290,7 +290,10 @@ function ReturnStopWorkspace({
         )
         .filter((c, i, all) => all.findIndex((x) => x.value === c.value) === i)
         .slice(0, 4)
-    : [{ value: current.location, label: t('outbound.pdaReturn.suggestedShort') }, ...(next ? [{ value: next.location }] : [])]
+    : [
+        { value: current.location, label: t('outbound.pdaReturn.suggestedShort') },
+        ...(next ? [{ value: next.location }] : []),
+      ]
 
   return (
     <>

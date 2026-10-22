@@ -2,10 +2,9 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { DetailSheet } from '@/components/biz/detail-sheet'
-import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
+import { BizCode, CodeName, DateTime, Empty, Num } from '@/components/biz/display'
 import { DetailTitle, Section } from '@/components/biz/page-container'
 import { TagLabel } from '@/components/biz/status-badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { qualityMeta } from '@/config/status'
 import { ledgerChange, ledgerObject } from '@/lib/inventory-ledger'
@@ -14,30 +13,13 @@ import type { InventoryLog } from '@/types/wms'
 import { documentPath } from './inventory-helpers'
 import { DocLink, SignedNum } from './inventory-shared'
 
-/** 库位或品质之间的转移记一减一加两行，这几类必须能找到成对流水 */
-const PAIRED_TYPES: InventoryLog['type'][] = ['PUTAWAY', 'PICK', 'RETURN', 'QUALITY', 'MOVE']
-
 /**
- * 流水详情抽屉（库存流水页面骨架）：变动摘要、余额维度、来源关联、成对流水、SN 清单、原因与留痕。
- * 只读；成对流水点开切换到另一行，找不到配对时提示数据异常，不在前端补造。
+ * 流水详情只读本条数量变化、余额维度、业务来源及实际SN依据；不合并或联动另一条流水。
  */
-export function LedgerDetailSheet({
-  log,
-  no,
-  numbers,
-  onOpenLog,
-  onClose,
-}: {
-  log?: InventoryLog
-  no?: string
-  numbers: Map<string, string>
-  onOpenLog: (id: string) => void
-  onClose: () => void
-}) {
+export function LedgerDetailSheet({ log, no, onClose }: { log?: InventoryLog; no?: string; onClose: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { sku, customerCode, customerName } = useLookups()
-  const logs = useDb((s) => s.inventoryLogs)
   const warehouses = useDb((s) => s.warehouseMasters)
 
   if (!log)
@@ -48,7 +30,6 @@ export function LedgerDetailSheet({
     )
 
   const object = ledgerObject(log)
-  const paired = log.pairedLogId ? logs.find((l) => l.id === log.pairedLogId) : undefined
   const sourcePath = documentPath(log.refNo)
   const reserved = object === 'RESERVED'
 
@@ -70,16 +51,19 @@ export function LedgerDetailSheet({
           <DescriptionItem label={t('inventory.logs.change')}>
             <SignedNum value={ledgerChange(log)} />
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.logs.before')}>
+          <DescriptionItem label={t(reserved ? 'inventory.logs.beforeReserved' : 'inventory.logs.beforeActual')}>
             <Num value={log.beforeQty ?? 0} />
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.logs.after')}>
+          <DescriptionItem label={t(reserved ? 'inventory.logs.afterReserved' : 'inventory.logs.afterActual')}>
             <Num value={log.afterQty ?? 0} />
           </DescriptionItem>
           <DescriptionItem label={t('inventory.logs.occurredAt')}>
             <DateTime value={log.createdAt} />
           </DescriptionItem>
         </Descriptions>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t(reserved ? 'inventory.logs.basisReservedNote' : 'inventory.logs.basisActualNote')}
+        </p>
       </Section>
       <Section title={t('inventory.logs.dimensions')}>
         <Descriptions columns={3}>
@@ -97,7 +81,7 @@ export function LedgerDetailSheet({
           </DescriptionItem>
           <DescriptionItem label={t('inventory.batchNo')}>{(!reserved && log.batchNo) || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('inventory.quality')}>
-            {!reserved && log.qualityType ? <TagLabel meta={qualityMeta[log.qualityType]} /> : <Empty />}
+            {log.qualityType ? <TagLabel meta={qualityMeta[log.qualityType]} /> : <Empty />}
           </DescriptionItem>
         </Descriptions>
       </Section>
@@ -118,27 +102,7 @@ export function LedgerDetailSheet({
           <DescriptionItem label={t('inventory.logs.actionId')}>
             {log.actionId ? <BizCode>{log.actionId}</BizCode> : <Empty />}
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.logs.pairedLog')}>
-            {paired ? (
-              <span className="inline-flex items-center gap-2">
-                <DocNo onClick={() => onOpenLog(paired.id)}>{numbers.get(paired.id) ?? ''}</DocNo>
-                <span className="text-muted-foreground">
-                  {t('inventory.logs.pairTarget', {
-                    change: `${ledgerChange(paired) > 0 ? '+' : ''}${ledgerChange(paired)}`,
-                    location: paired.locationCode,
-                  })}
-                </span>
-              </span>
-            ) : (
-              <Empty />
-            )}
-          </DescriptionItem>
         </Descriptions>
-        {PAIRED_TYPES.includes(log.type) && !paired && (
-          <Alert variant="destructive">
-            <AlertDescription>{t('inventory.logs.pairMissing')}</AlertDescription>
-          </Alert>
-        )}
       </Section>
       {Boolean(log.serialNos?.length) && (
         <Section title={t('inventory.logs.serials')}>

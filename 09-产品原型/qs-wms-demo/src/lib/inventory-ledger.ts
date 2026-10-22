@@ -28,7 +28,7 @@ export function balanceLog(r: InventoryRecord, change: number, meta: LogMeta): I
   }
 }
 
-/** 订单占用类流水，记在 SKU 层：库位、批次、品质为空，实际数量变化为 0 */
+/** 订单预占流水记在SKU良品层：库位、批次为空，实际数量变化为0 */
 export function reservedLog(
   key: { warehouseCode: string; customerId: string; skuCode: string },
   change: number,
@@ -37,6 +37,7 @@ export function reservedLog(
 ): InventoryLog {
   return {
     level: 'SKU',
+    qualityType: 'GOOD',
     warehouseCode: key.warehouseCode,
     customerId: key.customerId,
     skuCode: key.skuCode,

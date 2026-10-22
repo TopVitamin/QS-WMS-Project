@@ -21,14 +21,24 @@ const labels = {
   goodShort: ['正常', 'Good'],
   defective: ['不良品实际', 'Defective on hand'],
   defectiveShort: ['不良', 'Defective'],
-  orderReserved: ['订单占用', 'Order reserved'],
-  actual: ['实际', 'On hand'],
+  orderReserved: ['订单预占', 'Order reserved'],
+  actual: ['库存数量', 'On hand'],
   preoccupied: ['预占', 'Reserved'],
   available: ['可用', 'Available'],
+  availableQty: ['可用数量', 'Available qty'],
   allocated: ['已分配', 'Allocated'],
+  allocatedHint: [
+    '已排给拣货任务或其他出库指定；货仍在库位，不能再分配',
+    'Allocated to a pick task or specified by another outbound; stock remains in the location but cannot be reallocated',
+  ],
   allocatable: ['可分配', 'Allocatable'],
-  normalAllocatable: ['普通出库可分配', 'Allocatable for regular outbound'],
-  allocation: ['分配状态', 'Allocation status'],
+  allocatableQty: ['可分配数量', 'Allocatable qty'],
+  allocatableHint: [
+    '普通出库还能从这里拣的数量；不含暂存、过期、盘点中、暂停分配和其他出库指定',
+    'Stock regular outbound can still pick here; excludes temporary, expired, counting, paused and other-outbound stock',
+  ],
+  normalAllocatable: ['可分配资格', 'Allocatable eligibility'],
+  workHints: ['作业提示', 'Work hints'],
   countStatus: ['盘点状态', 'Count status'],
   relatedStocktake: ['关联盘点单', 'Related stocktake'],
   pendingSources: ['待核对来源', 'Review sources'],
@@ -43,11 +53,16 @@ const labels = {
   notAllocatable: ['不参与分配', 'Not allocatable'],
   negativeAvailable: ['正常品不足', 'Good stock short'],
   negativeHint: [
-    '可用为负：订单占用的正常品不足，相关出库按缺货规则处理',
-    'Negative available: reserved good stock is short; affected orders follow shortage rules',
+    '数据不满足非负库存约束，已阻断相关操作，请核对原业务记录',
+    'Inventory constraint violation; affected operations are blocked. Check source records.',
   ],
   counting: ['盘点中', 'Counting'],
-  pending: ['待核对', 'Pending review'],
+  countingHint: ['正在盘点，暂停影响数量、库位或品质的作业', 'Stocktake in progress; inventory operations are paused'],
+  pendingHint: [
+    '已发现库存差异，暂停新的库存分配，查看详情了解来源',
+    'Inventory discrepancy; new allocation is paused. See details for source.',
+  ],
+  pending: ['暂停分配', 'Allocation paused'],
   snTag: ['SN', 'SN'],
   yes: ['是', 'Yes'],
   no: ['否', 'No'],
@@ -72,8 +87,12 @@ const labels = {
 const stock = {
   views: ['库存视角', 'Inventory views'],
   viewSku: ['SKU库存', 'SKU inventory'],
-  viewBalance: ['库存明细', 'Inventory balances'],
-  viewSerial: ['SN库存', 'Serial inventory'],
+  viewBalance: ['批次库存', 'Batch inventory'],
+  skuSerialHint: [
+    '本仓该货主、SKU的在库SN；数量库位分布不能确定每个SN的位置或品质。',
+    'In-stock serials for this owner and SKU in this warehouse; quantity balances do not establish each serial’s location or quality.',
+  ],
+  viewSerial: ['SN台账', 'Serial register'],
   exportView: ['导出当前视角', 'Export current view'],
   skuKeywordPlaceholder: ['SKU编码或名称，空格分隔多个', 'SKU code or name; separate with spaces'],
   locationPlaceholder: ['库位编码或名称', 'Location code or name'],
@@ -88,11 +107,11 @@ const stock = {
   totalBreakdown: ['正常 {{good}}，不良 {{defective}}', 'good {{good}}, defective {{defective}}'],
   empty: ['当前仓库和筛选条件下没有库存', 'No stock for this warehouse and filters'],
   skuTitle: ['SKU库存', 'SKU inventory'],
-  balanceTitle: ['库存明细', 'Inventory balance'],
-  serialTitle: ['SN库存', 'Serial inventory'],
+  balanceTitle: ['批次库存', 'Batch inventory'],
+  serialTitle: ['SN台账', 'Serial register'],
   quantity: ['数量', 'Quantities'],
   tabLocations: ['库位分布', 'By location'],
-  tabReserved: ['订单占用', 'Order reservations'],
+  tabReserved: ['订单预占', 'Order reservations'],
   tabAllocated: ['已分配来源', 'Allocation sources'],
   tabSerials: ['SN', 'Serials'],
   tabLogs: ['最近流水', 'Recent transactions'],
@@ -132,7 +151,10 @@ const convert = {
   convertible: ['可转换', 'Convertible'],
   qty: ['转换数量', 'Quantity'],
   serials: ['SN 清单', 'Serial numbers'],
-  serialsHint: ['勾选要转换的 SN，个数等于转换数量', 'Select the serials to convert; count must equal the quantity'],
+  serialsHint: [
+    '仅逐件核实时勾选SN；留空可按数量转换，选择后个数须等于转换数量',
+    'Select serials only when individually confirmed; leave empty for quantity-only conversion. If selected, the count must equal the quantity.',
+  ],
   reason: ['原因', 'Reason'],
   reasonNote: ['原因说明', 'Reason note'],
   evidence: ['依据说明', 'Evidence'],
@@ -147,12 +169,12 @@ const convert = {
     'SKU: reserved {{preFrom}}→{{preTo}}, available {{availFrom}}→{{availTo}}',
   ],
   negativeWarn: [
-    '转换后可用为负：订单占用的正常品不足。已核实的品质变化照常转换，相关出库按缺货处理',
+    '转换将导致负可用库存，不能提交。请先处理相关订单预占，再重试',
     'Available goes negative: reserved good stock is short. Verified damage is still converted; affected orders follow shortage rules',
   ],
   submit: ['确认转换', 'Confirm conversion'],
   success: ['已把 {{qty}} 件转为不良品', '{{qty}} units converted to defective'],
-  pairLogs: ['本次转换已记成对流水', 'This conversion wrote a transaction pair'],
+  pairLogs: ['本次转换已记录两条独立流水', 'This conversion recorded two separate transactions'],
   max: ['最多可转换 {{max}} 件', 'Up to {{max}} units can be converted'],
   required: ['请填写{{field}}', '{{field}} is required'],
   serialMismatch: [
@@ -175,11 +197,8 @@ const logs = {
   occurredShort: ['发生时间', 'Occurred'],
   occurredRangePlaceholder: ['业务发生日期', 'Occurred date'],
   serialPlaceholder: ['完整 SN', 'Full serial no.'],
-  object: ['变动对象', 'Changed quantity'],
-  change: ['变化量', 'Change'],
-  beforeAfter: ['前→后', 'Before → after'],
-  before: ['变化前', 'Before'],
-  after: ['变化后', 'After'],
+  object: ['数量口径', 'Quantity basis'],
+  change: ['本口径变化量', 'Change on this basis'],
   sourceDoc: ['来源单据', 'Source document'],
   terminal: ['操作终端', 'Terminal'],
   sourceType: ['来源单据类型', 'Source type'],
@@ -201,6 +220,47 @@ const logs = {
   pairTarget: ['{{change}}（{{location}}）', '{{change}} ({{location}})'],
   empty: ['当前仓库和筛选条件下没有流水', 'No transactions for this warehouse and filters'],
   stocktakeLink: ['盘点快照、实盘与差异依据见盘点单', 'Snapshot, counts and variance evidence are on the stocktake'],
+  quantityChange: ['数量变化（本行口径）', 'Quantity change (row basis)'],
+  beforeActual: ['批次库位实际变化前', 'Batch/location on-hand before'],
+  afterActual: ['批次库位实际变化后', 'Batch/location on-hand after'],
+  beforeReserved: ['SKU订单预占变化前', 'SKU order reserved before'],
+  afterReserved: ['SKU订单预占变化后', 'SKU order reserved after'],
+  basisActualNote: [
+    '本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。',
+    'This row records the on-hand change for this location, batch (when present) and quality. It is not the SKU total; batch is empty for non-batch items but the row stays at this location.',
+  ],
+  basisReservedNote: [
+    '本条记该 SKU 良品层的订单预占变化；库位、批次不适用。',
+    'This row records the SKU good-stock order reservation change; location and batch do not apply.',
+  ],
+} as const
+
+const basis = {
+  title: ['口径说明', 'Quantity basis'],
+  intro: [
+    'SKU 看可用数量，批次看可分配；订单预占不等于已分配。',
+    'SKU shows available qty; batch shows allocatable. Order reserved is not allocated.',
+  ],
+  actual: [
+    '库存数量：按当前行统计的实际库存；批次行是本库位本批次，非批次商品批次为空。',
+    'On hand: actual stock for the current row; batch rows are this location and batch, and batch is empty for non-batch items.',
+  ],
+  reserved: [
+    '订单预占：SKU 良品层的未结案普通出库单有效预占合计，不带库位、批次。',
+    'Order reserved: total open regular-outbound reservations at the SKU good-stock level; no location or batch.',
+  ],
+  available: [
+    '可用数量：SKU 良品实际－订单预占，回答“还能接多少单”。',
+    'Available qty: good on hand minus order reserved; how much new demand can be accepted.',
+  ],
+  allocated: [
+    '已分配：批次库位层已排给拣货任务或其他出库指定、尚未拣走的数量；货仍在库位。',
+    'Allocated: batch/location quantity assigned to pick tasks or specified by other outbound and not yet picked; stock remains in the location.',
+  ],
+  allocatable: [
+    '可分配：批次库位层实际－已分配，再按普通出库资格过滤，回答“这个库位还能排多少拣货”。',
+    'Allocatable: batch/location on hand minus allocated, filtered by regular-outbound eligibility; how much can still be assigned from this location.',
+  ],
 } as const
 
 const move = {
@@ -309,7 +369,7 @@ const stocktake = {
   badChange: ['不良品 {{change}}', 'Defective {{change}}'],
   noDiff: ['全部无差异，确认后只解冻', 'No variances; confirming only releases the freeze'],
   negativeWarn: [
-    '确认后可用为负：{{skus}}。盘亏照常调整，相关出库按缺货处理',
+    '确认将导致负库存：{{skus}}。本次不能提交，实盘记录保留，请先处理相关占用',
     'Available goes negative after confirmation: {{skus}}. Losses are still adjusted; affected orders follow shortage rules',
   ],
   pendingRelease: ['确认后解除这些 SKU 的待核对', 'Pending review on these SKUs is released after confirmation'],
@@ -361,15 +421,10 @@ const serialStatuses = {
   SHIPPED: ['已出库', 'Shipped'],
   LOST: ['已盘亏', 'Lost in count'],
 } as const
-const allocationStatuses = {
-  NORMAL: ['正常', 'Normal'],
-  PENDING: ['待核对', 'Pending review'],
-} as const
 const qtyConditions = {
   HAS_ACTUAL: ['有实际', 'Has stock'],
   ZERO_ACTUAL: ['零实际', 'No stock'],
   ZERO_AVAILABLE: ['零可用', 'Zero available'],
-  NEGATIVE: ['可用为负', 'Negative available'],
 } as const
 const allocatableConditions = {
   POSITIVE: ['大于 0', 'Above 0'],
@@ -381,6 +436,7 @@ const reasons = {
 } as const
 const expiryPending = {
   COUNTING: ['盘点中', 'under count'],
+  RESERVED: ['SKU可用不足', 'Insufficient available stock'],
   ALLOCATED: ['仍有已分配', 'still allocated'],
   RETRY: ['待系统重试', 'awaiting system retry'],
 } as const
@@ -397,8 +453,8 @@ const types = {
   RELEASE: ['释放', 'Release'],
 } as const
 const objects = {
-  ACTUAL: ['实际数量', 'On hand'],
-  RESERVED: ['订单占用', 'Order reserved'],
+  ACTUAL: ['批次库位实际', 'Batch/location on hand'],
+  RESERVED: ['SKU订单预占', 'SKU order reserved'],
 } as const
 const sources = {
   INBOUND: ['入库单', 'Inbound order'],
@@ -454,6 +510,10 @@ const actions = {
   CANCEL_STOCKTAKE: ['取消盘点', 'Cancel stocktake'],
 } as const
 const errors = {
+  negativeInventory: [
+    '操作将导致负库存：{{sku}}良品{{actual}}、订单预占／分配{{reserved}}。请先处理占用后重试',
+    'Blocked: negative inventory for {{sku}} (good {{actual}}, reserved/allocated {{reserved}}). Resolve reservations first.',
+  ],
   notFound: ['记录不存在或已变化，请刷新', 'Record not found or changed; refresh and retry'],
   notGood: ['只有正常品可以转换', 'Only good stock can be converted'],
   convertLocation: [
@@ -536,12 +596,12 @@ const build = (lang: 0 | 1) => ({
   stock: pairs(stock, lang),
   convert: pairs(convert, lang),
   logs: pairs(logs, lang),
+  basis: pairs(basis, lang),
   move: pairs(move, lang),
   stocktake: pairs(stocktake, lang),
   usage: pairs(usage, lang),
   expiryLevel: pairs(expiryLevels, lang),
   serialStatus: pairs(serialStatuses, lang),
-  allocationStatus: pairs(allocationStatuses, lang),
   qtyCondition: pairs(qtyConditions, lang),
   allocatableCondition: pairs(allocatableConditions, lang),
   reason: pairs(reasons, lang),

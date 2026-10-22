@@ -1,5 +1,5 @@
-import { Download } from 'lucide-react'
-import { useMemo } from 'react'
+import { Download, Send } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ import { FILTER_ALL, sortByUpdatedAtDesc } from '@/lib/master-data'
 import { countryLabelKey, WAREHOUSE_COUNTRY_OPTIONS } from '@/lib/warehouse-master'
 import { useDb } from '@/mock/db'
 import type { CustomerMaster, CustomerOwnerType, UsageStatus } from '@/types/wms'
+import { MockMasterPushDialog } from './mock-master-push-dialog'
 
 interface Filters {
   code: string
@@ -137,15 +138,23 @@ export function CustomerListPage() {
     ])
   }, [navigate, t, toggleStatus])
 
+  const [pushOpen, setPushOpen] = useState(false)
+
   return (
     <PageContainer
       fill
       title={t('menu.customers')}
       actions={
-        <Button variant="outline" onClick={() => toast.info(t('masterCustomer.exportMock'))}>
-          <Download data-icon="inline-start" />
-          {t('common.export')}
-        </Button>
+        <>
+          <Button variant="outline" onClick={() => setPushOpen(true)}>
+            <Send data-icon="inline-start" />
+            {t('masterPush.action')}
+          </Button>
+          <Button variant="outline" onClick={() => toast.info(t('masterCustomer.exportMock'))}>
+            <Download data-icon="inline-start" />
+            {t('common.export')}
+          </Button>
+        </>
       }
     >
       <Panel className="p-4">
@@ -200,6 +209,7 @@ export function CustomerListPage() {
       <Panel className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <DataTable className="flex-1" data={rows} columns={columns} getRowId={(r) => r.code} pageSize={20} />
       </Panel>
+      {pushOpen && <MockMasterPushDialog masterType="OWNER" onClose={() => setPushOpen(false)} />}
     </PageContainer>
   )
 }

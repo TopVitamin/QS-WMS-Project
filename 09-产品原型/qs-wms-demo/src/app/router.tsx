@@ -41,6 +41,10 @@ const ZoneEditPage = lazyPage(() => import('@/pages/wms/master/zone-edit-page'),
 const LocationCreatePage = lazyPage(() => import('@/pages/wms/master/location-create-page'), 'LocationCreatePage')
 const LocationDetailPage = lazyPage(() => import('@/pages/wms/master/location-detail-page'), 'LocationDetailPage')
 const LocationEditPage = lazyPage(() => import('@/pages/wms/master/location-edit-page'), 'LocationEditPage')
+const ContainerDetailPage = lazyPage(
+  () => import('@/pages/wms/master/container-detail-page'),
+  'ContainerDetailPage',
+)
 const CarrierListPage = lazyPage(() => import('@/pages/wms/master/carrier-list-page'), 'CarrierListPage')
 const CarrierDetailPage = lazyPage(() => import('@/pages/wms/master/carrier-detail-page'), 'CarrierDetailPage')
 const CustomerDetailPage = lazyPage(() => import('@/pages/wms/master/customer-detail-page'), 'CustomerDetailPage')
@@ -100,6 +104,7 @@ export const router = createHashRouter([
           { path: 'master/zones/:code', element: <ZoneDetailPage /> },
           { path: 'master/locations/new', element: <LocationCreatePage /> },
           { path: 'master/locations/:code/edit', element: <LocationEditPage /> },
+          { path: 'master/containers/:containerNo', element: <ContainerDetailPage /> },
           { path: 'master/locations/:code', element: <LocationDetailPage /> },
           { path: 'master/carriers', element: <CarrierListPage /> },
           { path: 'master/carriers/:code', element: <CarrierDetailPage /> },

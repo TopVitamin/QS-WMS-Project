@@ -1,3 +1,22 @@
 {
-  "_comment": "占位样例；信封见消息信封与公共字段.md，载荷见映射表。"
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-OWNER-001",
+  "messageType": "PUSH_MASTER_DATA",
+  "masterType": "OWNER",
+  "ownerCode": "ANKR",
+  "expectedVersion": 0,
+  "payload": {
+    "ownerCode": "ANKR",
+    "name": "Shenzhen Anker Trading",
+    "ownerType": "EXTERNAL",
+    "status": "ENABLED",
+    "countryCode": "CN",
+    "city": "Shenzhen",
+    "address1": "Nanshan District",
+    "contactName": "Demo Contact",
+    "contactPhone": "+86-755-00000000",
+    "contactEmail": "demo@ankr.example",
+    "upstreamOwnerId": "MOCK-ANKR",
+    "putawayRecommendTiming": "AT_PUTAWAY_SCAN"
+  }
 }

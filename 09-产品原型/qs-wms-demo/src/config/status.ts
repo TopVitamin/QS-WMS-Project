@@ -1,7 +1,21 @@
-import type { InboundBizType, InboundOrderStatus, QualityType, UsageStatus } from '@/types/wms'
+import type {
+  ContainerStatus,
+  ContainerType,
+  InboundBizType,
+  InboundOrderStatus,
+  QualityType,
+  UsageStatus,
+} from '@/types/wms'
 import type { PutawayOrderStatus, UnclaimedStatus } from '@/types/inbound'
 import type { OrderComposition } from '@/lib/outbound-derive'
-import type { OutboundPickTask, OutboundPutback, OutboundStatus, OutboundType, PickStatus, WaveStatus } from '@/types/outbound'
+import type {
+  OutboundPickTask,
+  OutboundPutback,
+  OutboundStatus,
+  OutboundType,
+  PickStatus,
+  WaveStatus,
+} from '@/types/outbound'
 import type { StocktakeSource, StocktakeStatus } from '@/types/inventory'
 import type { ReturnOrderStatus, ReturnSourceType } from '@/types/return'
 import type { ExpiryLevel, SerialStatus } from '@/lib/inventory-derive'
@@ -22,7 +36,11 @@ export const outboundPickStatusMeta: Record<PickStatus, StatusMeta> = {
 }
 export const outboundPutbackStatusMeta = putbackMeta()
 function putbackMeta(): Record<'PENDING' | 'PUTAWAYING' | 'COMPLETED', StatusMeta> {
-  return { PENDING: { tone: 'orange', labelKey: 'outbound.status.PENDING' }, PUTAWAYING: { tone: 'blue', labelKey: 'outbound.status.PUTAWAYING' }, COMPLETED: { tone: 'green', labelKey: 'outbound.status.COMPLETED' } }
+  return {
+    PENDING: { tone: 'orange', labelKey: 'outbound.status.PENDING' },
+    PUTAWAYING: { tone: 'blue', labelKey: 'outbound.status.PUTAWAYING' },
+    COMPLETED: { tone: 'green', labelKey: 'outbound.status.COMPLETED' },
+  }
 }
 export const outboundWaveStatusMeta: Record<WaveStatus, StatusMeta> = {
   ALLOCATED: { tone: 'orange', labelKey: 'status.wave.ALLOCATED' },
@@ -38,12 +56,6 @@ export const outboundResultStatusMeta: Record<'SENT' | 'FAILED', StatusMeta> = {
   SENT: { tone: 'green', labelKey: 'status.outboundResult.SENT' },
   FAILED: { tone: 'red', labelKey: 'status.outboundResult.FAILED' },
 }
-export const allocationStatusMeta = {
-  NORMAL: { tone: 'green', labelKey: 'inventory.allocationStatus.NORMAL' },
-  PENDING: { tone: 'red', labelKey: 'inventory.allocationStatus.PENDING' },
-  COUNTING: { tone: 'blue', labelKey: 'inventory.counting' },
-} satisfies Record<string, StatusMeta>
-
 /** 库存/盘点行上的固定标记：新增实盘行、SN 商品 */
 export const inventoryFeatureMeta = {
   added: { tone: 'orange', labelKey: 'inventory.stocktake.added' },
@@ -101,6 +113,25 @@ export const putawayOrderStatusMeta: Record<PutawayOrderStatus, StatusMeta> = {
 /** 无主货登记：一期只有「暂存中」；后续 CONVERTED / DISPOSED 待 OMS 认领上线 */
 export const unclaimedStatusMeta: Record<UnclaimedStatus, StatusMeta> = {
   HOLDING: { tone: 'orange', labelKey: 'status.unclaimed.HOLDING' },
+}
+
+export const containerStatusMeta: Record<ContainerStatus, StatusMeta> = {
+  IDLE: { tone: 'gray', labelKey: 'status.container.IDLE' },
+  RECEIVING: { tone: 'blue', labelKey: 'status.container.RECEIVING' },
+  PUTAWAYING: { tone: 'orange', labelKey: 'status.container.PUTAWAYING' },
+  IN_STOCK: { tone: 'green', labelKey: 'status.container.IN_STOCK' },
+  OUTBOUND: { tone: 'purple', labelKey: 'status.container.OUTBOUND' },
+  SHIPPED: { tone: 'cyan', labelKey: 'status.container.SHIPPED' },
+  RELEASED: { tone: 'gray', labelKey: 'status.container.RELEASED' },
+  DISABLED: { tone: 'gray', labelKey: 'status.container.DISABLED' },
+}
+
+export const containerTypeMeta: Record<ContainerType, StatusMeta> = {
+  CARTON: { tone: 'gray', labelKey: 'enum.containerType.CARTON' },
+  PALLET: { tone: 'orange', labelKey: 'enum.containerType.PALLET' },
+  BAG: { tone: 'blue', labelKey: 'enum.containerType.BAG' },
+  CAGE: { tone: 'purple', labelKey: 'enum.containerType.CAGE' },
+  PACKAGE: { tone: 'cyan', labelKey: 'enum.containerType.PACKAGE' },
 }
 
 export const usageStatusMeta: Record<UsageStatus, StatusMeta> = {

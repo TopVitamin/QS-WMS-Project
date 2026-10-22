@@ -90,7 +90,7 @@ export function useStocktakeFlow() {
     (k: SkuKey) => useDb.getState().skuMasters.find((m) => m.customerId === k.customerId && m.code === k.skuCode),
     [],
   )
-  const isSn = useCallback((k: SkuKey) => Boolean(master(k)?.snEnabled), [master])
+  const isSn = useCallback((_k: SkuKey) => false, [])
   const needsBatch = useCallback((k: SkuKey) => Boolean(master(k)?.batchEnabled || master(k)?.expiryEnabled), [master])
   const needsExpiry = useCallback((k: SkuKey) => Boolean(master(k)?.expiryEnabled), [master])
 

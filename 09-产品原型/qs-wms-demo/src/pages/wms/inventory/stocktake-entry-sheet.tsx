@@ -62,8 +62,7 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
   const master = (customerId: string, skuCode: string) =>
     masters.find((m) => m.customerId === customerId && m.code === skuCode)
   const isSn = (l: Pick<StocktakeLine, 'customerId' | 'skuCode'>) => Boolean(master(l.customerId, l.skuCode)?.snEnabled)
-  const draftQty = (l: StocktakeLine, d: Draft) =>
-    isSn(l) ? parseSerials(d.serials).length : d.qty.trim() === '' ? undefined : Number(d.qty)
+  const draftQty = (_l: StocktakeLine, d: Draft) => (d.qty.trim() === '' ? undefined : Number(d.qty))
   const changed = count.lines.filter((l) => {
     const d = drafts[l.lineNo]
     const saved = savedDraft(l)
@@ -72,12 +71,8 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
   /** 只提交改过的行；普通商品清空数量视为未录，不提交 */
   const entries = changed.flatMap((l) => {
     const d = drafts[l.lineNo]
-    if (isSn(l)) {
-      const serials = parseSerials(d.serials)
-      return [{ lineNo: l.lineNo, qty: serials.length, serialNos: serials, note: d.note }]
-    }
     if (d.qty.trim() === '') return []
-    return [{ lineNo: l.lineNo, qty: Number(d.qty), serialNos: [], note: d.note }]
+    return [{ lineNo: l.lineNo, qty: Number(d.qty), serialNos: isSn(l) ? parseSerials(d.serials) : [], note: d.note }]
   })
   const addTouched = JSON.stringify(add) !== JSON.stringify(emptyAdd)
 
@@ -119,7 +114,7 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
         batchNo: add.batchNo || undefined,
         expiryDate: add.expiryDate || undefined,
         qualityType: add.quality,
-        qty: addMaster?.snEnabled ? serials.length : Number(add.qty),
+        qty: Number(add.qty),
         serialNos: addMaster?.snEnabled ? serials : [],
         note: add.note,
       },
@@ -186,23 +181,22 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
                     <Num value={l.bookQty} />
                   </TableCell>
                   <TableCell className="min-w-28">
-                    {isSn(l) ? (
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      aria-label={`${t('inventory.stocktake.countedQty')} ${label}`}
+                      placeholder={t('common.inputPlaceholder')}
+                      value={d.qty}
+                      onChange={(e) => setDraft(l.lineNo, { qty: e.target.value })}
+                    />
+                    {isSn(l) && (
                       <Textarea
                         rows={2}
                         aria-label={`${t('inventory.stocktake.countedSerials')} ${label}`}
                         placeholder={t('inventory.stocktake.serialInputHint')}
                         value={d.serials}
                         onChange={(e) => setDraft(l.lineNo, { serials: e.target.value })}
-                      />
-                    ) : (
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        aria-label={`${t('inventory.stocktake.countedQty')} ${label}`}
-                        placeholder={t('common.inputPlaceholder')}
-                        value={d.qty}
-                        onChange={(e) => setDraft(l.lineNo, { qty: e.target.value })}
                       />
                     )}
                   </TableCell>
@@ -257,8 +251,8 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
               options={(['GOOD', 'DEFECTIVE'] as const).map((q) => ({ value: q, label: t(qualityMeta[q].labelKey) }))}
             />
           </FormField>
-          {addMaster?.snEnabled ? (
-            <FormField label={t('inventory.stocktake.countedSerials')} required>
+          {addMaster?.snEnabled && (
+            <FormField label={t('inventory.stocktake.countedSerials')}>
               <Textarea
                 rows={2}
                 placeholder={t('inventory.stocktake.serialInputHint')}
@@ -266,7 +260,8 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
                 onChange={(e) => setAdd({ ...add, serials: e.target.value })}
               />
             </FormField>
-          ) : (
+          )}
+          {
             <FormField label={t('inventory.stocktake.countedQty')} required>
               <Input
                 type="number"
@@ -277,7 +272,7 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
                 onChange={(e) => setAdd({ ...add, qty: e.target.value })}
               />
             </FormField>
-          )}
+          }
           {(addMaster?.batchEnabled || addMaster?.expiryEnabled) && (
             <FormField label={t('inventory.batchNo')} required>
               <Input

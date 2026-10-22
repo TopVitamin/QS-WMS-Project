@@ -743,7 +743,37 @@ export function createInboundDemoBundle(): InboundDemoBundle {
     createdAt: '2026-10-11T09:00:00.000Z',
   })
 
-  const core = [o0001, o0002, o0003, o0004, o0005, o0006, o0007, o0008, o0009, o0010, o0011].map((o) =>
+
+  const oSelf = order(
+    '9001',
+    'OMS-IN-SELF-001',
+    [
+      line({
+        lineNo: 1,
+        skuCode: 'OWNER-SELF-001',
+        plannedQty: 20,
+        receivedQty: 0,
+        rejectedQty: 0,
+        goodQty: 0,
+        defectQty: 0,
+        putawayQty: 0,
+      }),
+    ],
+    { customerId: 'SELF-001', remark: '演示：自营货主入库（与外部货主同框架）' },
+  )
+
+  const oSkuForms = order(
+    '9002',
+    'OMS-IN-SKU-FORMS-001',
+    [
+      line({ lineNo: 1, skuCode: 'BIG-01', plannedQty: 10, receivedQty: 0, rejectedQty: 0, goodQty: 0, defectQty: 0, putawayQty: 0 }),
+      line({ lineNo: 2, skuCode: 'ODD-01', plannedQty: 10, receivedQty: 0, rejectedQty: 0, goodQty: 0, defectQty: 0, putawayQty: 0 }),
+      line({ lineNo: 3, skuCode: 'BATT-01', plannedQty: 10, receivedQty: 0, rejectedQty: 0, goodQty: 0, defectQty: 0, putawayQty: 0 }),
+    ],
+    { remark: '演示：大件、异形、带电商品的资料与收货' },
+  )
+
+  const core = [o0001, o0002, o0003, o0004, o0005, o0006, o0007, o0008, o0009, o0010, o0011, oSelf, oSkuForms].map((o) =>
     recomputeInboundOrder(o),
   )
   const filler = createFillerInboundsForOtherWarehouses()

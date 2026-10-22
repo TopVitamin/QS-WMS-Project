@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { useShallow } from 'zustand/react/shallow'
 import { DataTable, createDataColumns } from '@/components/biz/data-table'
 import { DateTime, Empty } from '@/components/biz/display'
 import { FormField, FormGrid } from '@/components/biz/form-field'
@@ -132,7 +133,7 @@ export function InboundCancelDialog({ order, onClose }: { order: InboundOrder; o
 /** 上游消息与完成结果：详情页签只读追溯 */
 export function InboundUpstreamPanel({ order }: { order: InboundOrder }) {
   const { t } = useTranslation()
-  const messages = useDb((s) => s.inboundMessages.filter((m) => m.inboundNo === order.inboundNo))
+  const messages = useDb(useShallow((s) => s.inboundMessages.filter((m) => m.inboundNo === order.inboundNo)))
   const result = useDb((s) => s.inboundResults.find((r) => r.inboundNo === order.inboundNo))
   const retry = useDb((s) => s.retryInboundResult)
 

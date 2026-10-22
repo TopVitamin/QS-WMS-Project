@@ -1,3 +1,27 @@
 {
-  "_comment": "占位样例；信封见消息信封与公共字段.md，载荷见映射表。"
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-SKU-001",
+  "messageType": "PUSH_MASTER_DATA",
+  "masterType": "SKU",
+  "ownerCode": "ANKR",
+  "expectedVersion": 0,
+  "payload": {
+    "ownerCode": "ANKR",
+    "skuCode": "CABLE-01",
+    "name": "USB 数据线",
+    "nameEn": "USB Cable",
+    "barcode": "690000000001",
+    "unit": "EA",
+    "productForm": "SMALL",
+    "isBattery": false,
+    "snEnabled": false,
+    "batchEnabled": false,
+    "expiryEnabled": false,
+    "grossWeightKg": 0.08,
+    "lengthCm": 15,
+    "widthCm": 8,
+    "heightCm": 2,
+    "status": "ENABLED",
+    "upstreamSkuId": "OMS-ANKR-CABLE-01"
+  }
 }

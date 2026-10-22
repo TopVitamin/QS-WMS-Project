@@ -56,7 +56,8 @@ export function useReturnFlow() {
   )
 
   const master = useCallback(
-    (p: OutboundPutback, skuCode: string) => skuMasters.find((m) => m.customerId === p.customerId && m.code === skuCode),
+    (p: OutboundPutback, skuCode: string) =>
+      skuMasters.find((m) => m.customerId === p.customerId && m.code === skuCode),
     [skuMasters],
   )
 
@@ -98,7 +99,8 @@ export function useReturnFlow() {
   )
   /** 扫码处理时读最新计数：连续快扫时组件可能还没重渲染 */
   const liveCountOf = useCallback(
-    (no: string): PdaPickCount | undefined => usePdaOutboundSession.getState().putback[pdaSessionKey(warehouseCode, no)],
+    (no: string): PdaPickCount | undefined =>
+      usePdaOutboundSession.getState().putback[pdaSessionKey(warehouseCode, no)],
     [warehouseCode],
   )
 
@@ -145,7 +147,7 @@ export function useReturnFlow() {
     latestPutback,
     skuName: (code: string, customerId?: string) => sku(code, customerId)?.name,
     master,
-    isSn: (line: PutbackLine) => line.serialNos.length > 0,
+    isSn: (_line: PutbackLine) => false,
     resolveSku,
     targetOf,
     serialsLeft,

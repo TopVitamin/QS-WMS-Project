@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { resetOutboundSeedInventory } from './outbound-seed'
 import { createSeedData, type SeedData } from './seed'
 import { applyInventoryAction } from './inventory-actions'
+import { warehouseSerialStocks } from '@/lib/serial-stock'
 import { applyOutboundAction, emptyOutboundData, outboundAvailable, orderAssignments } from './outbound-actions'
 import type { InventoryCommand } from '@/types/inventory'
 import type { OutboundCommand, OutboundCreateInput, OutboundType } from '@/types/outbound'
@@ -13,6 +14,7 @@ function fixture() {
   s.inventory = s.inventory.filter((r) => r.id.startsWith('INV-OUT-SEED-0-'))
   resetOutboundSeedInventory(s.inventory, 'US-LA-01', 0)
   s.inventoryLogs = []
+  s.serialStocks = undefined
   s.inventoryCounts = []
   s.stockMoves = []
   s.putawayOrders = []
@@ -108,6 +110,7 @@ describe('outbound inventory contract', () => {
     const pb = s.outboundPutbacks[0],
       line = pb.lines[0],
       stock = structuredClone(s.inventory)
+    const serialsBefore = structuredClone(warehouseSerialStocks(s))
     ok(s, { type: 'SAVE_PUTBACK', no: pb.no, lineId: line.id, location: 'A-01-02', qty: 1 })
     expect(act(s, { type: 'SUBMIT_PUTBACK', no: pb.no }).ok).toBe(false)
     ok(s, { type: 'RESET_PUTBACK_LINE', no: pb.no, lineId: line.id })
@@ -115,11 +118,14 @@ describe('outbound inventory contract', () => {
     ok(s, { type: 'SAVE_PUTBACK', no: pb.no, lineId: line.id, location: 'B-02-01', qty: 1 })
     expect(s.inventory).toEqual(stock)
     const actuals = s.outboundPutbacks[0].lines[0].placements!
-    expect(actuals.map((p) => p.serialNos.length)).toEqual([1, 1])
+    expect(actuals.map((p) => p.serialNos.length)).toEqual([0, 0])
     ok(s, { type: 'SUBMIT_PUTBACK', no: pb.no })
     expect(orderAssignments(s, b)[0].activeSerialNos).toEqual([otherSn])
     expect(s.inventory.find((r) => r.locationCode === 'B-02-01')!.serialNos).toEqual(actuals[1].serialNos)
-    expect(s.inventory.flatMap((r) => r.serialNos ?? [])).toHaveLength(5)
+    expect(warehouseSerialStocks(s)).toEqual(serialsBefore)
+    expect(
+      s.inventoryLogs.filter((l) => l.type === 'RETURN' && l.jobNo === pb.no).every((l) => !l.serialNos?.length),
+    ).toBe(true)
   })
   it('return placement keeps the serial numbers actually scanned, in any order', () => {
     const s = fixture()
@@ -460,7 +466,12 @@ describe('outbound inventory contract', () => {
     })
     const stock = structuredClone(s.inventory)
     expect(s.outboundHandovers).toHaveLength(1)
-    expect(s.outboundHandovers[0]).toMatchObject({ orderNo: no, method: 'DRIVER', party: 'Demo driver', containerQty: 1 })
+    expect(s.outboundHandovers[0]).toMatchObject({
+      orderNo: no,
+      method: 'DRIVER',
+      party: 'Demo driver',
+      containerQty: 1,
+    })
     expect(act(s, { type: 'SHIP', no })).toMatchObject({ ok: false, errorKey: 'outbound.error.terminal' })
     ok(s, {
       type: 'HANDOVER',

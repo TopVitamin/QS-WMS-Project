@@ -67,13 +67,11 @@ export function usePutawayFlow() {
     (order: PutawayOrder, skuCode: string) => findSkuMaster(skuMasters, customerCode(order.customerId), skuCode),
     [customerCode, skuMasters],
   )
-  const isSn = useCallback(
-    (order: PutawayOrder, line: PutawayPlanLine) => Boolean(master(order, line.skuCode)?.snEnabled),
-    [master],
-  )
+  const isSn = useCallback((_order: PutawayOrder, _line: PutawayPlanLine) => false, [])
   /** 模拟扫码用的商品条码：主条码，没有时用 SKU 编码 */
   const barcodeOf = useCallback(
-    (order: PutawayOrder, skuCode: string) => master(order, skuCode)?.primaryBarcode ?? sku(skuCode)?.barcode ?? skuCode,
+    (order: PutawayOrder, skuCode: string) =>
+      master(order, skuCode)?.primaryBarcode ?? sku(skuCode)?.barcode ?? skuCode,
     [master, sku],
   )
 

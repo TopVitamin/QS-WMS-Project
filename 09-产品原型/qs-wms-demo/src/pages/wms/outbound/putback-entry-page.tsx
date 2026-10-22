@@ -51,12 +51,6 @@ interface EntryDraft {
   serialText: string
 }
 
-/** 本行还没落位的序列号（按应返库清单顺序） */
-const serialsLeft = (l: PutbackLine) => {
-  const placed = (l.placements ?? []).flatMap((pl) => pl.serialNos)
-  return l.serialNos.filter((sn) => !placed.includes(sn))
-}
-
 /** 录入顺序：按建议库位的路径顺序 */
 const routeOrder = (p: OutboundPutback) =>
   [...p.lines].sort(
@@ -78,7 +72,7 @@ function EntryWorkspace({ putback }: { putback: OutboundPutback }) {
     lineId: line?.id,
     location: line?.suggestedLocation ?? '',
     qty: line ? String(putbackLineRemaining(line)) : '',
-    serialText: line ? serialsLeft(line).join('\n') : '',
+    serialText: '',
   })
   const [draft, setDraft] = useState<EntryDraft>(() => draftFor(openLines[0]))
   const [error, setError] = useState<string>()
@@ -113,7 +107,7 @@ function EntryWorkspace({ putback }: { putback: OutboundPutback }) {
     const qty = Number(draft.qty)
     if (!Number.isInteger(qty) || qty <= 0) return setError(t('outbound.entry.qtyInvalid'))
     if (qty > remain) return setError(t('outbound.entry.returnOver', { count: remain }))
-    const serialNos = line.serialNos.length ? parseSerials(draft.serialText) : undefined
+    const serialNos = line.serialNos.length && draft.serialText.trim() ? parseSerials(draft.serialText) : undefined
     if (serialNos && serialNos.length !== qty) return setError(t('outbound.entry.serialCount', { count: qty }))
     const res = useDb
       .getState()
@@ -190,7 +184,11 @@ function EntryWorkspace({ putback }: { putback: OutboundPutback }) {
               items={[
                 { label: t('outbound.ui.expected'), value: expected },
                 { label: t('outbound.saved'), value: saved, tone: 'blue' },
-                { label: t('outbound.entry.remaining'), value: expected - saved, tone: expected > saved ? 'orange' : undefined },
+                {
+                  label: t('outbound.entry.remaining'),
+                  value: expected - saved,
+                  tone: expected > saved ? 'orange' : undefined,
+                },
                 { label: t('outbound.pdaReturn.placementCount'), value: placements.length },
               ]}
             />
@@ -203,7 +201,9 @@ function EntryWorkspace({ putback }: { putback: OutboundPutback }) {
                   {t('outbound.entry.returnSubmitBlocked', { count: expected - saved })}
                 </p>
               )}
-              {putback.reason === 'MISSING' && <p className="text-xs text-warning-text">{t('outbound.missingNotice')}</p>}
+              {putback.reason === 'MISSING' && (
+                <p className="text-xs text-warning-text">{t('outbound.missingNotice')}</p>
+              )}
             </div>
           </SummaryCard>
         }
@@ -274,7 +274,7 @@ function EntryWorkspace({ putback }: { putback: OutboundPutback }) {
                   />
                 </FormField>
                 {line && line.serialNos.length > 0 && (
-                  <FormField label={t('outbound.ui.serial')} required span="full" hint={t('outbound.entry.returnSerialHint')}>
+                  <FormField label={t('outbound.ui.serial')} span="full" hint={t('outbound.entry.returnSerialHint')}>
                     <Textarea
                       rows={3}
                       value={draft.serialText}
@@ -413,7 +413,12 @@ function EntryTabs({
         cell: ({ row }) => (
           <RowActions
             actions={[
-              { key: 'redo', label: t('outbound.redoReturn'), danger: true, onClick: () => onRedo(row.original.lineId) },
+              {
+                key: 'redo',
+                label: t('outbound.redoReturn'),
+                danger: true,
+                onClick: () => onRedo(row.original.lineId),
+              },
             ]}
           />
         ),
@@ -430,7 +435,13 @@ function EntryTabs({
           label: t('outbound.ui.planReturn'),
           count: lineRows.length,
           content: (
-            <DataTable data={lineRows} columns={lineColumns} getRowId={(l) => l.id} selectable={false} paginate={false} />
+            <DataTable
+              data={lineRows}
+              columns={lineColumns}
+              getRowId={(l) => l.id}
+              selectable={false}
+              paginate={false}
+            />
           ),
         },
         {

@@ -207,7 +207,7 @@ function openingLedger(seed: SeedData): InventoryLog[] {
  * 先把种子直接写入的收货、上架和初始预占回放成流水，再走页面同一套动作，成对流水、前后数量和 SN 位置都由动作生成。每仓：
  * - 三条移库：单行普通 SKU、转不良后移到不良隔离库位、多行含批次和 SN；
  * - 一次在库受损品质转换；
- * - 一张已完成的计划盘点：盘亏使可用为负、不良品短少、盘盈新批次（临期）；洛杉矶以外三仓另含 SN 缺失；
+ * - 一张已完成的计划盘点：盘亏后可用为0、不良品短少、盘盈新批次（临期）；洛杉矶以外三仓另含 SN 缺失；
  * - 一张发现账实不符后取消的盘点，以及随后的盘点中计划盘点；演示商品再接一张批发单占满库存，
  *   同时显示待核对、盘点中、可用为 0，并演示盘点期间照常接单预占、不能分配。
  * 新泽西仓另提交一张返库上架单，流水覆盖返库上架。
@@ -379,7 +379,7 @@ export function playInventorySeedFlows(seed: SeedData): SeedData {
         no: counted,
         entries: stocktake.lines.map((l) => {
           if (l.skuCode === 'LOT-DEMO-01' && l.qualityType === 'GOOD' && l.locationCode === lotSource)
-            return { lineNo: l.lineNo, qty: l.bookQty - 2, serialNos: [], note: 'Two units missing from the location' }
+            return { lineNo: l.lineNo, qty: l.bookQty - 1, serialNos: [], note: 'One unit missing from the location' }
           if (l.skuCode === 'LOT-DEMO-01' && l.qualityType === 'DEFECTIVE')
             return { lineNo: l.lineNo, qty: l.bookQty - 1, serialNos: [], note: 'Only one expired unit in isolation' }
           if (l.skuCode === 'SN-DEMO-01' && l.locationCode === 'A-01-02') {

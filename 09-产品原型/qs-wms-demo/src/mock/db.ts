@@ -14,6 +14,7 @@ import type {
   CustomerMaster,
   InboundOrder,
   LocationMaster,
+  MasterPushMessage,
   Sku,
   SkuMaster,
   UsageStatus,
@@ -39,13 +40,20 @@ import {
 } from './putaway-actions'
 import { applySubmitNewSkuMeasure, type SubmitNewSkuMeasureInput } from './new-sku-actions'
 import { applyRegisterUnclaimed, type RegisterUnclaimedInput } from './unclaimed-actions'
-import { applyReturnReceipt } from './return-actions'
+import { applyDeliveryFailedReturn, applyReturnReceipt } from './return-actions'
 import { recomputeReturnOrder } from '@/lib/return-derive'
 import { createSeedData, type SeedData } from './seed'
-import type { ReturnOrder, ReturnReceiveLineInput } from '@/types/return'
+import type { ReturnOrder, ReturnReceiptContainerInput } from '@/types/return'
 import { nextDocNo } from '@/lib/doc-no'
 import { currentOperator } from './current-operator'
 import { createMasterActions } from './master-actions'
+import {
+  bindContainerAction,
+  createContainerAction,
+  setContainerStatusAction,
+  updateContainerAction,
+  type CreateContainerInput,
+} from './container-actions'
 
 // SeedData includes receiptRecords / putawayOrders / inboundExceptions
 
@@ -96,12 +104,43 @@ interface DbActions {
   }) => ActionResult
   /** 重试入库完成结果回传（Demo 只重试已有结果） */
   retryInboundResult: (inboundNo: string) => ActionResult
-  /** 退货收货（管理端与 PDA 共用）：生成退货收货记录、异常与共用上架单 */
+  /** 退货收货（管理端与 PDA 共用）：一次提交含 1～N 个容器，生成退货收货记录、异常与共用上架单 */
   receiveReturn: (input: {
     returnNo: string
-    containerNo?: string
-    lines: ReturnReceiveLineInput[]
+    containers: ReturnReceiptContainerInput[]
     operator: string
+  }) => ActionResult
+  /** 派送失败退回：扫原 B2C 出库单生成退货单 */
+  createDeliveryFailedReturn: (input: { outboundNo: string; operator: string }) => ActionResult & {
+    returnNo?: string
+  }
+  /** 重试退货完成结果回传（Demo 只重试已有结果） */
+  retryReturnResult: (returnNo: string) => ActionResult
+  /** OMS Mock 基础资料推送：货主或商品；接受/拒绝都留痕 */
+  mockPushMasterData: (input: { masterType: 'OWNER' | 'SKU'; ownerCode: string; skuCode?: string }) => ActionResult
+  /** 收货绑定容器：首次扫描自动建档，已停用/货主不符/占用中阻断 */
+  bindContainer: (input: {
+    warehouseCode: string
+    customerId: string
+    containerNo: string
+    operator: string
+  }) => ActionResult
+  /** 容器档案维护 */
+  createContainer: (input: CreateContainerInput) => ActionResult
+  updateContainer: (input: {
+    warehouseCode: string
+    containerNo: string
+    containerType: import('@/types/wms').ContainerType
+    maxPieces?: number
+    maxWeightKg?: number
+    maxVolumeM3?: number
+    parentContainerNo?: string
+    remark?: string
+  }) => ActionResult
+  setContainerStatus: (input: {
+    warehouseCode: string
+    containerNo: string
+    status: 'IDLE' | 'DISABLED'
   }) => ActionResult
   /** OMS Mock 退货预报：同来源+上游退货号重复接收返回原单 */
   mockReturnForecast: (input: {
@@ -401,12 +440,11 @@ export const useDb = create<DbState>()(
           const state = get()
           if (!input.customerId) return { ok: false, errorKey: 'inbound.mock.ownerRequired' }
           if (!input.upstreamNo.trim()) return { ok: false, errorKey: 'inbound.mock.upstreamRequired' }
-          const items =
-            input.items?.length
-              ? input.items
-              : input.skuCode && input.plannedQty
-                ? [{ skuCode: input.skuCode, plannedQty: input.plannedQty }]
-                : []
+          const items = input.items?.length
+            ? input.items
+            : input.skuCode && input.plannedQty
+              ? [{ skuCode: input.skuCode, plannedQty: input.plannedQty }]
+              : []
           if (
             items.length === 0 ||
             new Set(items.map((i) => i.skuCode)).size !== items.length ||
@@ -478,7 +516,10 @@ export const useDb = create<DbState>()(
           const order = state.inbounds.find((o) => o.inboundNo === inboundNo)
           if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
           const prior = messageId ? state.inboundMessages.find((m) => m.id === messageId) : undefined
-          if (prior) return prior.status === 'ACCEPTED' ? { ok: true } : { ok: false, errorKey: prior.errorKey ?? 'inbound.changeBlocked' }
+          if (prior)
+            return prior.status === 'ACCEPTED'
+              ? { ok: true }
+              : { ok: false, errorKey: prior.errorKey ?? 'inbound.changeBlocked' }
           const rejectChange = (errorKey: string) => {
             set({
               inboundMessages: [
@@ -540,7 +581,10 @@ export const useDb = create<DbState>()(
           const order = state.inbounds.find((o) => o.inboundNo === inboundNo)
           if (!order) return { ok: false, errorKey: 'error.inboundNotFound' }
           const prior = messageId ? state.inboundMessages.find((m) => m.id === messageId) : undefined
-          if (prior) return prior.status === 'ACCEPTED' ? { ok: true } : { ok: false, errorKey: prior.errorKey ?? 'inbound.cancelBlocked' }
+          if (prior)
+            return prior.status === 'ACCEPTED'
+              ? { ok: true }
+              : { ok: false, errorKey: prior.errorKey ?? 'inbound.cancelBlocked' }
           const received = order.items.reduce((n, l) => n + l.receivedQty, 0)
           if (received > 0) {
             set({
@@ -593,9 +637,10 @@ export const useDb = create<DbState>()(
           return { ok: true }
         },
 
-        receiveReturn: ({ returnNo, containerNo, lines, operator }) => {
-          const result = applyReturnReceipt(get(), { returnNo, containerNo, lines, operator })
+        receiveReturn: ({ returnNo, containers, operator }) => {
+          const result = applyReturnReceipt(get(), { returnNo, containers, operator })
           if (!result.ok) return result
+          const lineCount = containers.reduce((n, c) => n + c.lines.length, 0)
           set({
             ...result.patch,
             auditLogs: appendAudit({
@@ -603,10 +648,164 @@ export const useDb = create<DbState>()(
               refNo: returnNo,
               action: 'RETURN_RECEIVE',
               operator,
-              detail: `${lines.length} lines`,
+              detail: `${containers.length} containers · ${lineCount} lines`,
             }),
           })
           finalizeReturnResults()
+          return { ok: true }
+        },
+
+        createDeliveryFailedReturn: ({ outboundNo, operator }) => {
+          const result = applyDeliveryFailedReturn(get(), { outboundNo, operator })
+          if (!result.ok) return result
+          if (result.patch) {
+            set({
+              ...result.patch,
+              auditLogs: appendAudit({
+                refType: 'RETURN',
+                refNo: result.returnNo ?? outboundNo,
+                action: 'RETURN_DELIVERY_FAILED_CREATE',
+                operator,
+                detail: outboundNo,
+              }),
+            })
+          }
+          return { ok: true, returnNo: result.returnNo }
+        },
+
+        retryReturnResult: (returnNo) => {
+          const state = get()
+          const result = state.returnResults.find((r) => r.returnNo === returnNo)
+          if (!result) return { ok: false, errorKey: 'return.error.resultNotFound' }
+          if (result.status === 'SENT') return { ok: true }
+          set({
+            returnResults: state.returnResults.map((r) =>
+              r.returnNo === returnNo ? { ...r, status: 'SENT', attempts: r.attempts + 1, at: nowIso() } : r,
+            ),
+            auditLogs: appendAudit({
+              refType: 'RETURN',
+              refNo: returnNo,
+              action: 'RETURN_RESULT_RETRY',
+              operator: currentOperator(),
+            }),
+          })
+          return { ok: true }
+        },
+
+        bindContainer: ({ warehouseCode, customerId, containerNo, operator }) => {
+          const result = bindContainerAction(get(), { warehouseCode, customerId, containerNo, operator }, operator)
+          if (!result.ok) return result
+          set({ ...result.patch })
+          return { ok: true }
+        },
+
+        createContainer: (input) => {
+          const result = createContainerAction(get(), input, currentOperator())
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'MASTER',
+              refNo: `${input.warehouseCode}/${input.containerNo}`,
+              action: 'CONTAINER_SAVE',
+              operator: currentOperator(),
+              detail: 'CREATE',
+            }),
+          })
+          return { ok: true }
+        },
+
+        updateContainer: (input) => {
+          const result = updateContainerAction(get(), input, currentOperator())
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'MASTER',
+              refNo: `${input.warehouseCode}/${input.containerNo}`,
+              action: 'CONTAINER_SAVE',
+              operator: currentOperator(),
+              detail: 'UPDATE',
+            }),
+          })
+          return { ok: true }
+        },
+
+        setContainerStatus: (input) => {
+          const result = setContainerStatusAction(get(), input, currentOperator())
+          if (!result.ok) return result
+          set({
+            ...result.patch,
+            auditLogs: appendAudit({
+              refType: 'MASTER',
+              refNo: `${input.warehouseCode}/${input.containerNo}`,
+              action: 'CONTAINER_SAVE',
+              operator: currentOperator(),
+              detail: input.status,
+            }),
+          })
+          return { ok: true }
+        },
+
+        mockPushMasterData: ({ masterType, ownerCode, skuCode }) => {
+          const state = get()
+          const at = nowIso()
+          const owner = state.customerMasters.find((c) => c.code === ownerCode)
+          const sku = owner ? state.skuMasters.find((m) => m.customerId === owner.id && m.code === skuCode) : undefined
+          const rejected = (reason: string) => {
+            const message: MasterPushMessage = {
+              id: uid('MSG-MASTER'),
+              masterType,
+              ownerCode,
+              skuCode,
+              status: 'REJECTED',
+              reason,
+              at,
+            }
+            set({
+              masterMessages: [message, ...state.masterMessages],
+              auditLogs: appendAudit({
+                refType: 'MASTER',
+                refNo: skuCode ? `${ownerCode}/${skuCode}` : ownerCode,
+                action: 'MASTER_MOCK_PUSH',
+                operator: currentOperator(),
+                detail: `REJECTED ${reason}`,
+              }),
+            })
+            return { ok: false as const, errorKey: `masterPush.error.${reason}` }
+          }
+          if (!owner || owner.status !== 'ENABLED') return rejected('ownerInvalid')
+          if (masterType === 'SKU' && (!sku || sku.status !== 'ENABLED')) return rejected('skuInvalid')
+          const message: MasterPushMessage = {
+            id: uid('MSG-MASTER'),
+            masterType,
+            ownerCode,
+            skuCode,
+            status: 'ACCEPTED',
+            at,
+          }
+          set({
+            customerMasters:
+              masterType === 'OWNER'
+                ? state.customerMasters.map((c) => (c.code === ownerCode ? { ...c, lastSyncAt: at, updatedAt: at } : c))
+                : state.customerMasters,
+            skuMasters:
+              masterType === 'SKU' && sku
+                ? state.skuMasters.map((m) =>
+                    m.ownerCode === owner.code && m.code === sku.code
+                      ? { ...m, updatedAt: at, updatedBy: 'oms-mock' }
+                      : m,
+                  )
+                : state.skuMasters,
+            masterMessages: [message, ...state.masterMessages],
+            auditLogs: appendAudit({
+              refType: 'MASTER',
+              refNo: skuCode ? `${ownerCode}/${skuCode}` : ownerCode,
+              action: 'MASTER_MOCK_PUSH',
+              operator: currentOperator(),
+              detail: 'ACCEPTED',
+            }),
+          })
           return { ok: true }
         },
 
@@ -619,9 +818,19 @@ export const useDb = create<DbState>()(
           if (input.sourceType === 'DELIVERY_FAILED' && !input.originalOutboundNo?.trim()) {
             return { ok: false, errorKey: 'return.error.originalOutboundRequired' }
           }
+          if (input.sourceType === 'DELIVERY_FAILED') {
+            const outbound = state.outboundOrders.find(
+              (o) => o.no.toUpperCase() === input.originalOutboundNo?.trim().toUpperCase(),
+            )
+            if (!outbound) return { ok: false, errorKey: 'return.error.outboundNotFound' }
+            if (outbound.type !== 'B2C') return { ok: false, errorKey: 'return.error.outboundNotB2C' }
+            if (outbound.status !== 'SHIPPED') return { ok: false, errorKey: 'return.error.outboundNotShipped' }
+          }
           const customer = state.customerMasters.find((c) => c.id === input.customerId && c.status === 'ENABLED')
           const sku = customer
-            ? state.skuMasters.find((m) => m.customerId === input.customerId && m.code === input.skuCode && m.status === 'ENABLED')
+            ? state.skuMasters.find(
+                (m) => m.customerId === input.customerId && m.code === input.skuCode && m.status === 'ENABLED',
+              )
             : undefined
           if (!customer || !sku) return { ok: false, errorKey: 'return.error.skuInvalid' }
           const dup = state.returnOrders.find(
@@ -629,7 +838,11 @@ export const useDb = create<DbState>()(
           )
           if (dup) return { ok: true, returnNo: dup.returnNo }
           const at = nowIso()
-          const returnNo = nextDocNo('RT', state.returnOrders.map((o) => o.returnNo), at)
+          const returnNo = nextDocNo(
+            'RT',
+            state.returnOrders.map((o) => o.returnNo),
+            at,
+          )
           const order: ReturnOrder = recomputeReturnOrder({
             returnNo,
             warehouseCode: input.warehouseCode,
@@ -847,13 +1060,22 @@ export const useDb = create<DbState>()(
     {
       name: 'qs-wms-demo-db',
       // 修改 seed.ts 或数据结构后把版本号 +1，浏览器里的旧演示数据会被替换为新种子
-      /** 32：IB 单号、四仓主数据/作业同步、收货批次与 SN、退货单/上游消息 */
-      version: 32,
+      /** 36：按品质库存、非负拦截与仓库级SN台账；旧演示数据保留备份 */
+      version: 36,
       migrate: (_persisted: unknown, fromVersion: number) => {
-        if (fromVersion < 32) return createSeedData() as unknown as typeof _persisted
+        if (fromVersion < 36) {
+          if (typeof localStorage !== 'undefined' && !localStorage.getItem('qs-wms-demo-db-before-inventory-v36')) {
+            localStorage.setItem(
+              'qs-wms-demo-db-before-inventory-v36',
+              JSON.stringify({ state: _persisted, version: fromVersion }),
+            )
+          }
+          return createSeedData() as unknown as typeof _persisted
+        }
         return _persisted
       },
       partialize: (s) => ({
+        serialStocks: s.serialStocks,
         outboundOrders: s.outboundOrders,
         outboundWaves: s.outboundWaves,
         outboundPickTasks: s.outboundPickTasks,
@@ -892,6 +1114,8 @@ export const useDb = create<DbState>()(
         inventory: s.inventory,
         inventoryLogs: s.inventoryLogs,
         auditLogs: s.auditLogs,
+        masterMessages: s.masterMessages,
+        containers: s.containers,
       }),
     },
   ),

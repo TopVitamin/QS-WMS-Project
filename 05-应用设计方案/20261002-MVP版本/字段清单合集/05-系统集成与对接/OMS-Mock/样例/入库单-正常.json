@@ -1,3 +1,21 @@
 {
-  "_comment": "占位样例；完整表单字段对齐入库单初稿与新建入库指令映射表。"
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-IN-001",
+  "messageType": "CREATE_INBOUND",
+  "businessType": "NORMAL",
+  "upstreamNo": "OMS-IN-DEMO-001",
+  "expectedVersion": 0,
+  "payload": {
+    "warehouseCode": "US-LA-01",
+    "ownerCode": "ANKR",
+    "arrivalMethod": "CONTAINER",
+    "containerNo": "MSCU1234567",
+    "trackingNos": ["1Z999AA10123456784"],
+    "etaAt": "2026-10-23T08:00:00.000Z",
+    "items": [
+      { "skuCode": "CABLE-01", "plannedQty": 500 },
+      { "skuCode": "SN-DEMO-01", "plannedQty": 20 }
+    ],
+    "remark": "Demo inbound instruction"
+  }
 }

@@ -1,1 +1,30 @@
 Mock字段路径	WMS对象	WMS字段名称	Mock必填	说明
+source	消息信封	消息来源	是	固定 OMS_MOCK
+messageId	消息信封	消息标识	是	来源内唯一；重发同标识同内容返回原结论
+messageType	消息信封	消息类别	是	PUSH_MASTER_DATA
+masterType	消息信封	资料类别	是	SKU
+ownerCode	货主	货主编码	是	按货主编码定位；自营货主预置不推送
+expectedVersion	消息信封	预期对象版本	是	首次 0；更新按当前版本
+payload.ownerCode	商品	所属货主编码	是	与信封 ownerCode 一致
+payload.skuCode	商品	SKU 编码	是	货主内唯一；与上游标识匹配
+payload.name	商品	商品名称	是	中文名称
+payload.nameEn	商品	英文名称	否	英文名称
+payload.barcode	商品	主条码	否	为空时保留本地条码
+payload.unit	商品	计量单位	是	EA 等
+payload.productForm	商品	商品形态	是	SMALL｜LARGE｜IRREGULAR
+payload.isBattery	商品	是否带电	否	一期仅资料表达
+payload.snEnabled	商品	是否启用 SN	是	启用后收货逐件采集
+payload.snFormat	商品	SN 格式	条件必填	启用 SN 时填写正则
+payload.batchEnabled	商品	是否启用批次	是	启用后收货采集批次
+payload.expiryEnabled	商品	是否启用效期	是	启用后收货采集生产日期/失效日期
+payload.shelfLifeDays	商品	保质期天数	条件必填	效期商品填写
+payload.inboundDays	商品	入库效期天数	条件必填	效期商品填写
+payload.nearExpiryDays	商品	临期天数	条件必填	效期商品填写
+payload.expiredDays	商品	过期天数	条件必填	效期商品填写
+payload.grossWeightKg	商品	毛重（kg）	否	统一按 kg 存储
+payload.netWeightKg	商品	净重（kg）	否	统一按 kg 存储
+payload.lengthCm	商品	长（cm）	否	统一按 cm 存储
+payload.widthCm	商品	宽（cm）	否	统一按 cm 存储
+payload.heightCm	商品	高（cm）	否	统一按 cm 存储
+payload.status	商品	状态	是	ENABLED｜DISABLED
+payload.upstreamSkuId	商品	上游商品标识	是	上游系统内唯一

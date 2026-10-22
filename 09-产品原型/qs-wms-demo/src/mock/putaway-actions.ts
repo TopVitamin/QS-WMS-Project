@@ -1,3 +1,4 @@
+import { serialsInWarehouse, updateSerialStocks } from '@/lib/serial-stock'
 import { stagingLocationCode, syncInboundPutawayFromOrders } from '@/lib/inbound-derive'
 import { syncReturnPutawayFromOrders } from '@/lib/return-derive'
 import { countingStocktake } from '@/lib/inventory-derive'
@@ -5,6 +6,7 @@ import { balanceLog, pairLogs } from '@/lib/inventory-ledger'
 import { findLocation, isFullyRecorded, remainingQty, validatePutawayLocation } from '@/lib/putaway'
 import type { PutawayActualLine, PutawayOrder } from '@/types/inbound'
 import type { InventoryLog, InventoryRecord } from '@/types/wms'
+import { syncPutawayContainers } from './container-actions'
 import type { SeedData } from './seed'
 
 type ActionResult = { ok: true } | { ok: false; errorKey: string }
@@ -45,28 +47,22 @@ export function applySavePutawayLine(
   if (!planLine) return { ok: false, errorKey: 'pdaPutaway.error.lineNotFound' }
   if (input.qty > remainingQty(order, planLine.lineNo)) return { ok: false, errorKey: 'pdaPutaway.error.overRemain' }
   const serialNos = input.serialNos?.map((sn) => sn.trim().toUpperCase()).filter(Boolean)
-  const snEnabled = Boolean(
-    state.skuMasters.find((m) => m.customerId === order.customerId && m.code === planLine.skuCode)?.snEnabled,
-  )
-  if (snEnabled && (!serialNos || serialNos.length !== input.qty)) {
-    return { ok: false, errorKey: 'pdaPutaway.error.serialMismatch' }
-  }
   if (serialNos) {
     if (serialNos.length !== input.qty) return { ok: false, errorKey: 'pdaPutaway.error.serialMismatch' }
     const used = new Set(order.actualLines.flatMap((a) => a.serialNos ?? []))
     if (serialNos.some((sn) => used.has(sn))) return { ok: false, errorKey: 'pdaPutaway.error.serialDuplicated' }
-    /** SN 必须来自本单收货暂存库存，不能手输任意序列号落位 */
-    const staging = state.inventory.find(
-      (r) =>
-        r.warehouseCode === order.warehouseCode &&
-        r.locationCode === order.stagingLocationCode &&
-        r.customerId === order.customerId &&
-        r.skuCode === planLine.skuCode &&
-        r.qualityType === order.qualityType &&
-        (r.batchNo ?? '') === (planLine.batchNo ?? '') &&
-        (r.expiryDate ?? '') === (planLine.expiryDate ?? ''),
-    )
-    if (serialNos.some((sn) => !staging?.serialNos?.includes(sn))) {
+    if (
+      serialNos.some(
+        (sn) =>
+          !serialsInWarehouse(
+            state,
+            order.warehouseCode,
+            order.customerId,
+            planLine.skuCode,
+            order.qualityType,
+          ).includes(sn),
+      )
+    ) {
       return { ok: false, errorKey: 'pdaPutaway.error.serialNotInStock' }
     }
   }
@@ -118,15 +114,17 @@ export function applyRemovePutawayLine(
  * 提交上架单：每个应上架行已录＝应上架；逐条把收货暂存库位库存移到目标货位（不良品同时移动品质锁定量），
  * 写库存流水；上架单已完成；来源入库单已上架＝已提交上架单合计并重算状态（上架单主PRD 第三节）。
  */
-export function applySubmitPutawayOrder(
-  state: SeedData,
-  input: { putawayNo: string; operator: string },
-): PatchResult {
+export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: string; operator: string }): PatchResult {
   const found = findOpenOrder(state, input.putawayNo)
   if ('errorKey' in found) return { ok: false, errorKey: found.errorKey }
   const order = found
-  if (order.actualLines.length === 0 || !isFullyRecorded(order)) return { ok: false, errorKey: 'pdaPutaway.error.planMismatch' }
-  if (order.planLines.some((l) => countingStocktake(state.inventoryCounts, order.warehouseCode, order.customerId, l.skuCode)))
+  if (order.actualLines.length === 0 || !isFullyRecorded(order))
+    return { ok: false, errorKey: 'pdaPutaway.error.planMismatch' }
+  if (
+    order.planLines.some((l) =>
+      countingStocktake(state.inventoryCounts, order.warehouseCode, order.customerId, l.skuCode),
+    )
+  )
     return { ok: false, errorKey: 'outbound.error.countFrozen' }
   for (const line of order.actualLines) {
     const locationError = validatePutawayLocation(order, line.locationCode, state)
@@ -143,24 +141,28 @@ export function applySubmitPutawayOrder(
 
   for (const line of order.actualLines) {
     const locked = defective ? line.qty : 0
-    const plan = order.planLines.find(p => p.lineNo === line.planLineNo)!
+    const plan = order.planLines.find((p) => p.lineNo === line.planLineNo)!
     const stagingIdx = inventory.findIndex(
       (r) =>
         r.warehouseCode === order.warehouseCode &&
         r.locationCode === stagingCode &&
         r.customerId === order.customerId &&
         r.skuCode === line.skuCode &&
-        r.qualityType === order.qualityType && r.batchNo === plan.batchNo && r.expiryDate === plan.expiryDate,
+        r.qualityType === order.qualityType &&
+        r.batchNo === plan.batchNo &&
+        r.expiryDate === plan.expiryDate,
     )
+    if (stagingIdx < 0 || inventory[stagingIdx].onHandQty < line.qty)
+      return { ok: false, errorKey: 'pdaPutaway.error.stockInsufficient' }
     let stagingRow: InventoryRecord | undefined
     let removed = 0
     if (stagingIdx >= 0) {
       const row = inventory[stagingIdx]
       stagingRow = {
         ...row,
-        onHandQty: Math.max(0, row.onHandQty - line.qty),
-        lockedQty: Math.max(0, row.lockedQty - locked),
-        serialNos: row.serialNos?.filter(sn => !line.serialNos?.includes(sn)),
+        onHandQty: row.onHandQty - line.qty,
+        lockedQty: row.lockedQty - locked,
+        serialNos: line.serialNos?.length ? row.serialNos?.filter((sn) => !line.serialNos?.includes(sn)) : undefined,
       }
       removed = row.onHandQty - stagingRow.onHandQty
       inventory[stagingIdx] = stagingRow
@@ -171,12 +173,19 @@ export function applySubmitPutawayOrder(
         r.locationCode === line.locationCode &&
         r.customerId === order.customerId &&
         r.skuCode === line.skuCode &&
-        r.qualityType === order.qualityType && r.batchNo === plan.batchNo && r.expiryDate === plan.expiryDate,
+        r.qualityType === order.qualityType &&
+        r.batchNo === plan.batchNo &&
+        r.expiryDate === plan.expiryDate,
     )
     let targetRow: InventoryRecord
     if (targetIdx >= 0) {
       const row = inventory[targetIdx]
-      targetRow = { ...row, onHandQty: row.onHandQty + line.qty, lockedQty: row.lockedQty + locked, serialNos: [...(row.serialNos ?? []), ...(line.serialNos ?? [])] }
+      targetRow = {
+        ...row,
+        onHandQty: row.onHandQty + line.qty,
+        lockedQty: row.lockedQty + locked,
+        serialNos: [...(row.serialNos ?? []), ...(line.serialNos ?? [])],
+      }
       inventory[targetIdx] = targetRow
     } else {
       targetRow = {
@@ -239,7 +248,15 @@ export function applySubmitPutawayOrder(
   return {
     ok: true,
     order: next,
-    patch: { putawayOrders, inventory, inbounds, returnOrders, inventoryLogs: [...state.inventoryLogs, ...logs] },
+    patch: {
+      putawayOrders,
+      inventory,
+      inbounds,
+      returnOrders,
+      inventoryLogs: [...state.inventoryLogs, ...logs],
+      serialStocks: updateSerialStocks(state, logs),
+      containers: syncPutawayContainers(state.containers ?? [], next, input.operator, ts),
+    },
   }
 }
 

@@ -5,12 +5,16 @@ import { ScanInput, type ScanMessage } from '@/components/pda/scan-input'
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { cn } from '@/lib/utils'
 import { boxKeyOf } from '@/stores/pda-receive-session'
+import { useDb } from '@/mock/db'
+import { useSettings } from '@/stores/settings'
 import { QtyTriple, ReceiveContext } from './receive-shared'
 import type { ReceiveFlow } from './use-receive-flow'
 
 /** 扫容器（PDA 收货 PRD §3、§5）：绑定下一个作业容器或无容器收货；列出本次作业已有容器 */
 export function ReceiveContainerStep({ flow }: { flow: ReceiveFlow }) {
   const { t, nav, session, order, orderReceivable } = flow
+  const bindContainer = useDb((s) => s.bindContainer)
+  const operator = useSettings((s) => s.operator)
   const [message, setMessage] = useState<ScanMessage>()
 
   useEffect(() => {
@@ -36,6 +40,18 @@ export function ReceiveContainerStep({ flow }: { flow: ReceiveFlow }) {
     .map((value) => ({ value }))
 
   const openBox = (containerNo: string | undefined, bulkPiece: boolean) => {
+    if (!bulkPiece && containerNo && order) {
+      const bound = bindContainer({
+        warehouseCode: order.warehouseCode,
+        customerId: order.customerId,
+        containerNo,
+        operator,
+      })
+      if (!bound.ok) {
+        setMessage({ tone: 'error', text: t(bound.errorKey, bound.params) })
+        return
+      }
+    }
     const key = session.openBox({ containerNo, bulkPiece })
     nav.go('box', { box: key })
   }

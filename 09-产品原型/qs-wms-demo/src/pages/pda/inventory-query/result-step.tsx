@@ -18,8 +18,6 @@ import {
 } from '@/lib/inventory-derive'
 import { compareLocation } from '@/lib/pda-inventory-scan'
 import { beep } from '@/lib/scan-beep'
-import { toneTextClass } from '@/lib/tone-styles'
-import { cn } from '@/lib/utils'
 import type { QueryFlow } from './use-query-flow'
 
 /**
@@ -88,7 +86,11 @@ function BalanceCard({ flow, row, showSku }: { flow: QueryFlow; row: BalanceRow;
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {showSku ? (
-            <PdaSkuBlock skuCode={r.skuCode} name={flow.skuName(r.skuCode, r.customerId)} owner={flow.ownerText(r.customerId)} />
+            <PdaSkuBlock
+              skuCode={r.skuCode}
+              name={flow.skuName(r.skuCode, r.customerId)}
+              owner={flow.ownerText(r.customerId)}
+            />
           ) : (
             <PdaLocation code={r.locationCode} usage={row.usage && t(`inventory.usage.${row.usage}`)} />
           )}
@@ -130,63 +132,36 @@ function useBalances(flow: QueryFlow) {
 
 function SkuResult({ flow, owner, sku }: { flow: QueryFlow; owner: string; sku: string }) {
   const { t, state, warehouse } = flow
-  const row = useMemo(
-    () => deriveSkuStocks(state, warehouse.code).find((r) => r.customerId === owner && r.skuCode === sku),
+  const rows = useMemo(
+    () => deriveSkuStocks(state, warehouse.code).filter((r) => r.customerId === owner && r.skuCode === sku),
     [owner, sku, state, warehouse.code],
   )
   const balances = useBalances(flow).filter((b) => b.record.customerId === owner && b.record.skuCode === sku)
   return (
     <>
       <PdaCard>
-        <PdaSkuBlock
-          skuCode={sku}
-          name={flow.skuName(sku, owner)}
-          owner={flow.ownerText(owner)}
-          tags={
-            <>
-              {row?.pending && <TagLabel meta={inventoryTagMeta.pending} />}
-              {row?.counting && <TagLabel meta={inventoryTagMeta.counting} />}
-              {row && row.available < 0 && <TagLabel meta={inventoryTagMeta.negative} />}
-            </>
-          }
-        />
-        {row ? (
-          <>
-            <div className="mt-3 grid grid-cols-3 gap-2 border-t pt-3">
-              <PdaFigure label={t('inventory.actual')} value={row.actual} />
-              <PdaFigure label={t('inventory.preoccupied')} value={row.preoccupied} />
-              <PdaFigure
-                label={t('inventory.available')}
-                value={<span className={cn(row.available < 0 && toneTextClass.red)}>{row.available}</span>}
-              />
-            </div>
-            <div className="mt-2 text-sm text-muted-foreground tabular-nums">
-              {t('pdaQuery.qtyBreakdown', { good: row.good, defective: row.defective, reserved: row.orderReserved })}
-            </div>
-          </>
-        ) : (
-          <p className="mt-3 text-sm text-muted-foreground">{t('pdaQuery.empty')}</p>
-        )}
+        <PdaSkuBlock skuCode={sku} name={flow.skuName(sku, owner)} owner={flow.ownerText(owner)} />
       </PdaCard>
-      {row && (row.available < 0 || row.pending || row.counting) && (
-        <PdaCard className="flex flex-col gap-1 text-sm">
-          {row.available < 0 && <p className={toneTextClass.red}>{t('inventory.negativeHint')}</p>}
-          {row.pending && (
-            <p>
-              {t('pdaQuery.pendingHint', {
-                sources: row.pending.sources
-                  .map((s) => (s.includes('@') ? `${t(`inventory.stage.${s.split('@')[0]}`)} ${s.split('@')[1]}` : s))
-                  .join(t('common.listSeparator')),
-              })}
-            </p>
+      {rows.map((row) => (
+        <PdaCard key={row.id}>
+          <div className="flex flex-wrap items-center gap-2">
+            <TagLabel meta={qualityMeta[row.qualityType]} />
+            {row.pending && <TagLabel meta={inventoryTagMeta.pending} />}
+            {row.counting && <TagLabel meta={inventoryTagMeta.counting} />}
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t pt-3">
+            <PdaFigure label={t('inventory.actual')} value={row.actual} />
+            <PdaFigure label={t('inventory.orderReserved')} value={row.orderReserved} />
+            <PdaFigure label={t('inventory.available')} value={row.available} />
+          </div>
+          {row.pending && <p className="mt-2 text-sm text-muted-foreground">{t('inventory.pendingHint')}</p>}
+          {row.counting && (
+            <p className="mt-2 text-sm text-muted-foreground">{t('pdaQuery.countingHint', { no: row.counting.no })}</p>
           )}
-          {row.counting && <p>{t('pdaQuery.countingHint', { no: row.counting.no })}</p>}
         </PdaCard>
-      )}
+      ))}
+      {rows.length === 0 && <p>{t('pdaQuery.empty')}</p>}
       <PdaSection title={t('pdaQuery.distribution', { count: balances.length })}>
-        {balances.length === 0 && (
-          <p className="py-4 text-center text-sm text-muted-foreground">{t('pdaQuery.empty')}</p>
-        )}
         {balances.map((b) => (
           <BalanceCard key={b.id} flow={flow} row={b} />
         ))}
@@ -237,7 +212,6 @@ function SerialResult({ flow, owner, sku, sn }: { flow: QueryFlow; owner: string
   )
   if (!row)
     return <p className="py-8 text-center text-sm text-muted-foreground">{t('pdaQuery.notFound', { code: sn })}</p>
-  const usage = locationInfo(state, warehouse.code, row.locationCode)?.usage
   return (
     <>
       <PdaCard>
@@ -247,16 +221,7 @@ function SerialResult({ flow, owner, sku, sn }: { flow: QueryFlow; owner: string
         </div>
         <PdaSkuBlock className="mt-2" skuCode={sku} name={flow.skuName(sku, owner)} owner={flow.ownerText(owner)} />
         <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3">
-          <PdaFigure
-            size="md"
-            label={row.status === 'IN_STOCK' ? t('inventory.currentLocation') : t('pdaQuery.lastLocation')}
-            value={<PdaLocation code={row.locationCode} usage={usage && t(`inventory.usage.${usage}`)} />}
-          />
-          <PdaFigure
-            size="md"
-            label={t('inventory.quality')}
-            value={row.qualityType ? <TagLabel meta={qualityMeta[row.qualityType]} /> : <Empty />}
-          />
+          <PdaFigure size="md" label={t('inventory.warehouse')} value={row.warehouseCode} />
         </div>
         {row.lastChangedAt && (
           <div className="mt-2 text-sm text-muted-foreground tabular-nums">
@@ -272,9 +237,7 @@ function SerialResult({ flow, owner, sku, sn }: { flow: QueryFlow; owner: string
           <PdaCard key={n.id} className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="text-base font-medium">{t(`inventory.type.${n.type}`)}</div>
-              <div className="font-mono text-sm">
-                {[n.fromLocation, n.toLocation].filter(Boolean).join(' → ') || <Empty />}
-              </div>
+              <div className="font-mono text-sm">{n.log.locationCode || <Empty />}</div>
               {n.log.refNo && <div className="font-mono text-sm text-muted-foreground">{n.log.refNo}</div>}
             </div>
             <span className="shrink-0 text-sm text-muted-foreground tabular-nums">

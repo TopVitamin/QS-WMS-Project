@@ -6,6 +6,7 @@ import { useDb } from '@/mock/db'
  * 扫码处理请改读 useDb.getState()，动作刚写入时组件可能还没重渲染（《PDA作业端设计规范》§4.7）。
  */
 export function useInventoryState() {
+  const serialStocks = useDb((s) => s.serialStocks)
   const inventory = useDb((s) => s.inventory)
   const inventoryLogs = useDb((s) => s.inventoryLogs)
   const inventoryCounts = useDb((s) => s.inventoryCounts)
@@ -22,6 +23,7 @@ export function useInventoryState() {
   const stockMoves = useDb((s) => s.stockMoves)
   return useMemo(
     () => ({
+      serialStocks,
       inventory,
       inventoryLogs,
       inventoryCounts,
@@ -38,6 +40,7 @@ export function useInventoryState() {
       stockMoves,
     }),
     [
+      serialStocks,
       inventory,
       inventoryCounts,
       inventoryLogs,

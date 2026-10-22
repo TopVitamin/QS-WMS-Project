@@ -25,6 +25,7 @@ export const wmsPageRegistry: Record<string, ComponentType> = {
   '/wms/master/warehouses': lazyPage(() => import('./master/warehouse-list-page'), 'WarehouseListPage'),
   '/wms/master/zones': lazyPage(() => import('./master/zone-list-page'), 'ZoneListPage'),
   '/wms/master/locations': lazyPage(() => import('./master/location-list-page'), 'LocationListPage'),
+  '/wms/master/containers': lazyPage(() => import('./master/container-list-page'), 'ContainerListPage'),
   '/wms/master/channels': lazyPage(() => import('./master/channel-list-page'), 'ChannelListPage'),
   '/wms/master/customers': lazyPage(() => import('./master/customer-list-page'), 'CustomerListPage'),
   '/wms/master/skus': lazyPage(() => import('./master/sku-list-page'), 'SkuListPage'),

@@ -36,16 +36,6 @@ export function StockSerialSheet({ row, onClose }: { row?: SerialRow; onClose: (
         header: t('inventory.logs.type'),
         cell: ({ getValue }) => t(`inventory.type.${getValue()}`),
       }),
-      col.accessor((n) => n.fromLocation ?? '', {
-        id: 'from',
-        header: t('inventory.move.sourceLocation'),
-        cell: ({ getValue }) => (getValue() ? <BizCode>{getValue()}</BizCode> : <Empty />),
-      }),
-      col.accessor((n) => n.toLocation ?? '', {
-        id: 'to',
-        header: t('inventory.move.targetLocation'),
-        cell: ({ getValue }) => (getValue() ? <BizCode>{getValue()}</BizCode> : <Empty />),
-      }),
       col.accessor((n) => n.qualityType ?? '', {
         id: 'quality',
         header: t('inventory.quality'),
@@ -98,14 +88,6 @@ export function StockSerialSheet({ row, onClose }: { row?: SerialRow; onClose: (
           </DescriptionItem>
           <DescriptionItem label={t('inventory.warehouse')}>
             <BizCode>{row.warehouseCode}</BizCode>
-          </DescriptionItem>
-          <DescriptionItem label={t('inventory.currentLocation')}>
-            {row.locationCode ? <BizCode>{row.locationCode}</BizCode> : <Empty />}
-          </DescriptionItem>
-          <DescriptionItem label={t('inventory.batchNo')}>{row.batchNo || <Empty />}</DescriptionItem>
-          <DescriptionItem label={t('inventory.expiryDate')}>{row.expiryDate || <Empty />}</DescriptionItem>
-          <DescriptionItem label={t('inventory.quality')}>
-            {row.qualityType ? <TagLabel meta={qualityMeta[row.qualityType]} /> : <Empty />}
           </DescriptionItem>
         </Descriptions>
       </Section>

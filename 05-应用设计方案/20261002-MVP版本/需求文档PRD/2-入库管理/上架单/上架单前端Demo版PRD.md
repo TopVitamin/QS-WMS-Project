@@ -39,7 +39,7 @@
 | `PutawayPlanLine.productionDate` | `string?` | 启用效期时有值 |
 | `PutawayActualLine.lineNo` | `number` | 本单内唯一 |
 | `PutawayActualLine.planLineNo` | `number` | 关联应上架行；同SKU不同批次靠它区分 |
-| `PutawayActualLine.serialNos` | `string[]?` | SN商品落位的序列号，条数等于 `qty` |
+| `PutawayActualLine.serialNos` | `string[]?` | 可选的实际采集SN清单；未采集可空，不能据数量推断SN位置 |
 
 `PutawayActualLine.submitted` 保留：Demo 内部用它区分未提交与已提交明细（占用判定、PDA 撤销按钮），业务判定一律按单头 `status`，不用它推导「已上架」。
 
@@ -195,7 +195,7 @@ PageContainer（DetailTitle「Web 端上架 · PA-…（尾号加粗）[状态]�
 | 操作 | 64px | 第一条「拆分」，拆出来的「移除」 |
 
 - 默认值：库位留空、数量填剩余。页面只存作业员改过的行，没改过的行随单据实时算（`lib/putaway-entry.ts`）。
-- SN 商品每条落位下面一行序列号 `Textarea`（每行一个），条数须等于该条数量。
+- SN商品同样按数量落位，不强制序列号输入；实际采集时才校验清单数量和去重。
 - PDA 已保存未提交的落位不进表，列在右侧清单对应库位下，标「PDA 已存」，可「撤销」（`removePutawayLine`，按实际明细行号，先 `useConfirm` destructive）；撤销后该行默认数量随剩余回升。
 
 ### 扫码与录入

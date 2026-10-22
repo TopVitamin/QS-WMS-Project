@@ -1,0 +1,17 @@
+{
+  "source": "WMS",
+  "messageType": "RETURN_CREATED",
+  "businessType": "RETURN",
+  "upstreamNo": "OB-20261015-0007",
+  "resultSequence": 1,
+  "payload": {
+    "returnNo": "RT-20261023-0002",
+    "sourceType": "DELIVERY_FAILED",
+    "originalOutboundNo": "OB-20261015-0007",
+    "warehouseCode": "US-LA-01",
+    "ownerCode": "ANKR",
+    "items": [
+      { "skuCode": "CABLE-01", "plannedQty": 1 }
+    ]
+  }
+}

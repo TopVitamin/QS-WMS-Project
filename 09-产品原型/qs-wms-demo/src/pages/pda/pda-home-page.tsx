@@ -11,7 +11,6 @@ import {
   PackageSearch,
   ScanSearch,
   ShoppingCart,
-  Truck,
   Undo2,
   Warehouse,
   type LucideIcon,
@@ -43,7 +42,6 @@ const groups: { titleKey: string; tone: StatusTone; items: PdaFunction[] }[] = [
     titleKey: 'pda.inboundGroup',
     tone: 'blue',
     items: [
-      { key: 'arrival', titleKey: 'pda.arrival', icon: Truck, to: '/pda/soon/arrival', ready: false },
       { key: 'receive', titleKey: 'pda.receive', icon: PackageOpen, to: '/pda/receive', ready: true },
       { key: 'putaway', titleKey: 'pda.putaway', icon: ArrowUpFromLine, to: '/pda/putaway', ready: true },
       { key: 'unclaimed', titleKey: 'menu.unclaimed', icon: PackageSearch, to: '/pda/unclaimed', ready: true },

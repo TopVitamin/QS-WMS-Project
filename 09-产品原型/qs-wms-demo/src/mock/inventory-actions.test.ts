@@ -40,7 +40,7 @@ function stock(
   )
 }
 const skuRow = (s: SeedData, warehouse: string, owner: string, sku: string) =>
-  deriveSkuStocks(s, warehouse).find((r) => r.customerId === owner && r.skuCode === sku)!
+  deriveSkuStocks(s, warehouse).find((r) => r.customerId === owner && r.skuCode === sku && r.qualityType === 'GOOD')!
 const convert = (
   inventoryId: string,
   qty: number,
@@ -57,15 +57,15 @@ const convert = (
 })
 
 describe('品质转换（品质转换主PRD）', () => {
-  it('原位正常转不良：实际不变、预占加、可用减，写成对流水且重复确认不再转', () => {
+  it('原位正常转不良：总实物不变、订单预占不变、良品可用减少，写成对流水且重复确认不再转', () => {
     const s = createSeedData()
     const source = stock(s, LA, HOMY, 'CABLE-01', 'B-01-02')!
     const before = skuRow(s, LA, HOMY, 'CABLE-01')
     const logCount = s.inventoryLogs.length
     ok(s, convert(source.id, 2))
     const after = skuRow(s, LA, HOMY, 'CABLE-01')
-    expect(after.actual).toBe(before.actual)
-    expect(after.preoccupied).toBe(before.preoccupied + 2)
+    expect(after.actual).toBe(before.actual - 2)
+    expect(after.preoccupied).toBe(before.preoccupied)
     expect(after.available).toBe(before.available - 2)
     expect(stock(s, LA, HOMY, 'CABLE-01', 'B-01-02', 'DEFECTIVE')!.onHandQty).toBe(2)
     const [minus, plus] = s.inventoryLogs.slice(logCount)
@@ -92,12 +92,14 @@ describe('品质转换（品质转换主PRD）', () => {
     })
   })
 
-  it('已核实的品质变化可以让可用为负；盘点中的 SKU 不能转换', () => {
+  it('品质变化会使可用为负时整次拒绝；盘点中的SKU也不能转换', () => {
     const s = createSeedData()
     const lot = stock(s, LA, ANKR, 'LOT-DEMO-01', 'C-01-01')!
     const before = skuRow(s, LA, ANKR, 'LOT-DEMO-01').available
-    ok(s, convert(lot.id, 1))
-    expect(skuRow(s, LA, ANKR, 'LOT-DEMO-01').available).toBe(before - 1)
+    const snapshot = structuredClone(s)
+    expect(act(s, convert(lot.id, 1))).toMatchObject({ ok: false, errorKey: 'inventory.error.negativeInventory' })
+    expect(s).toEqual(snapshot)
+    expect(skuRow(s, LA, ANKR, 'LOT-DEMO-01').available).toBe(before)
     const frozen = stock(s, LA, HOMY, 'HOMY-003', 'B-04-01')!
     expect(act(s, convert(frozen.id, 1, 'QC-T2'))).toMatchObject({ ok: false, errorKey: 'inventory.error.counting' })
   })
@@ -260,10 +262,18 @@ describe('盘点单（盘点单主PRD）', () => {
       skus: [{ customerId: HOMY, skuCode: 'HOMY-003' }],
     })
     ok(s, { type: 'SAVE_COUNTS', no: recount, entries: [{ lineNo: 1, qty: 11, serialNos: [] }] })
+    const snapshot = structuredClone(s)
+    expect(act(s, { type: 'CONFIRM_STOCKTAKE', no: recount })).toMatchObject({
+      ok: false,
+      errorKey: 'inventory.error.negativeInventory',
+    })
+    expect(s).toEqual(snapshot)
+    expect(pending()).toBe(true)
+    expect(s.inventoryCounts.find((p) => p.no === recount)?.status).toBe('COUNTING')
+    ok(s, { type: 'SAVE_COUNTS', no: recount, entries: [{ lineNo: 1, qty: 12, serialNos: [] }] })
     ok(s, { type: 'CONFIRM_STOCKTAKE', no: recount })
     expect(pending()).toBe(false)
-    // 盘亏 1 件，订单仍占 12：可用为负
-    expect(skuRow(s, LA, HOMY, 'HOMY-003').available).toBe(-1)
+    expect(skuRow(s, LA, HOMY, 'HOMY-003').available).toBe(0)
   })
 
   it('SN 商品：缺失的 SN 记为已盘亏，实盘找回的 SN 新增账面 0 行确认后重新在库', () => {
@@ -305,7 +315,7 @@ describe('盘点单（盘点单主PRD）', () => {
     ok(s, { type: 'CONFIRM_STOCKTAKE', no })
     expect(deriveSerials(s, NJ).find((r) => r.serialNo === lost.serialNo)).toMatchObject({
       status: 'IN_STOCK',
-      locationCode: 'B-04-02',
+      locationCode: '',
     })
   })
 })

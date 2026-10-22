@@ -89,6 +89,7 @@ export const wmsMenu: MenuGroup[] = [
       { path: '/wms/master/warehouses', titleKey: 'menu.warehouses', milestone: 'M0' },
       { path: '/wms/master/zones', titleKey: 'menu.zones', milestone: 'M0' },
       { path: '/wms/master/locations', titleKey: 'menu.locations', milestone: 'M0' },
+      { path: '/wms/master/containers', titleKey: 'menu.containers', milestone: 'M4' },
       { path: '/wms/master/skus', titleKey: 'menu.skus', milestone: 'M4' },
       { path: '/wms/master/customers', titleKey: 'menu.customers', milestone: 'M4' },
       { path: '/wms/master/carriers', titleKey: 'menu.carriers', milestone: 'M4' },

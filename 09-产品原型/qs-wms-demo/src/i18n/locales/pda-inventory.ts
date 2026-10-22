@@ -5,8 +5,8 @@
 const query = {
   scanPrompt: ['扫库位、商品或 SN', 'Scan location, item, or SN'],
   scanHint: [
-    '扫库位看这个库位上有什么；扫商品看三量和库位分布；扫 SN 看单件在哪、最近去过哪里。只查询，不改数。',
-    'Scan a location to see what is there, an item for its quantities and locations, or an SN for where it is and has been. Read only.',
+    '扫库位看批次库存；扫商品按品质看数量和库位分布；扫SN看所在仓库、在库状态和已采集记录。只查询，不改数。',
+    'Scan a location for batch stock, an item for quantities by quality and location, or an SN for its warehouse, stock status and recorded events. Read only.',
   ],
   kindLocation: ['库位', 'Location'],
   candidateMultiOwner: ['多货主', 'Several owners'],

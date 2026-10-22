@@ -1,9 +1,18 @@
+import { Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { CodeName, DocNo, Empty, Num } from '@/components/biz/display'
 import { PageContainer, Panel } from '@/components/biz/page-container'
 import { TagLabel } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { inventoryTagMeta } from '@/config/status'
 import type { LocationUsage } from '@/lib/inventory-derive'
 import { toneTextClass } from '@/lib/tone-styles'
@@ -47,6 +56,36 @@ export function AvailableQty({ value }: { value: number }) {
   )
 }
 
+const BASIS_ROWS = ['actual', 'reserved', 'available', 'allocated', 'allocatable'] as const
+
+/** 数量口径说明：SKU 可用、订单预占、批次已分配、可分配不是同一个数。 */
+export function InventoryBasisHelp({ className }: { className?: string }) {
+  const { t } = useTranslation()
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="ghost" size="sm" className={cn('h-auto gap-1 px-1 text-xs', className)}>
+          <Info data-icon="inline-start" />
+          {t('inventory.basis.title')}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-96">
+        <PopoverHeader>
+          <PopoverTitle>{t('inventory.basis.title')}</PopoverTitle>
+          <PopoverDescription>{t('inventory.basis.intro')}</PopoverDescription>
+        </PopoverHeader>
+        <div className="space-y-2 text-sm">
+          {BASIS_ROWS.map((key) => (
+            <p key={key} className="text-muted-foreground">
+              {t(`inventory.basis.${key}`)}
+            </p>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 /** 库位：编码为主，用途作辅助说明 */
 export function LocationCode({ code, usage }: { code: string; usage?: LocationUsage }) {
   const { t } = useTranslation()
@@ -68,4 +107,23 @@ export function PendingSource({ source }: { source: string }) {
   const [stage, location] = source.split('@')
   if (location) return <span>{`${t(`inventory.stage.${stage}`)} · ${location}`}</span>
   return <DocLink no={source} />
+}
+
+/** 标签直接由业务依据派生，不建立可编辑的分配状态。 */
+export function StockFlags({ pending, counting }: { pending?: boolean; counting?: boolean }) {
+  const { t } = useTranslation()
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {counting && (
+        <span title={t('inventory.countingHint')}>
+          <TagLabel meta={inventoryTagMeta.counting} />
+        </span>
+      )}
+      {pending && (
+        <span title={t('inventory.pendingHint')}>
+          <TagLabel meta={inventoryTagMeta.pending} />
+        </span>
+      )}
+    </span>
+  )
 }

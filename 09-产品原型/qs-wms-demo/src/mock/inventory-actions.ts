@@ -1,3 +1,5 @@
+import { negativeInventoryIssue } from '@/lib/inventory-constraints'
+import { serialsInWarehouse, updateSerialStocks } from '@/lib/serial-stock'
 import { nextDocNo } from '@/lib/doc-no'
 import {
   countingStocktake,
@@ -15,7 +17,10 @@ import type { InventoryCommand, InventoryCount, StockMoveLine, StocktakeDiscover
 import type { AuditRefType, InventoryLog, InventoryRecord, QualityType } from '@/types/wms'
 import type { SeedData } from './seed'
 
-type Patch = Pick<SeedData, 'inventory' | 'inventoryLogs' | 'inventoryCounts' | 'stockMoves' | 'skuAllocationControls'>
+type Patch = Pick<
+  SeedData,
+  'inventory' | 'inventoryLogs' | 'inventoryCounts' | 'stockMoves' | 'skuAllocationControls' | 'serialStocks'
+>
 type Params = Record<string, string | number>
 type WriteMeta = Omit<
   Partial<InventoryLog>,
@@ -66,7 +71,12 @@ export function applyInventoryAction(
     skuAllocationControls: state.skuAllocationControls,
   })
   const s = { ...state, ...patch }
-  const finish = (no?: string): InventoryActionResult => ({ ok: true, no, patch })
+  const finish = (no?: string): InventoryActionResult => {
+    const issue = negativeInventoryIssue(s)
+    if (issue) reject('negativeInventory', issue)
+    patch.serialStocks = updateSerialStocks(state, s.inventoryLogs.slice(state.inventoryLogs.length))
+    return { ok: true, no, patch }
+  }
   const row = (id: string) => s.inventory.find((r) => r.id === id) ?? reject('notFound')
   const stocktake = (no: string) => s.inventoryCounts.find((p) => p.no === no) ?? reject('notFound')
   const master = (customerId: string, skuCode: string) =>
@@ -136,7 +146,7 @@ export function applyInventoryAction(
     pool?: string[],
     line?: number,
   ) => {
-    if (!master(customerId, skuCode)?.snEnabled) return
+    if (!master(customerId, skuCode)?.snEnabled || serialNos.length === 0) return
     if (
       serialNos.length !== qty ||
       new Set(serialNos).size !== qty ||
@@ -216,10 +226,16 @@ export function applyInventoryAction(
         const max = r.onHandQty - (r.allocatedQty ?? 0)
         if (!positive(c.qty) || c.qty > max) reject('convertQty', { max })
         if (!c.reasonNote.trim() || !c.evidence.trim() || !c.ownerNotice) reject('convertReason')
-        checkSerials(r.customerId, r.skuCode, c.qty, c.serialNos, r.serialNos ?? [])
+        checkSerials(
+          r.customerId,
+          r.skuCode,
+          c.qty,
+          c.serialNos,
+          serialsInWarehouse(s, r.warehouseCode, r.customerId, r.skuCode, r.qualityType),
+        )
         const to = balanceAt(r, r.locationCode, 'DEFECTIVE')
         r.onHandQty -= c.qty
-        r.serialNos = r.serialNos?.filter((sn) => !c.serialNos.includes(sn))
+        r.serialNos = c.serialNos.length ? r.serialNos?.filter((sn) => !c.serialNos.includes(sn)) : undefined
         to.onHandQty += c.qty
         to.serialNos = [...(to.serialNos ?? []), ...c.serialNos]
         sync(r)
@@ -266,12 +282,19 @@ export function applyInventoryAction(
           if (frozen) reject('counting', { sku: r.skuCode, no: frozen.no, line })
           const max = r.onHandQty - (r.allocatedQty ?? 0)
           if (!positive(input.qty) || input.qty > max) reject('moveQty', { line, max })
-          checkSerials(r.customerId, r.skuCode, input.qty, input.serialNos, r.serialNos ?? [], line)
+          checkSerials(
+            r.customerId,
+            r.skuCode,
+            input.qty,
+            input.serialNos,
+            serialsInWarehouse(s, r.warehouseCode, r.customerId, r.skuCode, r.qualityType),
+            line,
+          )
           if (input.serialNos.some((sn) => usedSerials.has(sn))) reject('serial', { sku: r.skuCode, line })
           input.serialNos.forEach((sn) => usedSerials.add(sn))
           const to = balanceAt(r, targetCode, r.qualityType)
           r.onHandQty -= input.qty
-          r.serialNos = r.serialNos?.filter((sn) => !input.serialNos.includes(sn))
+          r.serialNos = input.serialNos.length ? r.serialNos?.filter((sn) => !input.serialNos.includes(sn)) : undefined
           to.onHandQty += input.qty
           to.serialNos = [...(to.serialNos ?? []), ...input.serialNos]
           sync(r)
@@ -370,7 +393,10 @@ export function applyInventoryAction(
           if (e.serialNos.some((sn) => elsewhere.includes(sn) || inBatch.includes(sn)))
             reject('serial', { sku: l.skuCode })
           l.countedQty = e.qty
-          l.countedSerialNos = master(l.customerId, l.skuCode)?.snEnabled ? [...e.serialNos] : undefined
+          l.countedSerialNos =
+            master(l.customerId, l.skuCode)?.snEnabled && (e.serialNos.length > 0 || e.qty === 0)
+              ? [...e.serialNos]
+              : undefined
           l.countedBy = operator
           l.countedAt = at
           if (e.note !== undefined) l.diffNote = e.note.trim() || undefined
@@ -459,7 +485,7 @@ export function applyInventoryAction(
             sourceType: 'STOCKTAKE' as const,
             sourceLineNo: l.lineNo,
           }
-          if (sn) {
+          if (sn && l.countedSerialNos !== undefined && r.serialNos?.length === r.onHandQty) {
             const book = r.serialNos ?? []
             const actual = l.countedSerialNos ?? []
             const removed = book.filter((x) => !actual.includes(x))
@@ -481,7 +507,7 @@ export function applyInventoryAction(
             if (diff) {
               r.onHandQty = counted
               sync(r)
-              l.adjustLogId = write(r, diff, meta).id
+              l.adjustLogId = write(r, diff, { ...meta, serialNos: diff > 0 ? l.countedSerialNos : undefined }).id
             }
           }
           if ((r.allocatedQty ?? 0) > r.onHandQty) reject('stocktakeAllocated', { location: r.locationCode })

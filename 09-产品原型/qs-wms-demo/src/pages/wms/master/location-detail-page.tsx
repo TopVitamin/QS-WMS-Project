@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useShallow } from 'zustand/react/shallow'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { BizCode, CodeName, Empty } from '@/components/biz/display'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
@@ -30,16 +31,18 @@ export function LocationDetailPage() {
       : undefined,
   )
   const warehouse = useDb((s) => s.warehouseMasters.find((w) => w.code === warehouseCode))
-  const occupants = useDb((s) =>
-    warehouseCode && code
-      ? [
-          ...new Set(
-            s.inventory
-              .filter((r) => r.warehouseCode === warehouseCode && r.locationCode === code && r.onHandQty > 0)
-              .map((r) => r.customerId),
-          ),
-        ]
-      : [],
+  const occupants = useDb(
+    useShallow((s) =>
+      warehouseCode && code
+        ? [
+            ...new Set(
+              s.inventory
+                .filter((r) => r.warehouseCode === warehouseCode && r.locationCode === code && r.onHandQty > 0)
+                .map((r) => r.customerId),
+            ),
+          ]
+        : [],
+    ),
   )
   const zone = useDb((s) => s.zoneMasters.find((z) => z.code === location?.zoneCode))
 

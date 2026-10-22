@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils'
 import type { OutboundPutback, PutbackLine } from '@/types/outbound'
 import type { ReturnFlow } from './use-return-flow'
 
-
 /** 上下文条：返库单号 · 退拣原因 · 已保存/应返库 */
 export function ReturnContext({ flow, putback }: { flow: ReturnFlow; putback: OutboundPutback }) {
   return (
@@ -66,10 +65,13 @@ export function ReturnLineCard({
         </div>
         <div className="mt-0.5 line-clamp-2 text-sm">{flow.skuName(line.skuCode, customerId)}</div>
         {line.batchNo && <div className="mt-0.5 font-mono text-sm text-muted-foreground">{line.batchNo}</div>}
-        {left.length > 0 && (
+        {flow.isSn(line) && left.length > 0 && (
           <div className="mt-1 font-mono text-sm break-all">
             {left.map((sn) => (
-              <span key={sn} className={cn('mr-2', serialNos.includes(sn) ? 'text-primary line-through' : 'text-muted-foreground')}>
+              <span
+                key={sn}
+                className={cn('mr-2', serialNos.includes(sn) ? 'text-primary line-through' : 'text-muted-foreground')}
+              >
                 {sn}
               </span>
             ))}

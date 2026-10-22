@@ -12,7 +12,7 @@ import {
 
 export function useInbound() {
   const inbounds = useDb((s) => s.inbounds)
-  const putawayOrders = useDb((s) => s.putawayOrders ?? [])
+  const putawayOrders = useDb((s) => s.putawayOrders)
   const customers = useDb((s) => s.customers)
 
   const confirmReceiptClose = useCallback((inboundNo: string, operator = 'admin') => confirmReceiptCloseAction(inboundNo, operator), [])
@@ -45,6 +45,6 @@ export function useInbound() {
 
 export function useReceivableInbounds(warehouseCode: string) {
   const inbounds = useDb((s) => s.inbounds)
-  const putawayOrders = useDb((s) => s.putawayOrders ?? [])
+  const putawayOrders = useDb((s) => s.putawayOrders)
   return listReceivableInbounds(warehouseCode, { inbounds, putawayOrders })
 }

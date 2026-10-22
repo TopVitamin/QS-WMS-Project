@@ -1,0 +1,11 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-IN-CANCEL-001",
+  "messageType": "CANCEL_INBOUND",
+  "businessType": "NORMAL",
+  "upstreamNo": "OMS-IN-DEMO-001",
+  "expectedVersion": 2,
+  "payload": {
+    "reason": "全单拒收，上游取消"
+  }
+}

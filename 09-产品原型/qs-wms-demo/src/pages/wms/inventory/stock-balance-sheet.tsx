@@ -8,7 +8,7 @@ import { DetailTitle, Section } from '@/components/biz/page-container'
 import { TagLabel } from '@/components/biz/status-badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { allocationStatusMeta, expiryLevelMeta, inventoryTagMeta, qualityMeta } from '@/config/status'
+import { expiryLevelMeta, inventoryTagMeta, qualityMeta } from '@/config/status'
 import type { BalanceRow, SkuStockRow } from '@/lib/inventory-derive'
 import { ledgerNumbers } from '@/lib/inventory-ledger'
 import { useDb, useLookups } from '@/mock/db'
@@ -16,7 +16,7 @@ import { DocLink, LocationCode, SignedNum } from './inventory-shared'
 import { QualityConvertDialog } from './quality-convert-dialog'
 
 /**
- * 库存明细详情抽屉：身份与位置、批次效期、数量、作业状态、追溯；SN 商品列出本行在库 SN。
+ * 批次库存详情：余额维度、批次效期、数量、作业提示与追溯；不推断单件SN位置。
  * 正常品且可转换数量大于 0 时页头给「品质转换」，转换成功后在顶部列出本次一减一加两条流水；
  * 自动过期转换只展示结果或待补做原因，不设执行按钮。
  */
@@ -56,7 +56,7 @@ export function StockBalanceSheet({
         : undefined
   const viewLogs = () =>
     navigate(
-      `/wms/inventory/logs?customerId=${r.customerId}&sku=${encodeURIComponent(r.skuCode)}&location=${encodeURIComponent(r.locationCode)}${r.batchNo ? `&batch=${encodeURIComponent(r.batchNo)}` : ''}`,
+      `/wms/inventory/logs?customerId=${r.customerId}&sku=${encodeURIComponent(r.skuCode)}&quality=${r.qualityType}&location=${encodeURIComponent(r.locationCode)}${r.batchNo ? `&batch=${encodeURIComponent(r.batchNo)}` : ''}`,
     )
 
   return (
@@ -141,7 +141,7 @@ export function StockBalanceSheet({
           <DescriptionItem label={t('inventory.allocated')}>
             <Num value={row.allocated} />
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.allocatable')}>
+          <DescriptionItem label={t('inventory.allocatableQty')}>
             <span className="inline-flex items-center gap-1.5">
               <Num value={row.allocatable} />
               {row.stagingGood && <TagLabel meta={inventoryTagMeta.notAllocatable} />}
@@ -161,15 +161,11 @@ export function StockBalanceSheet({
                 <DocLink no={row.counting.no} />
               </span>
             ) : (
-              <TagLabel meta={allocationStatusMeta.NORMAL} />
+              <Empty />
             )}
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.allocation')}>
-            {row.pending ? (
-              <TagLabel meta={inventoryTagMeta.pending} />
-            ) : (
-              <TagLabel meta={allocationStatusMeta.NORMAL} />
-            )}
+          <DescriptionItem label={t('inventory.workHints')}>
+            {row.pending ? <TagLabel meta={inventoryTagMeta.pending} /> : <Empty />}
           </DescriptionItem>
           <DescriptionItem label={t('inventory.stock.expiryConversion')}>
             {expiryConversion ?? <Empty />}

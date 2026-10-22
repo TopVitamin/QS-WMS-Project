@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { toast } from 'sonner'
+import { useShallow } from 'zustand/react/shallow'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
 import { DetailTabs } from '@/components/biz/detail-tabs'
@@ -26,11 +28,14 @@ export function ReturnDetailPage() {
   const location = useLocation()
   const warehouseCode = useSettings((s) => s.warehouseCode)
   const order = useDb((s) => s.returnOrders.find((o) => o.returnNo === returnNo))
-  const receipts = useDb((s) => s.returnReceipts.filter((r) => r.returnNo === returnNo))
-  const exceptions = useDb((s) => s.returnExceptions.filter((e) => e.returnNo === returnNo))
-  const putaways = useDb((s) => s.putawayOrders.filter((p) => p.sourceType === 'RETURN' && p.sourceNo === returnNo))
+  const receipts = useDb(useShallow((s) => s.returnReceipts.filter((r) => r.returnNo === returnNo)))
+  const exceptions = useDb(useShallow((s) => s.returnExceptions.filter((e) => e.returnNo === returnNo)))
+  const putaways = useDb(
+    useShallow((s) => s.putawayOrders.filter((p) => p.sourceType === 'RETURN' && p.sourceNo === returnNo)),
+  )
   const auditLogs = useDb((s) => s.auditLogs)
   const result = useDb((s) => s.returnResults.find((r) => r.returnNo === returnNo))
+  const retryResult = useDb((s) => s.retryReturnResult)
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const { customerCode, customerName, sku } = useLookups()
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
@@ -59,6 +64,11 @@ export function ReturnDetailPage() {
         putaways={putaways}
         auditLogs={auditLogs}
         result={result}
+        onRetryResult={() => {
+          const retry = retryResult(order.returnNo)
+          if (!retry.ok) toast.error(t(retry.errorKey, retry.params))
+          else toast.success(t('return.detail.resultRetried'))
+        }}
         backTo={backTo}
         onCancel={() => setCancelOpen(true)}
         warehouseName={warehouseMasters.find((w) => w.code === order.warehouseCode)?.name}
@@ -80,6 +90,7 @@ function ReturnDetail({
   putaways,
   auditLogs,
   result,
+  onRetryResult,
   backTo,
   onCancel,
   warehouseName,
@@ -95,6 +106,7 @@ function ReturnDetail({
   putaways: PutawayOrder[]
   auditLogs: AuditLog[]
   result?: { status: 'SENT' | 'FAILED'; attempts: number }
+  onRetryResult: () => void
   backTo: string
   onCancel: () => void
   warehouseName?: string
@@ -199,6 +211,11 @@ function ReturnDetail({
           {canReceiveReturn(order) && (
             <Button variant="outline" onClick={() => navigate(`/pda/return-receive?no=${order.returnNo}`)}>
               {t('return.receive.openPda')}
+            </Button>
+          )}
+          {result?.status === 'FAILED' && (
+            <Button variant="outline" onClick={onRetryResult}>
+              {t('inbound.upstream.retry')}
             </Button>
           )}
           {totalReceived === 0 && order.status !== 'CANCELLED' && order.status !== 'COMPLETED' && (

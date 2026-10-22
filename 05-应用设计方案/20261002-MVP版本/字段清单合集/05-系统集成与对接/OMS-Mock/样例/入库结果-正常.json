@@ -1,0 +1,33 @@
+{
+  "source": "WMS",
+  "messageType": "INBOUND_RESULT",
+  "businessType": "NORMAL",
+  "upstreamNo": "OMS-IN-DEMO-001",
+  "resultSequence": 1,
+  "payload": {
+    "inboundNo": "IB-20261023-0001",
+    "status": "COMPLETED",
+    "items": [
+      {
+        "skuCode": "CABLE-01",
+        "plannedQty": 500,
+        "receivedQty": 498,
+        "goodQty": 490,
+        "defectQty": 8,
+        "rejectedQty": 2,
+        "putawayQty": 498,
+        "shortQty": 0
+      },
+      {
+        "skuCode": "SN-DEMO-01",
+        "plannedQty": 20,
+        "receivedQty": 20,
+        "goodQty": 20,
+        "defectQty": 0,
+        "rejectedQty": 0,
+        "putawayQty": 20,
+        "shortQty": 0
+      }
+    ]
+  }
+}

@@ -58,15 +58,7 @@ export function useMoveFlow() {
     [update, warehouse.code],
   )
 
-  const master = useCallback(
-    (r: Pick<InventoryRecord, 'customerId' | 'skuCode'>) =>
-      useDb.getState().skuMasters.find((m) => m.customerId === r.customerId && m.code === r.skuCode),
-    [],
-  )
-  const isSn = useCallback(
-    (r: Pick<InventoryRecord, 'customerId' | 'skuCode'>) => Boolean(master(r)?.snEnabled),
-    [master],
-  )
+  const isSn = useCallback((_r: Pick<InventoryRecord, 'customerId' | 'skuCode'>) => false, [])
 
   /** 某条库存明细还能移多少：实际 − 已分配 − 清单里已加的（移库作业主PRD 第二节） */
   const movable = useCallback(

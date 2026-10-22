@@ -64,7 +64,8 @@ export function InboundOrderReceivePage() {
   const warehouseCode = useSettings((s) => s.warehouseCode)
   const operator = useSettings((s) => s.operator)
   const { getOrder, submitReceipt } = useInbound()
-  const receiptRecords = useDb((s) => s.receiptRecords ?? [])
+  const receiptRecords = useDb((s) => s.receiptRecords)
+  const bindContainer = useDb((s) => s.bindContainer)
   const { customerCode, customerName, sku } = useLookups()
   const skuBarcodes = useDb((s) => s.skuBarcodes)
   const skuMasters = useDb((s) => s.skuMasters)
@@ -182,6 +183,7 @@ export function InboundOrderReceivePage() {
 
   /** 扫箱号 / 选无容器收货：本次已有就切过去，没有就新增，并设为当前容器 */
   const openBox = (input: { containerNo?: string; bulkPiece: boolean }) => {
+    if (!order) return
     const containerNo = input.containerNo?.trim()
     if (!input.bulkPiece && !containerNo) {
       scanResult(false, { tone: 'error', title: t('inbound.receive.prompt.containerEmptyTitle') })
@@ -190,6 +192,18 @@ export function InboundOrderReceivePage() {
     if (!input.bulkPiece && containerNo && isWorkContainerUsedOnInbound(receiptRecords, inboundNo, containerNo)) {
       void block(t('inbound.receive.prompt.usedTitle', { no: containerNo }), t('inbound.receive.prompt.usedDetail'))
       return
+    }
+    if (!input.bulkPiece && containerNo) {
+      const bound = bindContainer({
+        warehouseCode: order.warehouseCode,
+        customerId: order.customerId,
+        containerNo,
+        operator,
+      })
+      if (!bound.ok) {
+        void block(t('inbound.receive.prompt.containerBlockedTitle'), t(bound.errorKey, bound.params))
+        return
+      }
     }
     const key = boxKeyOf(containerNo, input.bulkPiece)
     const existing = session.boxes.find((b) => b.key === key)

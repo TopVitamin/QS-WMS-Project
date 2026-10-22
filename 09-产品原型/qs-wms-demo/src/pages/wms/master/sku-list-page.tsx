@@ -1,5 +1,5 @@
-import { Download } from 'lucide-react'
-import { useMemo } from 'react'
+import { Download, Send } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -27,6 +27,7 @@ import {
 import { codeNameText } from '@/lib/typography'
 import { useDb } from '@/mock/db'
 import type { SkuMaster, UsageStatus } from '@/types/wms'
+import { MockMasterPushDialog } from './mock-master-push-dialog'
 
 interface Filters {
   ownerCode: string
@@ -216,15 +217,23 @@ export function SkuListPage() {
     ])
   }, [navigate, t, toggleStatus, customers])
 
+  const [pushOpen, setPushOpen] = useState(false)
+
   return (
     <PageContainer
       fill
       title={t('menu.skus')}
       actions={
-        <Button variant="outline" onClick={() => toast.info(t('masterSku.exportMock'))}>
-          <Download data-icon="inline-start" />
-          {t('common.export')}
-        </Button>
+        <>
+          <Button variant="outline" onClick={() => setPushOpen(true)}>
+            <Send data-icon="inline-start" />
+            {t('masterPush.action')}
+          </Button>
+          <Button variant="outline" onClick={() => toast.info(t('masterSku.exportMock'))}>
+            <Download data-icon="inline-start" />
+            {t('common.export')}
+          </Button>
+        </>
       }
     >
       <Panel className="p-4">
@@ -325,6 +334,7 @@ export function SkuListPage() {
           }}
         />
       </Panel>
+      {pushOpen && <MockMasterPushDialog masterType="SKU" onClose={() => setPushOpen(false)} />}
     </PageContainer>
   )
 }

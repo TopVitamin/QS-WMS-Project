@@ -268,8 +268,9 @@ export type {
 } from './inbound'
 
 export interface InventoryRecord {
-  /** 库位分配与SN实物位置；SKU订单占用从出库单明细汇总。 */
+  /** 本行已分配数量；SKU订单预占从出库单明细汇总。 */
   allocatedQty?: number
+  /** 兼容已有逐件采集记录；当前SN身份以独立仓库级台账为准，不要求库位关联完整。 */
   serialNos?: string[]
   id: string
   warehouseCode: string
@@ -279,7 +280,7 @@ export interface InventoryRecord {
   qualityType: QualityType
   onHandQty: number
   lockedQty: number
-  /** 库存预占数量 */
+  /** 旧演示兼容字段；不参与SKU订单预占计算。 */
   reservedQty?: number
   /** 批次号 */
   batchNo?: string
@@ -293,22 +294,13 @@ export interface InventoryRecord {
  * 品质转换、移库、盘点调整、确认出库扣减、预占、释放。分配与其他出库指定不写流水。
  */
 export type InventoryLogType =
-  | 'RECEIVE'
-  | 'PUTAWAY'
-  | 'PICK'
-  | 'RETURN'
-  | 'QUALITY'
-  | 'MOVE'
-  | 'ADJUST'
-  | 'SHIP'
-  | 'RESERVE'
-  | 'RELEASE'
+  'RECEIVE' | 'PUTAWAY' | 'PICK' | 'RETURN' | 'QUALITY' | 'MOVE' | 'ADJUST' | 'SHIP' | 'RESERVE' | 'RELEASE'
 
 /** 来源单据类型：入库单、退货单、出库单、盘点单、移库作业、其他业务记录、无独立单据 */
 export type InventoryLogSource = 'INBOUND' | 'RETURN' | 'OUTBOUND' | 'STOCKTAKE' | 'MOVE' | 'OTHER' | 'NONE'
 
 export interface InventoryLog {
-  /** SKU：订单占用变化（库位、批次、品质为空）；DETAIL 或缺省：库存明细的实际数量变化 */
+  /** SKU：良品订单预占变化（库位、批次为空）；DETAIL或缺省：批次库位实际数量变化 */
   level?: 'SKU' | 'DETAIL'
   /** 订单占用变化量；实际数量类为空 */
   reservedChange?: number
@@ -333,7 +325,7 @@ export interface InventoryLog {
   beforeQty?: number
   afterQty?: number
   serialNos?: string[]
-  /** 同一次业务动作的流水共用，成对流水互相指向 */
+  /** 同一次业务动作的内部幂等与追溯标识；页面逐条展示，不提供配对联动 */
   actionId?: string
   pairedLogId?: string
   sourceType?: InventoryLogSource
@@ -360,6 +352,7 @@ export type AuditRefType =
   | 'STOCKTAKE'
   | 'STOCK_MOVE'
   | 'INVENTORY'
+  | 'MASTER'
 
 export type AuditAction =
   | 'OUTBOUND_ACTION'
@@ -372,13 +365,57 @@ export type AuditAction =
   | 'INBOUND_RECEIVE'
   | 'RETURN_RECEIVE'
   | 'RETURN_MOCK_FORECAST'
+  | 'RETURN_DELIVERY_FAILED_CREATE'
+  | 'RETURN_RESULT_RETRY'
   | 'RETURN_CANCEL'
+  | 'MASTER_MOCK_PUSH'
+  | 'CONTAINER_SAVE'
   | 'PUTAWAY_SAVE'
   | 'PUTAWAY_REMOVE'
   | 'PUTAWAY'
   | 'NEW_SKU_MEASURE'
   | 'UNCLAIMED_REGISTER'
   | 'DEMO_RESET'
+
+/** 容器类型：箱、托、袋、笼车、包裹 */
+export type ContainerType = 'CARTON' | 'PALLET' | 'BAG' | 'CAGE' | 'PACKAGE'
+/** 容器状态由作业驱动 */
+export type ContainerStatus =
+  'IDLE' | 'RECEIVING' | 'PUTAWAYING' | 'IN_STOCK' | 'OUTBOUND' | 'SHIPPED' | 'RELEASED' | 'DISABLED'
+export type ContainerSource = 'EXTERNAL_LABEL' | 'INTERNAL' | 'OUTBOUND_PACK'
+
+export interface ContainerMaster {
+  warehouseCode: string
+  containerNo: string
+  containerType: ContainerType
+  source: ContainerSource
+  customerId: string
+  status: ContainerStatus
+  /** 容量为空表示不限制 */
+  maxPieces?: number
+  maxWeightKg?: number
+  maxVolumeM3?: number
+  /** 整箱落位时记录；拆散后为空 */
+  currentLocationCode?: string
+  parentContainerNo?: string
+  remark?: string
+  lastScannedAt?: string
+  lastScannedBy?: string
+  createdAt: string
+  createdBy: string
+  updatedAt: string
+  updatedBy: string
+}
+
+export interface MasterPushMessage {
+  id: string
+  masterType: 'OWNER' | 'SKU'
+  ownerCode: string
+  skuCode?: string
+  status: 'ACCEPTED' | 'REJECTED'
+  reason?: string
+  at: string
+}
 
 export interface AuditLog {
   id: string

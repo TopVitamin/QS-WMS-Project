@@ -1,3 +1,4 @@
+import { serialsInWarehouse } from '@/lib/serial-stock'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -29,7 +30,7 @@ const fieldError = (msg?: string) => (msg ? <p className="text-xs text-destructi
 
 /**
  * 品质转换（库存查询前端Demo版PRD 第四节）：管理端人工转换，入口在库存明细详情。
- * 原因固定为在库受损；SN 商品勾选 SN，转换数量等于所选 SN 数；提交前展示前后值，可用转负只告警不阻断。
+ * 原因固定为在库受损；SN可选登记；提交前展示当前品质数量与可用变化，会导致负库存时阻断提交。
  */
 export function QualityConvertDialog({
   row,
@@ -40,7 +41,7 @@ export function QualityConvertDialog({
   row: BalanceRow
   skuRow?: SkuStockRow
   onClose: () => void
-  /** 转换成功：回传业务动作标识，明细详情据此展示成对流水 */
+  /** 转换成功：回传业务动作标识，明细详情据此分别列出本次两条流水 */
   onConverted: (actionId: string) => void
 }) {
   const { t } = useTranslation()
@@ -48,6 +49,8 @@ export function QualityConvertDialog({
   const run = useInventoryRun()
   const { sku, customerCode, customerName } = useLookups()
   const inventory = useDb((s) => s.inventory)
+  const serialStocks = useDb((s) => s.serialStocks)
+  const inventoryLogs = useDb((s) => s.inventoryLogs)
   const master = useDb((s) =>
     s.skuMasters.find((m) => m.customerId === row.record.customerId && m.code === row.record.skuCode),
   )
@@ -62,12 +65,12 @@ export function QualityConvertDialog({
 
   const r = row.record
   const max = row.convertible
-  const qty = snItem ? serials.length : Number(qtyText)
+  const qty = Number(qtyText)
   const qtyValid = Number.isInteger(qty) && qty > 0 && qty <= max
   const errors = {
     qty: qtyValid ? undefined : t('inventory.convert.max', { max }),
     serials:
-      snItem && !qtyValid
+      snItem && serials.length > 0 && serials.length !== qty
         ? t('inventory.convert.serialMismatch', { selected: serials.length, qty: Math.max(1, qty) })
         : undefined,
     reasonNote: reasonNote.trim()
@@ -151,29 +154,24 @@ export function QualityConvertDialog({
           {readOnly(t('inventory.actual'), String(r.onHandQty))}
           {readOnly(t('inventory.allocated'), String(row.allocated))}
           {readOnly(t('inventory.convert.convertible'), String(max))}
-          {snItem ? (
-            readOnly(t('inventory.convert.qty'), String(serials.length))
-          ) : (
-            <FormField
-              label={t('inventory.convert.qty')}
-              required
-              error={showErrors ? fieldError(errors.qty) : undefined}
-            >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={max}
-                value={qtyText}
-                placeholder={t('common.inputPlaceholder')}
-                onChange={(e) => setQtyText(e.target.value)}
-              />
-            </FormField>
-          )}
+          <FormField
+            label={t('inventory.convert.qty')}
+            required
+            error={showErrors ? fieldError(errors.qty) : undefined}
+          >
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={max}
+              value={qtyText}
+              placeholder={t('common.inputPlaceholder')}
+              onChange={(e) => setQtyText(e.target.value)}
+            />
+          </FormField>
           {snItem && (
             <FormField
               label={t('inventory.convert.serials')}
-              required
               span="full"
               hint={t('inventory.convert.serialsHint')}
               error={showErrors ? fieldError(errors.serials) : undefined}
@@ -183,7 +181,13 @@ export function QualityConvertDialog({
                 aria-label={t('inventory.convert.serials')}
                 className="grid grid-cols-2 gap-2 rounded-lg border p-3"
               >
-                {(r.serialNos ?? []).map((sn) => (
+                {serialsInWarehouse(
+                  { inventory, inventoryLogs, serialStocks },
+                  r.warehouseCode,
+                  r.customerId,
+                  r.skuCode,
+                  r.qualityType,
+                ).map((sn) => (
                   <Label key={sn} className="flex items-center gap-2 font-normal">
                     <Checkbox
                       checked={serials.includes(sn)}
@@ -248,7 +252,7 @@ export function QualityConvertDialog({
             <span>
               {t('inventory.convert.previewSku', {
                 preFrom: skuRow.preoccupied,
-                preTo: skuRow.preoccupied + step,
+                preTo: skuRow.preoccupied,
                 availFrom: skuRow.available,
                 availTo: availAfter,
               })}

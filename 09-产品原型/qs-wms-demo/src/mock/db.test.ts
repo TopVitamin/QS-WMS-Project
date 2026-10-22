@@ -147,7 +147,11 @@ describe('useDb actions', () => {
         }),
       ).toEqual({ ok: false, errorKey: 'inbound.receive.containerDuplicated' })
       expect(
-        useDb.getState().submitReceipt({ inboundNo: order.inboundNo, operator: 'test', containers: [{ containerNo: 'BOX-C', lines: [] }] }),
+        useDb.getState().submitReceipt({
+          inboundNo: order.inboundNo,
+          operator: 'test',
+          containers: [{ containerNo: 'BOX-C', lines: [] }],
+        }),
       ).toEqual({ ok: false, errorKey: 'inbound.receive.emptySubmit' })
     })
 
@@ -208,7 +212,13 @@ describe('useDb actions', () => {
       const stagingBefore = onHandAt(order.warehouseCode, 'STAGE-IN-01', skuCode, 'GOOD')
       const targetBefore = onHandAt(order.warehouseCode, target, skuCode, 'GOOD')
 
-      const save = useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: 10, operator: 'test' })
+      const save = useDb.getState().savePutawayLine({
+        putawayNo: po.putawayNo,
+        locationCode: target,
+        planLineNo: po.planLines[0].lineNo,
+        qty: 10,
+        operator: 'test',
+      })
       expect(save).toEqual({ ok: true })
       const saved = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
       expect(saved.status).toBe('PUTAWAYING')
@@ -248,21 +258,53 @@ describe('useDb actions', () => {
       const defect = orders.find((p) => p.qualityType === 'DEFECTIVE')!
 
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: defect.putawayNo, locationCode: 'A-01-01', planLineNo: defect.planLines[0].lineNo, qty: 10, operator: 'test' }),
+        useDb.getState().savePutawayLine({
+          putawayNo: defect.putawayNo,
+          locationCode: 'A-01-01',
+          planLineNo: defect.planLines[0].lineNo,
+          qty: 10,
+          operator: 'test',
+        }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.defectOnly' })
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: 'DEFECT-01', planLineNo: good.planLines[0].lineNo, qty: 1, operator: 'test' }),
+        useDb.getState().savePutawayLine({
+          putawayNo: good.putawayNo,
+          locationCode: 'DEFECT-01',
+          planLineNo: good.planLines[0].lineNo,
+          qty: 1,
+          operator: 'test',
+        }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.goodToDefect' })
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: 'STAGE-IN-01', planLineNo: good.planLines[0].lineNo, qty: 1, operator: 'test' }),
+        useDb.getState().savePutawayLine({
+          putawayNo: good.putawayNo,
+          locationCode: 'STAGE-IN-01',
+          planLineNo: good.planLines[0].lineNo,
+          qty: 1,
+          operator: 'test',
+        }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.staging' })
 
       const goodTarget = suggestPutawayLocation(good, item.skuCode, useDb.getState())!
-      useDb.getState().savePutawayLine({ putawayNo: good.putawayNo, locationCode: goodTarget, planLineNo: good.planLines[0].lineNo, qty: item.plannedQty - 10, operator: 'test' })
-      useDb.getState().savePutawayLine({ putawayNo: defect.putawayNo, locationCode: 'DEFECT-01', planLineNo: defect.planLines[0].lineNo, qty: 10, operator: 'test' })
+      useDb.getState().savePutawayLine({
+        putawayNo: good.putawayNo,
+        locationCode: goodTarget,
+        planLineNo: good.planLines[0].lineNo,
+        qty: item.plannedQty - 10,
+        operator: 'test',
+      })
+      useDb.getState().savePutawayLine({
+        putawayNo: defect.putawayNo,
+        locationCode: 'DEFECT-01',
+        planLineNo: defect.planLines[0].lineNo,
+        qty: 10,
+        operator: 'test',
+      })
       expect(useDb.getState().submitPutawayOrder({ putawayNo: good.putawayNo, operator: 'test' })).toEqual({ ok: true })
       expect(getInbound(order.inboundNo)!.status).toBe('PUTAWAYING')
-      expect(useDb.getState().submitPutawayOrder({ putawayNo: defect.putawayNo, operator: 'test' })).toEqual({ ok: true })
+      expect(useDb.getState().submitPutawayOrder({ putawayNo: defect.putawayNo, operator: 'test' })).toEqual({
+        ok: true,
+      })
       expect(getInbound(order.inboundNo)!.status).toBe('COMPLETED')
     })
 
@@ -270,21 +312,35 @@ describe('useDb actions', () => {
       const po = useDb.getState().putawayOrders.find((p) => p.putawayNo === 'PA-20261009-0001')!
       const skuCode = po.planLines[0].skuCode
       const target = suggestPutawayLocation(po, skuCode, useDb.getState())!
-      useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: 10, operator: 'test' })
+      useDb.getState().savePutawayLine({
+        putawayNo: po.putawayNo,
+        locationCode: target,
+        planLineNo: po.planLines[0].lineNo,
+        qty: 10,
+        operator: 'test',
+      })
       expect(useDb.getState().submitPutawayOrder({ putawayNo: po.putawayNo, operator: 'test' })).toEqual({
         ok: false,
         errorKey: 'pdaPutaway.error.planMismatch',
       })
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: target, planLineNo: po.planLines[0].lineNo, qty: po.planLines[0].planQty, operator: 'test' }),
+        useDb.getState().savePutawayLine({
+          putawayNo: po.putawayNo,
+          locationCode: target,
+          planLineNo: po.planLines[0].lineNo,
+          qty: po.planLines[0].planQty,
+          operator: 'test',
+        }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.overRemain' })
 
       const [placed] = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.actualLines
-      expect(useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: placed.lineNo, operator: 'test' })).toEqual({ ok: true })
+      expect(
+        useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: placed.lineNo, operator: 'test' }),
+      ).toEqual({ ok: true })
       expect(useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!.status).toBe('PENDING')
     })
 
-    it('rejects a location already holding another owner\'s stock (one owner per location)', () => {
+    it("rejects a location already holding another owner's stock (one owner per location)", () => {
       const po = useDb.getState().putawayOrders.find((p) => p.putawayNo === 'PA-20261009-0001')!
       useDb.setState((s) => ({
         inventory: [
@@ -303,7 +359,13 @@ describe('useDb actions', () => {
         ],
       }))
       expect(
-        useDb.getState().savePutawayLine({ putawayNo: po.putawayNo, locationCode: 'C-04-03', planLineNo: po.planLines[0].lineNo, qty: 1, operator: 'test' }),
+        useDb.getState().savePutawayLine({
+          putawayNo: po.putawayNo,
+          locationCode: 'C-04-03',
+          planLineNo: po.planLines[0].lineNo,
+          qty: 1,
+          operator: 'test',
+        }),
       ).toEqual({ ok: false, errorKey: 'pdaPutaway.error.otherOwner' })
     })
   })
@@ -344,9 +406,16 @@ describe('useDb actions', () => {
               .filter((p) => p.sourceType === 'INBOUND' && p.sourceNo === o.inboundNo && p.qualityType === quality)
               .flatMap((p) => p.planLines)
               .reduce((s, l) => s + l.planQty, 0)
-          const received = (pick: (line: (typeof o.items)[number]) => number) => o.items.reduce((s, i) => s + pick(i), 0)
-          expect({ no: o.inboundNo, good: planned('GOOD') }).toEqual({ no: o.inboundNo, good: received((i) => i.goodQty) })
-          expect({ no: o.inboundNo, defect: planned('DEFECTIVE') }).toEqual({ no: o.inboundNo, defect: received((i) => i.defectQty) })
+          const received = (pick: (line: (typeof o.items)[number]) => number) =>
+            o.items.reduce((s, i) => s + pick(i), 0)
+          expect({ no: o.inboundNo, good: planned('GOOD') }).toEqual({
+            no: o.inboundNo,
+            good: received((i) => i.goodQty),
+          })
+          expect({ no: o.inboundNo, defect: planned('DEFECTIVE') }).toEqual({
+            no: o.inboundNo,
+            defect: received((i) => i.defectQty),
+          })
         })
     })
   })
@@ -394,7 +463,9 @@ describe('上架单按应上架行落位（上架单主PRD 第三节）', () => 
     expect(recordedOfPlanLine(afterFirst, second.lineNo)).toBe(10)
 
     expect(
-      useDb.getState().removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: secondLine.lineNo, operator: 'test' }),
+      useDb
+        .getState()
+        .removePutawayLine({ putawayNo: po.putawayNo, actualLineNo: secondLine.lineNo, operator: 'test' }),
     ).toEqual({ ok: true })
     const afterRemove = useDb.getState().putawayOrders.find((p) => p.putawayNo === po.putawayNo)!
     expect(recordedOfPlanLine(afterRemove, second.lineNo)).toBe(0)
@@ -428,7 +499,8 @@ describe('上架单按应上架行落位（上架单主PRD 第三节）', () => 
     }
     useDb.setState((s) => ({
       putawayOrders: [...s.putawayOrders, po],
-      /** SN 落位必须来自本单收货暂存库存 */
+      /** 兼容旧演示fixture，按实际注入的SN建立仓库台账 */
+      serialStocks: undefined,
       inventory: [
         ...s.inventory,
         {
@@ -632,12 +704,14 @@ describe('无主货登记（无主货登记主PRD 第二～三节）', () => {
     expect(again.ok).toBe(true)
     expect(again.record?.registerNo).toBe(first.record?.registerNo)
 
-    expect(
-      useDb.getState().registerUnclaimed({ ...input, requestId: 'test-ug-3', trackingNos: [] }),
-    ).toEqual({ ok: false, errorKey: 'unclaimed.error.clueRequired' })
-    expect(
-      useDb.getState().registerUnclaimed({ ...input, requestId: 'test-ug-4', cartonQty: 0 }),
-    ).toEqual({ ok: false, errorKey: 'error.qtyInvalid' })
+    expect(useDb.getState().registerUnclaimed({ ...input, requestId: 'test-ug-3', trackingNos: [] })).toEqual({
+      ok: false,
+      errorKey: 'unclaimed.error.clueRequired',
+    })
+    expect(useDb.getState().registerUnclaimed({ ...input, requestId: 'test-ug-4', cartonQty: 0 })).toEqual({
+      ok: false,
+      errorKey: 'error.qtyInvalid',
+    })
     /** 只有箱唛、没有运单号也算有线索（登记不选库位，实物统一放无主货暂存区域） */
     expect(
       useDb

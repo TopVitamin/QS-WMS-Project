@@ -1,1 +1,20 @@
 Mock字段路径	WMS对象	WMS字段名称	Mock必填	说明
+source	消息信封	消息来源	是	固定 OMS_MOCK
+messageId	消息信封	消息标识	是	来源内唯一；重发同标识同内容返回原结论
+messageType	消息信封	消息类别	是	PUSH_MASTER_DATA
+masterType	消息信封	资料类别	是	OWNER
+ownerCode	货主	货主编码	是	按货主编码定位；自营货主预置不推送
+expectedVersion	消息信封	预期对象版本	是	首次 0；更新按当前版本
+payload.ownerCode	货主	货主编码	是	与信封 ownerCode 一致
+payload.name	货主	货主名称	是	业务名称
+payload.ownerType	货主	货主类型	是	SELF｜EXTERNAL；外部货主推送为 EXTERNAL
+payload.status	货主	状态	是	ENABLED｜DISABLED
+payload.countryCode	货主	国家/地区代码	否	ISO 3166-1 alpha-2
+payload.city	货主	城市	否	城市名称
+payload.address1	货主	地址行 1	否	街道地址
+payload.address2	货主	地址行 2	否	补充地址
+payload.contactName	货主	联系人	否	业务联系人
+payload.contactPhone	货主	联系电话	否	含国家区号
+payload.contactEmail	货主	联系邮箱	否	业务邮箱
+payload.upstreamOwnerId	货主	上游货主标识	是	上游系统内唯一
+payload.putawayRecommendTiming	货主	上架推荐时机	否	AT_PUTAWAY_SCAN｜AFTER_RECEIVE｜NONE

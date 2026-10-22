@@ -1,1 +1,17 @@
 Mock字段路径	WMS对象	WMS字段名称	Mock必填	说明
+source	消息信封	消息来源	是	固定 OMS_MOCK
+messageId	消息信封	消息标识	是	来源内唯一；重发同标识同内容返回原结论
+messageType	消息信封	消息类别	是	CREATE_INBOUND
+businessType	消息信封	业务类型	是	NORMAL｜TRANSFER
+upstreamNo	消息信封	上游指令号	是	来源＋业务类型＋上游指令号定位业务对象
+expectedVersion	消息信封	预期对象版本	是	首次固定 0
+payload.warehouseCode	入库单	仓库编码	是	一期四仓之一
+payload.ownerCode	入库单	货主编码	是	须为启用货主
+payload.arrivalMethod	入库单	到货方式	否	CONTAINER｜LTL｜EXPRESS｜OTHER
+payload.containerNo	入库单	柜号/箱唛线索	否	整柜或箱唛线索，不等于收货作业容器
+payload.trackingNos	入库单	运单号	否	多行文本；一行一单号
+payload.etaAt	入库单	预计到货时间	否	ISO 8601 UTC
+payload.items	入库单明细	商品明细	是	至少一行
+payload.items[].skuCode	入库单明细	SKU 编码	是	须为该货主启用商品
+payload.items[].plannedQty	入库单明细	预计数量	是	正整数
+payload.remark	入库单	备注	否	上游备注

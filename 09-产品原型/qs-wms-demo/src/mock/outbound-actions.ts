@@ -1,3 +1,5 @@
+import { negativeInventoryIssue } from '@/lib/inventory-constraints'
+import { serialsInWarehouse, updateSerialStocks } from '@/lib/serial-stock'
 import { nextDocNo } from '@/lib/doc-no'
 import { countingStocktake, isLiveOutbound, stockKey } from '@/lib/inventory-derive'
 import { balanceLog, pairLogs, reservedLog } from '@/lib/inventory-ledger'
@@ -96,7 +98,7 @@ export function verificationRemaining(s: Pick<SeedData, 'outboundVerifications'>
   }
 }
 
-type Patch = OutboundData & Pick<SeedData, 'inventory' | 'inventoryLogs'>
+type Patch = OutboundData & Pick<SeedData, 'inventory' | 'inventoryLogs' | 'serialStocks'>
 export type OutboundActionResult =
   | { ok: true; no?: string; patch: Patch }
   | { ok: false; errorKey: string; params?: Record<string, string | number>; patch?: Patch }
@@ -124,7 +126,12 @@ export function applyOutboundAction(
   const data = Object.fromEntries(outboundDataKeys.map((k) => [k, state[k]])) as unknown as OutboundData
   const patch: Patch = structuredClone({ ...data, inventory: state.inventory, inventoryLogs: state.inventoryLogs })
   const s = { ...state, ...patch }
-  const finish = (no?: string): OutboundActionResult => ({ ok: true, no, patch })
+  const finish = (no?: string): OutboundActionResult => {
+    const issue = negativeInventoryIssue(s)
+    if (issue) reject('negativeInventory', issue)
+    patch.serialStocks = updateSerialStocks(state, s.inventoryLogs.slice(state.inventoryLogs.length))
+    return { ok: true, no, patch }
+  }
   const order = (no: string) => s.outboundOrders.find((o) => o.no === no) ?? reject('notFound')
   const task = (no: string) => s.outboundPickTasks.find((t) => t.no === no) ?? reject('notFound')
   const inventory = (id: string) => s.inventory.find((r) => r.id === id) ?? reject('notFound')
@@ -176,7 +183,14 @@ export function applyOutboundAction(
   ) => {
     const from = inventory(id)
     if (frozen(from.warehouseCode, from.customerId, from.skuCode)) reject('countFrozen')
-    if (from.onHandQty < qty || serialNos.some((sn) => !from.serialNos?.includes(sn))) reject('stockChanged')
+    if (
+      from.onHandQty < qty ||
+      serialNos.some(
+        (sn) =>
+          !serialsInWarehouse(s, from.warehouseCode, from.customerId, from.skuCode, from.qualityType).includes(sn),
+      )
+    )
+      reject('stockChanged')
     const q = quality ?? from.qualityType
     let to = s.inventory.find(
       (r) =>
@@ -202,7 +216,7 @@ export function applyOutboundAction(
     }
     from.onHandQty -= qty
     from.lockedQty = from.qualityType === 'DEFECTIVE' ? from.onHandQty : 0
-    from.serialNos = from.serialNos?.filter((sn) => !serialNos.includes(sn))
+    from.serialNos = serialNos.length ? from.serialNos?.filter((sn) => !serialNos.includes(sn)) : undefined
     to.onHandQty += qty
     to.lockedQty = q === 'DEFECTIVE' ? to.onHandQty : 0
     to.serialNos = [...(to.serialNos ?? []), ...serialNos]
@@ -289,8 +303,7 @@ export function applyOutboundAction(
       orderNo: waveNo ? undefined : first.no,
       status: 'PENDING_PICK',
       stagingCode:
-        s.warehouseMasters.find((w) => w.code === first.warehouseCode)?.outboundStagingLocation ??
-        'STAGE-OUT-01',
+        s.warehouseMasters.find((w) => w.code === first.warehouseCode)?.outboundStagingLocation ?? 'STAGE-OUT-01',
       lines: [],
       assignments: [],
       confirmations: [],
@@ -584,7 +597,10 @@ export function applyOutboundAction(
                 skuMaster(o.customerId, i.skuCode)?.snEnabled &&
                 (sp.serialNos.length !== sp.qty ||
                   new Set(sp.serialNos).size !== sp.qty ||
-                  sp.serialNos.some((sn) => !r.serialNos?.includes(sn)) ||
+                  sp.serialNos.some(
+                    (sn) =>
+                      !serialsInWarehouse(s, r.warehouseCode, r.customerId, r.skuCode, r.qualityType).includes(sn),
+                  ) ||
                   s.outboundOrders.some(
                     (old) =>
                       !['CANCELLED', 'SHIPPED'].includes(old.status) &&
@@ -696,9 +712,17 @@ export function applyOutboundAction(
           master?.snEnabled &&
           (c.serialNos.length !== c.qty ||
             new Set(c.serialNos).size !== c.qty ||
-            c.serialNos.some((sn) => !r.serialNos?.includes(sn)))
+            c.serialNos.some(
+              (sn) => !serialsInWarehouse(s, r.warehouseCode, r.customerId, r.skuCode, r.qualityType).includes(sn),
+            ))
         )
           reject('serial')
+        if (
+          c.serialNos.some((sn) =>
+            s.outboundPickTasks.some((task) => task.assignments.some((a) => a.activeSerialNos.includes(sn))),
+          )
+        )
+          reject('stockChanged')
         const snPool = [...c.serialNos]
         let remaining = c.qty
         l.shares.forEach((p) => {
@@ -974,7 +998,12 @@ export function applyOutboundAction(
           .filter((a) => a.activeQty > 0)
           .forEach((a) => {
             const r = inventory(a.stagingInventoryId)
-            if (r.onHandQty < a.activeQty || a.activeSerialNos.some((sn) => !r.serialNos?.includes(sn)))
+            if (
+              r.onHandQty < a.activeQty ||
+              a.activeSerialNos.some(
+                (sn) => !serialsInWarehouse(s, r.warehouseCode, r.customerId, r.skuCode, r.qualityType).includes(sn),
+              )
+            )
               reject('stockChanged')
             r.onHandQty -= a.activeQty
             r.lockedQty = r.qualityType === 'DEFECTIVE' ? r.onHandQty : 0
@@ -1034,7 +1063,7 @@ export function applyOutboundAction(
         const l = p.lines.find((l) => l.id === c.lineId) ?? reject('notFound')
         validateReturnTarget(p, l, c.location)
         if (!positive(c.qty) || c.qty > l.qty - l.savedQty) reject('quantity')
-        // SN 行：PDA 逐件扫到的序列号须是本行还没落位的；不传时按应返库清单顺序取
+        // 仅校验实际逐件采集的SN；未采集时不能按清单顺序推断SN落位。
         const placed = (l.placements ?? []).flatMap((pl) => pl.serialNos)
         const left = l.serialNos.filter((sn) => !placed.includes(sn))
         if (
@@ -1050,7 +1079,7 @@ export function applyOutboundAction(
           {
             location: c.location,
             qty: c.qty,
-            serialNos: l.serialNos.length ? (c.serialNos ?? left.slice(0, c.qty)) : [],
+            serialNos: l.serialNos.length ? (c.serialNos ?? []) : [],
           },
         ]
         l.savedQty += c.qty
@@ -1074,7 +1103,7 @@ export function applyOutboundAction(
         if (p.status === 'COMPLETED') reject('terminal')
         if (p.lines.some((l) => l.savedQty !== l.qty || !l.targetLocation)) reject('unfinished')
         p.lines.forEach((l) => {
-          const placements = l.placements ?? [{ location: l.targetLocation!, qty: l.qty, serialNos: l.serialNos }]
+          const placements = l.placements ?? [{ location: l.targetLocation!, qty: l.qty, serialNos: [] }]
           for (const actual of placements) {
             validateReturnTarget(p, l, actual.location)
             move(l.stagingInventoryId, actual.location, actual.qty, actual.serialNos, {

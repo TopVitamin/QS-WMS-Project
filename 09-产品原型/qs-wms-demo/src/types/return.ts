@@ -50,6 +50,10 @@ export interface ReturnReceiptLine {
   expiryDate?: string
   goodSerialNos?: string[]
   defectSerialNos?: string[]
+  /** 拒收件扫到的 SN；与原出库不一致的 SN 只能走这里 */
+  rejectedSerialNos?: string[]
+  /** SN 核验依据：有原出库可对核，或无可对核原单 */
+  serialCheckBasis?: 'ORIGINAL_OUTBOUND' | 'NO_REFERENCE'
 }
 
 export interface ReturnReceiptRecord {
@@ -57,6 +61,8 @@ export interface ReturnReceiptRecord {
   returnNo: string
   warehouseCode: string
   customerId: string
+  /** 仅单容器提交时有值；多容器以明细行 containerNo 为准 */
+  containerNo?: string
   stagingLocationCode: string
   operator: string
   receivedAt: string
@@ -94,6 +100,15 @@ export interface ReturnReceiveLineInput {
   expiryDate?: string
   goodSerialNos?: string[]
   defectSerialNos?: string[]
+  /** 拒收件 SN；SN 与原出库不一致时只能放这里 */
+  rejectedSerialNos?: string[]
+}
+
+/** 一次退货收货提交中的一个容器（或无容器收货的一组） */
+export interface ReturnReceiptContainerInput {
+  containerNo?: string
+  bulkPiece?: boolean
+  lines: ReturnReceiveLineInput[]
 }
 
 export interface ReturnData {

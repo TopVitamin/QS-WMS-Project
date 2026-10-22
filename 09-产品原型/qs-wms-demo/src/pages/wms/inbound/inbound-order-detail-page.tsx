@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { useShallow } from 'zustand/react/shallow'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DetailTabs } from '@/components/biz/detail-tabs'
 import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
@@ -55,7 +56,7 @@ export function InboundOrderDetailPage() {
   const [putaway, setPutaway] = useState<PutawayOrder>()
   const [closeOpen, setCloseOpen] = useState(false)
   const [upstream, setUpstream] = useState<'change' | 'cancel'>()
-  const inboundMessages = useDb((s) => s.inboundMessages.filter((m) => m.inboundNo === inboundNo))
+  const inboundMessages = useDb(useShallow((s) => s.inboundMessages.filter((m) => m.inboundNo === inboundNo)))
 
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
   const backTo = listSearch ? `/wms/inbound/orders?${listSearch}` : '/wms/inbound/orders'

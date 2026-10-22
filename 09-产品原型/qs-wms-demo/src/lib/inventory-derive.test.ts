@@ -33,15 +33,21 @@ const detailKey = (
   },
 ) => [l.warehouseCode, l.customerId, l.skuCode, l.locationCode, l.batchNo ?? '', l.qualityType ?? ''].join('|')
 
-describe('SKU 库存三量（库存查询主PRD 第二节）', () => {
-  it('实际＝正常＋不良，预占＝订单占用＋不良，可用＝正常－订单占用，各仓都成立', () => {
+describe('SKU库存按品质分行（库存查询主PRD 第二节）', () => {
+  it('良品库存＝订单预占＋可用，不良品预占与可用均为0，汇总等于批次库存', () => {
     warehouses.forEach((w) => {
       const balances = deriveBalances(seed, w, NOW)
       deriveSkuStocks(seed, w).forEach((r) => {
         expect(r.actual).toBe(r.good + r.defective)
-        expect(r.preoccupied).toBe(r.orderReserved + r.defective)
-        expect(r.available).toBe(r.actual - r.preoccupied)
-        const detail = balances.filter((b) => b.record.customerId === r.customerId && b.record.skuCode === r.skuCode)
+        expect(r.preoccupied).toBe(r.orderReserved)
+        expect(r.available).toBe(r.qualityType === 'GOOD' ? r.actual - r.orderReserved : 0)
+        expect(r.available).toBeGreaterThanOrEqual(0)
+        const detail = balances.filter(
+          (b) =>
+            b.record.customerId === r.customerId &&
+            b.record.skuCode === r.skuCode &&
+            b.record.qualityType === r.qualityType,
+        )
         expect(detail.reduce((n, b) => n + b.record.onHandQty, 0)).toBe(r.actual)
       })
     })
@@ -56,13 +62,13 @@ describe('SKU 库存三量（库存查询主PRD 第二节）', () => {
     })
   })
 
-  it('演示数据：洛杉矶仓演示商品待核对、盘点中、可用为 0；批次商品盘亏后可用为负', () => {
+  it('演示数据：洛杉矶仓演示商品待核对、盘点中、可用为 0；批次商品盘亏后可用为0', () => {
     const rows = deriveSkuStocks(seed, LA)
     const homy = rows.find((r) => r.customerId === HOMY && r.skuCode === 'HOMY-003')!
     expect(homy.pending).toBeDefined()
     expect(homy.counting?.status).toBe('COUNTING')
     expect(homy.available).toBe(0)
-    expect(rows.find((r) => r.customerId === ANKR && r.skuCode === 'LOT-DEMO-01')!.available).toBeLessThan(0)
+    expect(rows.find((r) => r.customerId === ANKR && r.skuCode === 'LOT-DEMO-01')!.available).toBe(0)
     const frozen = deriveBalances(seed, LA, NOW).filter((b) => b.record.skuCode === 'HOMY-003')
     expect(frozen.every((b) => b.counting && b.convertible === 0 && !b.normalAllocatable)).toBe(true)
   })
@@ -89,23 +95,24 @@ describe('效期等级', () => {
 })
 
 describe('SN 库存', () => {
-  it('在库 SN 全系统唯一；盘点缺失的 SN 记为已盘亏并保留最后库位', () => {
+  it('在库 SN 全系统唯一；盘点核实缺失SN记为已盘亏，不推断当前库位', () => {
     const inStock = warehouses.flatMap((w) => deriveSerials(seed, w)).filter((r) => r.status === 'IN_STOCK')
     expect(new Set(inStock.map((r) => r.id)).size).toBe(inStock.length)
     const lost = deriveSerials(seed, NJ).filter((r) => r.status === 'LOST')
     expect(lost).toHaveLength(1)
-    expect(lost[0]).toMatchObject({ locationCode: 'A-01-02', skuCode: 'SN-DEMO-01' })
+    expect(lost[0]).toMatchObject({ locationCode: '', skuCode: 'SN-DEMO-01' })
     expect(lost[0].lastLog).toMatchObject({ type: 'ADJUST', qtyChange: -1 })
     expect(seed.inventory.some((r) => r.serialNos?.includes(lost[0].serialNo))).toBe(false)
     expect(deriveSerials(seed, LA).some((r) => r.status === 'LOST')).toBe(false)
   })
 
-  it('SN 轨迹把同一次移库的一减一加合成一个节点', () => {
-    const moved = deriveSerials(seed, LA).find((r) => r.status === 'IN_STOCK' && r.locationCode === 'B-03-02')!
+  it('SN轨迹保留两条独立移库记录，不生成源目标位字段', () => {
+    const moved = deriveSerials(seed, LA).find((r) => r.serialNo === 'SN00000017')!
     const nodes = serialTrack(seed.inventoryLogs, moved.customerId, moved.skuCode, moved.serialNo)
     const move = nodes.find((n) => n.type === 'MOVE')!
-    expect(move).toMatchObject({ fromLocation: 'A-01-02', toLocation: 'B-03-02' })
-    expect(nodes.filter((n) => n.type === 'MOVE')).toHaveLength(1)
+    expect(move).not.toHaveProperty('fromLocation')
+    expect(move).not.toHaveProperty('toLocation')
+    expect(nodes.filter((n) => n.type === 'MOVE')).toHaveLength(2)
   })
 })
 

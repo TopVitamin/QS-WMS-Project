@@ -118,7 +118,7 @@ function EntryWorkspace({ order, listSearch }: { order: PutawayOrder; listSearch
   const barcodeOf = (line: PutawayPlanLine) => master(line)?.primaryBarcode ?? sku(line.skuCode)?.barcode
   /** 提示里指认一行：名称，同商品多批次时带批次 */
   const labelOf = (line: PutawayPlanLine) => (line.batchNo ? `${nameOf(line)} · ${line.batchNo}` : nameOf(line))
-  const isSerialLine = (line: PutawayPlanLine) => Boolean(master(line)?.snEnabled)
+  const isSerialLine = (_line: PutawayPlanLine) => false
   const suggestionOf = (line: PutawayPlanLine) => suggestPutawayLocation(order, line.skuCode, putaway.locationContext)
   const lineOf = (lineNo: number) => order.planLines.find((l) => l.lineNo === lineNo)
 

@@ -1,3 +1,4 @@
+import { warehouseSerialStocks, serialStockId } from './serial-stock'
 import { stagingLocationCode } from '@/lib/inbound-derive'
 import type { SeedData } from '@/mock/seed'
 import type { InventoryCount, StockMove, StocktakeLine, StocktakeSku } from '@/types/inventory'
@@ -199,14 +200,15 @@ export interface SkuStockRow {
   warehouseCode: string
   customerId: string
   skuCode: string
+  qualityType: QualityType
   good: number
   defective: number
   orderReserved: number
-  /** 实际＝正常品实际＋不良品实际 */
+  /** 当前品质行的实际数量 */
   actual: number
-  /** 预占＝订单占用＋不良品实际 */
+  /** 良品行订单预占；不良品为0 */
   preoccupied: number
-  /** 可用＝正常品实际－订单占用，可为负 */
+  /** 良品行实际－订单预占；不良品为0，禁止负数 */
   available: number
   pending?: SkuAllocationControl
   counting?: InventoryCount
@@ -216,8 +218,8 @@ export interface SkuStockRow {
 
 export function deriveSkuStocks(s: DeriveState, warehouseCode: string): SkuStockRow[] {
   const rows = new Map<string, SkuStockRow>()
-  const ensure = (customerId: string, skuCode: string) => {
-    const id = stockKey(warehouseCode, customerId, skuCode)
+  const ensure = (customerId: string, skuCode: string, qualityType: QualityType = 'GOOD') => {
+    const id = `${stockKey(warehouseCode, customerId, skuCode)}::${qualityType}`
     let row = rows.get(id)
     if (!row) {
       row = {
@@ -225,6 +227,7 @@ export function deriveSkuStocks(s: DeriveState, warehouseCode: string): SkuStock
         warehouseCode,
         customerId,
         skuCode,
+        qualityType,
         good: 0,
         defective: 0,
         orderReserved: 0,
@@ -240,7 +243,7 @@ export function deriveSkuStocks(s: DeriveState, warehouseCode: string): SkuStock
   s.inventory
     .filter((r) => r.warehouseCode === warehouseCode && r.onHandQty > 0)
     .forEach((r) => {
-      const row = ensure(r.customerId, r.skuCode)
+      const row = ensure(r.customerId, r.skuCode, r.qualityType)
       if (r.qualityType === 'GOOD') row.good += r.onHandQty
       else row.defective += r.onHandQty
       const prev = firstInbound.get(row.id)
@@ -257,15 +260,19 @@ export function deriveSkuStocks(s: DeriveState, warehouseCode: string): SkuStock
     .filter((c) => c.status === 'COUNTING' && c.warehouseCode === warehouseCode)
     .forEach((c) => c.skus.forEach((k) => (ensure(k.customerId, k.skuCode).counting = c)))
   const latest = latestLogs(s.inventoryLogs, (l) =>
-    l.warehouseCode === warehouseCode ? stockKey(l.warehouseCode, l.customerId, l.skuCode) : undefined,
+    l.warehouseCode === warehouseCode
+      ? `${stockKey(l.warehouseCode, l.customerId, l.skuCode)}::${l.qualityType ?? 'GOOD'}`
+      : undefined,
   )
   return [...rows.values()].map((row) => {
     const lastLog = latest.get(row.id)
     return {
       ...row,
+      pending: pendingControl(s.skuAllocationControls, warehouseCode, row.customerId, row.skuCode),
+      counting: countingStocktake(s.inventoryCounts, warehouseCode, row.customerId, row.skuCode),
       actual: row.good + row.defective,
-      preoccupied: row.orderReserved + row.defective,
-      available: row.good - row.orderReserved,
+      preoccupied: row.orderReserved,
+      available: row.qualityType === 'GOOD' ? row.good - row.orderReserved : 0,
       lastLog,
       lastChangedAt: lastLog?.createdAt ?? firstInbound.get(row.id),
     }
@@ -273,7 +280,7 @@ export function deriveSkuStocks(s: DeriveState, warehouseCode: string): SkuStock
 }
 
 /** 过期正常品暂未自动转不良的原因：盘点中、仍有已分配、待系统重试 */
-export type ExpiryPendingReason = 'COUNTING' | 'ALLOCATED' | 'RETRY'
+export type ExpiryPendingReason = 'COUNTING' | 'ALLOCATED' | 'RESERVED' | 'RETRY'
 
 export interface BalanceRow {
   id: string
@@ -281,7 +288,8 @@ export interface BalanceRow {
   usage?: LocationUsage
   expiry?: ExpiryLevel
   allocated: number
-  /** 可分配＝实际－已分配；只是数量余量 */
+  unallocated: number
+  /** 普通出库可分配：满足品质、效期、库位及作业条件才取未分配量，否则为0。 */
   allocatable: number
   /** 普通出库能否从这一行分配：正常品、存储或拣货库位、未过期、非盘点中、非待核对且可分配大于 0 */
   normalAllocatable: boolean
@@ -290,7 +298,7 @@ export interface BalanceRow {
   counting?: InventoryCount
   pending: boolean
   expiryPending?: ExpiryPendingReason
-  /** 可做人工品质转换的数量：存储、拣货库位上的正常品，非盘点中，实际－已分配 */
+  /** 可转换数量同时受本行未分配量和SKU良品可用量约束。 */
   convertible: number
   lastLog?: InventoryLog
   lastChangedAt: string
@@ -301,6 +309,14 @@ export interface BalanceRow {
 export function deriveBalances(s: DeriveState, warehouseCode: string, now: Date): BalanceRow[] {
   const timezone = s.warehouses.find((w) => w.code === warehouseCode)?.timezone ?? 'UTC'
   const today = warehouseLocalDate(timezone, now)
+  const reserved = orderReservedTotals(s.outboundOrders, warehouseCode)
+  const goods = new Map<string, number>()
+  s.inventory
+    .filter((r) => r.warehouseCode === warehouseCode && r.qualityType === 'GOOD')
+    .forEach((r) => {
+      const key = stockKey(warehouseCode, r.customerId, r.skuCode)
+      goods.set(key, (goods.get(key) ?? 0) + r.onHandQty)
+    })
   const latest = latestLogs(s.inventoryLogs, (l) => l.inventoryId)
   const earliest = new Map<string, string>()
   s.inventoryLogs.forEach((l) => {
@@ -320,13 +336,17 @@ export function deriveBalances(s: DeriveState, warehouseCode: string, now: Date)
       const good = r.qualityType === 'GOOD'
       const workGood = good && (usage === 'PICK' || usage === 'STORAGE')
       const lastLog = latest.get(r.id)
+      const key = stockKey(warehouseCode, r.customerId, r.skuCode)
+      const available = (goods.get(key) ?? 0) - (reserved.get(key) ?? 0)
+      const eligible = workGood && expiry !== 'EXPIRED' && !counting && !pending
       return {
         id: r.id,
         record: r,
         usage,
         expiry,
         allocated,
-        allocatable,
+        unallocated: allocatable,
+        allocatable: eligible ? allocatable : 0,
         normalAllocatable: workGood && expiry !== 'EXPIRED' && !counting && !pending && allocatable > 0,
         stagingGood: good && (usage === 'RECEIVING_STAGING' || usage === 'OUTBOUND_STAGING'),
         counting,
@@ -337,9 +357,11 @@ export function deriveBalances(s: DeriveState, warehouseCode: string, now: Date)
               ? 'COUNTING'
               : allocated > 0
                 ? 'ALLOCATED'
-                : 'RETRY'
+                : available <= 0
+                  ? 'RESERVED'
+                  : 'RETRY'
             : undefined,
-        convertible: workGood && !counting ? Math.max(0, allocatable) : 0,
+        convertible: workGood && !counting ? Math.max(0, Math.min(allocatable, available)) : 0,
         lastLog,
         lastChangedAt: lastLog?.createdAt ?? r.firstInboundAt,
         createdAt: earliest.get(r.id) ?? r.firstInboundAt,
@@ -366,101 +388,44 @@ export interface SerialRow {
   lastChangedAt?: string
 }
 
-const serialId = (customerId: string, skuCode: string, sn: string) => `${customerId}::${skuCode}::${sn}`
-
-/** SN 库存：在库的取库存明细上的序列号；已出库、已盘亏的取最后一条涉及该 SN 的流水 */
+/** SN台账由仓库级身份维护，不推断当前库位。 */
 export function deriveSerials(
-  s: Pick<SeedData, 'inventory' | 'inventoryLogs' | 'skuMasters'>,
+  s: Pick<SeedData, 'inventory' | 'inventoryLogs' | 'skuMasters' | 'serialStocks'>,
   warehouseCode: string,
 ): SerialRow[] {
-  const last = new Map<string, InventoryLog>()
-  s.inventoryLogs.forEach((l) =>
-    l.serialNos?.forEach((sn) => {
-      const id = serialId(l.customerId, l.skuCode, sn)
-      const prev = last.get(id)
-      if (!prev || l.createdAt >= prev.createdAt) last.set(id, l)
-    }),
-  )
-  const rows = new Map<string, SerialRow>()
-  s.inventory
-    .filter((r) => r.onHandQty > 0 && r.serialNos?.length)
-    .forEach((r) =>
-      r.serialNos!.forEach((sn) => {
-        const id = serialId(r.customerId, r.skuCode, sn)
-        const lastLog = last.get(id)
-        rows.set(id, {
-          id,
-          customerId: r.customerId,
-          skuCode: r.skuCode,
-          serialNo: sn,
-          status: 'IN_STOCK',
-          warehouseCode: r.warehouseCode,
-          locationCode: r.locationCode,
-          batchNo: r.batchNo,
-          expiryDate: r.expiryDate,
-          qualityType: r.qualityType,
-          inventoryId: r.id,
-          lastLog,
-          lastChangedAt: lastLog?.createdAt ?? r.firstInboundAt,
-        })
-      }),
-    )
-  last.forEach((l, id) => {
-    if (rows.has(id) || !findMaster(s, l.customerId, l.skuCode)?.snEnabled) return
-    const status: SerialStatus | undefined =
-      l.type === 'SHIP' ? 'SHIPPED' : l.type === 'ADJUST' && l.qtyChange < 0 ? 'LOST' : undefined
-    if (!status) return
-    rows.set(id, {
-      id,
-      customerId: l.customerId,
-      skuCode: l.skuCode,
-      serialNo: id.split('::')[2],
-      status,
-      warehouseCode: l.warehouseCode,
-      locationCode: l.locationCode,
-      batchNo: l.batchNo,
-      expiryDate: l.expiryDate,
-      qualityType: l.qualityType,
-      lastLog: l,
-      lastChangedAt: l.createdAt,
-    })
-  })
-  return [...rows.values()].filter((r) => r.warehouseCode === warehouseCode)
+  return warehouseSerialStocks(s)
+    .filter((r) => r.warehouseCode === warehouseCode)
+    .map((r) => ({
+      ...r,
+      id: serialStockId(r),
+      locationCode: '',
+      lastLog: r.lastLogId ? s.inventoryLogs.find((l) => l.id === r.lastLogId) : undefined,
+    }))
 }
 
 export interface SerialTrackNode {
   id: string
   at: string
   type: InventoryLog['type']
-  fromLocation?: string
-  toLocation?: string
+  locationCode: string
   qualityType?: QualityType
   log: InventoryLog
 }
 
-/** SN 轨迹：按业务发生时间正序，同一动作的一减一加合成一个节点；只列实际发生的节点 */
+/** 只展示实际带SN的记录，每条流水独立展示。 */
 export function serialTrack(logs: InventoryLog[], customerId: string, skuCode: string, serialNo: string) {
-  const nodes: SerialTrackNode[] = []
-  const byAction = new Map<string, SerialTrackNode>()
-  logs
+  return logs
     .map((l, index) => ({ l, index }))
     .filter(({ l }) => l.customerId === customerId && l.skuCode === skuCode && l.serialNos?.includes(serialNo))
     .sort((a, b) => a.l.createdAt.localeCompare(b.l.createdAt) || a.index - b.index)
-    .forEach(({ l }) => {
-      const existing = l.actionId ? byAction.get(l.actionId) : undefined
-      const node = existing ?? { id: l.id, at: l.createdAt, type: l.type, log: l }
-      if (l.qtyChange < 0) node.fromLocation = l.locationCode
-      else {
-        node.toLocation = l.locationCode
-        node.qualityType = l.qualityType
-        node.log = l
-      }
-      if (!existing) {
-        nodes.push(node)
-        if (l.actionId) byAction.set(l.actionId, node)
-      }
-    })
-  return nodes
+    .map(({ l }): SerialTrackNode => ({
+      id: l.id,
+      at: l.createdAt,
+      type: l.type,
+      locationCode: l.locationCode,
+      qualityType: l.qualityType,
+      log: l,
+    }))
 }
 
 /** 盘点明细差异：未盘返回 undefined，不按 0 计算 */

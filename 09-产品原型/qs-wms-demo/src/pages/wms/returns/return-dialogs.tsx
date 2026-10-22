@@ -20,7 +20,7 @@ import { useDb } from '@/mock/db'
 import { useCurrentWarehouse } from '@/stores/settings'
 import type { ReturnOrder, ReturnSourceType } from '@/types/return'
 
-const SOURCES: ReturnSourceType[] = ['CUSTOMER', 'PLATFORM', 'DELIVERY_FAILED']
+const SOURCES: ReturnSourceType[] = ['CUSTOMER', 'PLATFORM']
 
 export function ReturnForecastDialog({
   onClose,
@@ -50,10 +50,6 @@ export function ReturnForecastDialog({
   const selectedSku = ownerSkus.some((m) => m.code === skuCode) ? skuCode : (ownerSkus[0]?.code ?? '')
 
   const submit = () => {
-    if (sourceType === 'DELIVERY_FAILED' && !originalOutboundNo.trim()) {
-      setError(t('return.forecast.originalOutboundNo'))
-      return
-    }
     const result = forecast({
       customerId,
       warehouseCode: warehouse.code,

@@ -64,9 +64,12 @@ export function MoveItemStep({ flow }: { flow: MoveFlow }) {
     }
     const serial = hits.find((h) => h.kind === 'serial')
     if (serial && serial.kind === 'serial') {
-      const row = here.find((r) => r.serialNos?.includes(serial.serialNo))
-      if (!row) return fail(t('pdaMove.errSerialNotHere', { sn: serial.serialNo, location: src }))
-      return choose(row, serial.serialNo, true) === 'ok'
+      const found = here.filter((r) => r.customerId === serial.customerId && r.skuCode === serial.skuCode)
+      if (!found.length) return fail(t('pdaMove.errSkuNotHere', { sku: serial.skuCode, location: src }))
+      if (found.length === 1) return choose(found[0], undefined, true) === 'ok'
+      setMatched(found.map((r) => r.id))
+      setMessage({ tone: 'info', text: t('pdaMove.infoPickRow', { sku: serial.skuCode, count: found.length }) })
+      return true
     }
     const skus = hits.filter((h) => h.kind === 'sku')
     if (skus.length === 0) return fail(t('pdaMove.errUnknown', { code: code.trim() }))

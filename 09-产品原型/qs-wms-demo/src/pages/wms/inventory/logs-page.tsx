@@ -17,6 +17,7 @@ import { codeNameText } from '@/lib/typography'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { InventoryLogType } from '@/types/wms'
+import { InventoryBasisHelp } from './inventory-shared'
 import { useLedgerColumns, type LedgerRow } from './inventory-columns'
 import { LedgerDetailSheet } from './ledger-detail-sheet'
 
@@ -79,10 +80,13 @@ export function InventoryLogsPage() {
       fill
       title={t('menu.inventoryLogs')}
       actions={
-        <Button variant="outline" onClick={() => toast.info(t('common.exportMock'))}>
-          <Download data-icon="inline-start" />
-          {t('common.export')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <InventoryBasisHelp />
+          <Button variant="outline" onClick={() => toast.info(t('common.exportMock'))}>
+            <Download data-icon="inline-start" />
+            {t('common.export')}
+          </Button>
+        </div>
       }
     >
       <Panel className="p-4">
@@ -98,6 +102,14 @@ export function InventoryLogsPage() {
                   value={draft.customerId}
                   onValueChange={(v) => setDraft({ ...draft, customerId: v })}
                   options={customers.map((c) => ({ value: c.id, label: codeNameText(c.code, c.name) }))}
+                />
+              </FilterItem>
+              <FilterItem label={t('inventory.quality')}>
+                <OptionSelect
+                  allOption
+                  value={draft.quality}
+                  onValueChange={(v) => setDraft({ ...draft, quality: v })}
+                  options={['GOOD', 'DEFECTIVE'].map((v) => ({ value: v, label: t(`enum.quality.${v}`) }))}
                 />
               </FilterItem>
               <FilterItem label={t('inventory.location')}>
@@ -172,15 +184,7 @@ export function InventoryLogsPage() {
           emptyText={t('inventory.logs.empty')}
         />
       </Panel>
-      {openId && (
-        <LedgerDetailSheet
-          log={opened}
-          no={opened ? numbers.get(opened.id) : undefined}
-          numbers={numbers}
-          onOpenLog={openLog}
-          onClose={closeLog}
-        />
-      )}
+      {openId && <LedgerDetailSheet log={opened} no={opened ? numbers.get(opened.id) : undefined} onClose={closeLog} />}
     </PageContainer>
   )
 }

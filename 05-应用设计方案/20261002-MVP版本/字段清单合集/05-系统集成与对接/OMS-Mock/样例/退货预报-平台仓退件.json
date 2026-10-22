@@ -1,0 +1,18 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-RT-002",
+  "messageType": "CREATE_RETURN_FORECAST",
+  "businessType": "RETURN",
+  "upstreamNo": "OMS-RT-DEMO-002",
+  "expectedVersion": 0,
+  "payload": {
+    "warehouseCode": "DE-FRA-01",
+    "ownerCode": "HOMY",
+    "sourceType": "PLATFORM",
+    "trackingNo": "1Z999AA10123456703",
+    "platformReturnNo": "WFS-RETURN-0001",
+    "items": [
+      { "skuCode": "HOMY-003", "plannedQty": 3 }
+    ]
+  }
+}

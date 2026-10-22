@@ -1,0 +1,24 @@
+{
+  "source": "WMS",
+  "messageType": "RETURN_RESULT",
+  "businessType": "RETURN",
+  "upstreamNo": "OMS-RT-DEMO-001",
+  "resultSequence": 1,
+  "payload": {
+    "returnNo": "RT-20261023-0001",
+    "status": "COMPLETED",
+    "sourceType": "CUSTOMER",
+    "items": [
+      {
+        "skuCode": "CABLE-01",
+        "plannedQty": 2,
+        "receivedQty": 1,
+        "goodQty": 1,
+        "defectQty": 0,
+        "rejectedQty": 1,
+        "putawayQty": 1,
+        "shortQty": 0
+      }
+    ]
+  }
+}

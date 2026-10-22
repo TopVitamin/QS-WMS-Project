@@ -41,7 +41,6 @@ export const STOCK_VIEWS: StockView[] = ['sku', 'balance', 'serial']
 export type StockFilters = {
   keyword: string
   customerId: string
-  allocation: string
   qty: string
   changedFrom: string
   changedTo: string
@@ -57,7 +56,6 @@ export type StockFilters = {
 export const emptyStockFilters: StockFilters = {
   keyword: '',
   customerId: FILTER_ALL,
-  allocation: FILTER_ALL,
   qty: FILTER_ALL,
   changedFrom: '',
   changedTo: '',
@@ -78,11 +76,10 @@ type Name = (skuCode: string) => string | undefined
 export function matchSkuStock(r: SkuStockRow, f: StockFilters, name: Name): boolean {
   if (!matchesKeyword([r.skuCode, name(r.skuCode)], f.keyword)) return false
   if (!anyOf(r.customerId, f.customerId)) return false
-  if (f.allocation !== FILTER_ALL && (r.pending ? 'PENDING' : 'NORMAL') !== f.allocation) return false
+  if (!anyOf(r.qualityType, f.quality)) return false
   if (f.qty === 'HAS_ACTUAL' && r.actual <= 0) return false
   if (f.qty === 'ZERO_ACTUAL' && r.actual !== 0) return false
   if (f.qty === 'ZERO_AVAILABLE' && r.available !== 0) return false
-  if (f.qty === 'NEGATIVE' && r.available >= 0) return false
   return inDateRange(r.lastChangedAt, f.changedFrom, f.changedTo)
 }
 
@@ -104,9 +101,7 @@ export function matchSerial(r: SerialRow, f: StockFilters, name: Name): boolean 
   if (!matchesKeyword([r.skuCode, name(r.skuCode)], f.keyword)) return false
   if (!anyOf(r.customerId, f.customerId)) return false
   if (!anyOf(r.status, f.serialStatus)) return false
-  if (!contains(r.locationCode, f.location)) return false
-  if (!contains(r.batchNo, f.batch)) return false
-  return anyOf(r.qualityType, f.quality)
+  return inDateRange(r.lastChangedAt, f.changedFrom, f.changedTo)
 }
 
 export interface LedgerFilters {
@@ -120,6 +115,7 @@ export interface LedgerFilters {
   location: string
   batch: string
   sn: string
+  quality: string
 }
 
 export const emptyLedgerFilters: LedgerFilters = {
@@ -133,6 +129,7 @@ export const emptyLedgerFilters: LedgerFilters = {
   location: '',
   batch: '',
   sn: '',
+  quality: FILTER_ALL,
 }
 
 export function matchLedger(l: InventoryLog, f: LedgerFilters, name: Name, displayNo: string): boolean {
@@ -143,6 +140,7 @@ export function matchLedger(l: InventoryLog, f: LedgerFilters, name: Name, displ
     matchesKeyword([l.skuCode, name(l.skuCode)], f.sku) &&
     inDateRange(l.createdAt, f.occurredFrom, f.occurredTo) &&
     anyOf(l.customerId, f.customerId) &&
+    anyOf(l.qualityType, f.quality) &&
     contains(l.locationCode, f.location) &&
     contains(l.batchNo, f.batch) &&
     (!f.sn.trim() || Boolean(l.serialNos?.some((sn) => sn.toUpperCase() === f.sn.trim().toUpperCase())))

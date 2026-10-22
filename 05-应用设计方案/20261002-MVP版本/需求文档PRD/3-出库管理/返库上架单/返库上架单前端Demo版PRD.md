@@ -28,7 +28,7 @@
 | 实际返库明细 | 各行 `placements` 展开为 `{应返库行号, 商品, 目标库位, 数量, SN}`；无 `placements` 而有 `targetLocation` 的旧数据按一条处理 | 实际返库页签、已保存落位页签 |
 | 是否未完成 | `status !== 'COMPLETED'` | 列表行操作、页头入口 |
 
-`SAVE_PUTBACK` 增加可选 `serialNos`：SN 行传入时须条数等于数量、不重复、都在本行还没落位的 SN 里，否则 `outbound.error.serial`；不传时按清单顺序取。`RESET_PUTBACK_LINE`、`SUBMIT_PUTBACK` 不变。
+`SAVE_PUTBACK` 增加可选 `serialNos`：SN 行传入时须条数等于数量、不重复、都在本行还没落位的 SN 里，否则 `outbound.error.serial`；不传时按数量保存，SN清单为空，不推断具体SN库位。`RESET_PUTBACK_LINE`、`SUBMIT_PUTBACK` 不变。
 
 ## 三、列表页
 
@@ -92,7 +92,7 @@
 | 应返库行 * | `OptionSelect`（跨 2 列），选项为剩余大于 0 的行，按建议库位排序，文案 `#行号 · 商品 · 批次 · 品质 · 剩余 n` | 第一条 | 未选：`returnLineFirst` |
 | 目标库位 * | `Input`；与建议库位不同时 hint 为 `ActionLink`「建议 X，点此填入」 | 本行建议库位 | 空：`targetRequired`；保存时转大写；不合规由动作返回 `outbound.error.target` |
 | 本次数量 * | `Input type=number`；hint「剩余 n」 | 本行剩余 | 正整数：`qtyInvalid`；超剩余：`returnOver` |
-| 序列号 * | `Textarea`（整行），仅 SN 行 | 本行还没落位的 SN，每行一个 | 条数等于本次数量：`serialCount`；不在本行或重复由动作拒绝 |
+| 序列号 | `Textarea`（整行），仅SN行；可选 | 默认空，实际逐件核实时每行一个 | 填写后条数须等于本次数量：`serialCount`；不在本行或重复由动作拒绝 |
 
 保存按钮（outline）「保存落位」→ `SAVE_PUTBACK`，成功 toast 写商品、件数与库位；本行没录满留在本行（数量带出新剩余），录满切到下一条。表单底部左侧无错误时显示提示：保存只记落位、不动库存，可重录；整单提交才移库。
 

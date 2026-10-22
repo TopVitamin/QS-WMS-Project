@@ -13,7 +13,7 @@ import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { StatusTabs } from '@/components/biz/status-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { allocationStatusMeta, expiryLevelMeta, inventoryTagMeta, qualityMeta, serialStatusMeta } from '@/config/status'
+import { expiryLevelMeta, inventoryTagMeta, qualityMeta, serialStatusMeta } from '@/config/status'
 import { useListState } from '@/hooks/use-list-state'
 import { useNow } from '@/hooks/use-now'
 import {
@@ -37,7 +37,7 @@ import {
 import { codeNameText } from '@/lib/typography'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
-import { AvailableQty, LocationCode } from './inventory-shared'
+import { AvailableQty, InventoryBasisHelp, LocationCode, StockFlags } from './inventory-shared'
 import { StockBalanceSheet } from './stock-balance-sheet'
 import { StockSerialSheet } from './stock-serial-sheet'
 import { StockSkuSheet } from './stock-sku-sheet'
@@ -45,7 +45,7 @@ import { StockSkuSheet } from './stock-sku-sheet'
 const QUALITIES = ['GOOD', 'DEFECTIVE'] as const
 const EXPIRY_OPTIONS = ['NORMAL', 'NEAR', 'EXPIRED', 'NONE'] as const
 const SERIAL_STATUSES = ['IN_STOCK', 'SHIPPED', 'LOST'] as const
-const QTY_CONDITIONS = ['HAS_ACTUAL', 'ZERO_ACTUAL', 'ZERO_AVAILABLE', 'NEGATIVE'] as const
+const QTY_CONDITIONS = ['HAS_ACTUAL', 'ZERO_ACTUAL', 'ZERO_AVAILABLE'] as const
 const ALLOCATABLE_CONDITIONS = ['POSITIVE', 'ZERO'] as const
 const KEEP_PARAMS = ['view'] as const
 /** 详情抽屉的 URL 参数：可复制链接恢复 */
@@ -53,6 +53,7 @@ const SHEET_PARAMS = { sku: 'skuId', balance: 'inventoryId', serial: 'serialId' 
 
 /** 库存数据都从同一份业务事实派生（库存查询前端Demo版PRD 第五节），页面不另存数字 */
 function useStockData(warehouseCode: string) {
+  const serialStocks = useDb((s) => s.serialStocks)
   const inventory = useDb((s) => s.inventory)
   const inventoryLogs = useDb((s) => s.inventoryLogs)
   const inventoryCounts = useDb((s) => s.inventoryCounts)
@@ -66,6 +67,7 @@ function useStockData(warehouseCode: string) {
   return useMemo(() => {
     const s = {
       inventory,
+      serialStocks,
       inventoryLogs,
       inventoryCounts,
       outboundOrders,
@@ -82,6 +84,7 @@ function useStockData(warehouseCode: string) {
     }
   }, [
     inventory,
+    serialStocks,
     inventoryLogs,
     inventoryCounts,
     outboundOrders,
@@ -189,42 +192,32 @@ export function StockPage() {
         enableHiding: false,
         meta: { pin: 'left' },
         cell: ({ row }) => (
-          <CodeName
-            code={row.original.skuCode}
-            name={skuName(row.original.skuCode, row.original.customerId)}
-            onClick={() => openSheet(row.original.id)}
-            className="max-w-64"
-          />
+          <span className="inline-flex items-center gap-2">
+            <CodeName
+              code={row.original.skuCode}
+              name={skuName(row.original.skuCode, row.original.customerId)}
+              onClick={() => openSheet(row.original.id)}
+              className="max-w-64"
+            />
+            <StockFlags pending={Boolean(row.original.pending)} counting={Boolean(row.original.counting)} />
+          </span>
         ),
       }),
       col.accessor('customerId', {
         header: t('inventory.owner'),
         cell: ({ getValue }) => <OwnerCell id={getValue()} />,
       }),
-      num('good', t('inventory.goodShort')),
-      num('defective', t('inventory.defectiveShort')),
-      num('orderReserved', t('inventory.orderReserved')),
+      col.accessor('qualityType', {
+        header: t('inventory.quality'),
+        cell: ({ getValue }) => <TagLabel meta={qualityMeta[getValue()]} />,
+      }),
       num('actual', t('inventory.actual')),
-      num('preoccupied', t('inventory.preoccupied')),
+      num('orderReserved', t('inventory.orderReserved')),
       col.accessor('available', {
-        header: t('inventory.available'),
+        header: t('inventory.availableQty'),
         enableSorting: true,
         meta: { align: 'right' },
         cell: ({ getValue }) => <AvailableQty value={getValue()} />,
-      }),
-      col.accessor((r) => (r.pending ? 'PENDING' : 'NORMAL'), {
-        id: 'allocation',
-        header: t('inventory.allocation'),
-        cell: ({ row }) => (
-          <span className="inline-flex items-center gap-1.5">
-            {row.original.pending ? (
-              <TagLabel meta={inventoryTagMeta.pending} />
-            ) : (
-              <TagLabel meta={allocationStatusMeta.NORMAL} />
-            )}
-            {row.original.counting && <TagLabel meta={inventoryTagMeta.counting} />}
-          </span>
-        ),
       }),
       col.accessor('lastChangedAt', {
         header: t('inventory.lastChangedAt'),
@@ -285,15 +278,15 @@ export function StockPage() {
         cell: ({ getValue }) => <Num value={getValue()} />,
       }),
       col.accessor('allocated', {
-        header: t('inventory.allocated'),
+        header: () => <span title={t('inventory.allocatedHint')}>{t('inventory.allocated')}</span>,
         enableSorting: true,
-        meta: { align: 'right' },
+        meta: { align: 'right', label: t('inventory.allocated') },
         cell: ({ getValue }) => <Num value={getValue()} />,
       }),
       col.accessor('allocatable', {
-        header: t('inventory.allocatable'),
+        header: () => <span title={t('inventory.allocatableHint')}>{t('inventory.allocatable')}</span>,
         enableSorting: true,
-        meta: { align: 'right' },
+        meta: { align: 'right', label: t('inventory.allocatable') },
         cell: ({ row }) => (
           <span className="inline-flex items-center justify-end gap-1.5">
             {row.original.stagingGood && <TagLabel meta={inventoryTagMeta.notAllocatable} />}
@@ -334,21 +327,6 @@ export function StockPage() {
         header: t('inventory.owner'),
         cell: ({ getValue }) => <OwnerCell id={getValue()} />,
       }),
-      col.accessor('locationCode', {
-        header: t('inventory.currentLocation'),
-        cell: ({ getValue }) => getValue() || <Empty />,
-      }),
-      col.accessor((r) => r.batchNo ?? '', {
-        id: 'batch',
-        header: t('inventory.batch'),
-        cell: ({ getValue }) => getValue() || <Empty />,
-      }),
-      col.accessor((r) => r.qualityType ?? '', {
-        id: 'quality',
-        header: t('inventory.quality'),
-        cell: ({ row }) =>
-          row.original.qualityType ? <TagLabel meta={qualityMeta[row.original.qualityType]} /> : <Empty />,
-      }),
       col.accessor('status', {
         header: t('inventory.serialStatusLabel'),
         cell: ({ getValue }) => <StatusBadge meta={serialStatusMeta[getValue()]} />,
@@ -364,7 +342,7 @@ export function StockPage() {
 
   const totals = useMemo(
     () => ({
-      skus: skuRows.length,
+      skus: new Set(skuRows.map((r) => `${r.customerId}::${r.skuCode}`)).size,
       actual: skuRows.reduce((n, r) => n + r.actual, 0),
       good: skuRows.reduce((n, r) => n + r.good, 0),
       defective: skuRows.reduce((n, r) => n + r.defective, 0),
@@ -422,17 +400,7 @@ export function StockPage() {
       <FilterBar columns={6} onSearch={list.search} onReset={list.reset}>
         {keywordField}
         {ownerField}
-        <FilterItem label={t('inventory.allocation')}>
-          <OptionSelect
-            allOption
-            value={draft.allocation}
-            onValueChange={(v) => setDraft({ ...draft, allocation: v })}
-            options={(['NORMAL', 'PENDING'] as const).map((v) => ({
-              value: v,
-              label: t(`inventory.allocationStatus.${v}`),
-            }))}
-          />
-        </FilterItem>
+        {qualityField}
         <FilterItem label={t('inventory.stock.qtyCondition')}>
           <OptionSelect
             allOption
@@ -491,17 +459,7 @@ export function StockPage() {
         </FilterItem>
       </FilterBar>
     ) : (
-      <FilterBar
-        columns={6}
-        onSearch={list.search}
-        onReset={list.reset}
-        advanced={
-          <>
-            {batchField}
-            {qualityField}
-          </>
-        }
-      >
+      <FilterBar columns={6} onSearch={list.search} onReset={list.reset}>
         <FilterItem label={t('inventory.serialNo')}>
           <Input
             value={draft.sn}
@@ -519,11 +477,11 @@ export function StockPage() {
             options={SERIAL_STATUSES.map((v) => ({ value: v, label: t(serialStatusMeta[v].labelKey) }))}
           />
         </FilterItem>
-        <FilterItem label={t('inventory.currentLocation')}>
-          <Input
-            value={draft.location}
-            placeholder={t('inventory.stock.locationPlaceholder')}
-            onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+        <FilterItem label={t('inventory.lastChangedAt')}>
+          <DateRangePickerField
+            value={{ from: draft.changedFrom, to: draft.changedTo }}
+            placeholder={t('inventory.stock.updatedRangePlaceholder')}
+            onChange={(range) => setDraft({ ...draft, changedFrom: range.from, changedTo: range.to })}
           />
         </FilterItem>
       </FilterBar>
@@ -592,6 +550,10 @@ export function StockPage() {
     >
       <Panel className="overflow-hidden">
         <StatusTabs label={t('inventory.stock.views')} items={viewTabs} value={view} onChange={switchView} />
+        <div className="flex flex-wrap items-center gap-1 px-4 pt-3 text-xs text-muted-foreground">
+          <span>{t('inventory.basis.intro')}</span>
+          <InventoryBasisHelp />
+        </div>
         <div className="p-4">{filterBar}</div>
       </Panel>
       <Panel className="flex min-h-0 flex-1 flex-col overflow-hidden">{table}</Panel>
@@ -608,7 +570,10 @@ export function StockPage() {
         <StockBalanceSheet
           row={balanceSheetRow}
           skuRow={data.skus.find(
-            (r) => r.customerId === balanceSheetRow?.record.customerId && r.skuCode === balanceSheetRow?.record.skuCode,
+            (r) =>
+              r.customerId === balanceSheetRow?.record.customerId &&
+              r.skuCode === balanceSheetRow?.record.skuCode &&
+              r.qualityType === 'GOOD',
           )}
           onClose={closeSheet}
         />

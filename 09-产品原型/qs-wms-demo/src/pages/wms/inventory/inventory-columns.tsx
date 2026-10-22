@@ -18,11 +18,11 @@ export interface LedgerRow {
 
 /**
  * 库存流水列：流水页用全量列；SKU 详情最近流水、移库详情的流水页签用 compact（去掉商品、批次、品质、操作者）。
- * 订单占用类库位、批次、品质显示占位符；来源单据有详情页时可点开。
+ * 订单预占类库位、批次显示占位符，品质为良品；来源单据有详情页时可点开。
  */
 export function useLedgerColumns({ compact, onOpen }: { compact?: boolean; onOpen: (row: LedgerRow) => void }) {
   const { t } = useTranslation()
-  const { sku } = useLookups()
+  const { sku, customerName } = useLookups()
   return useMemo(() => {
     const col = createDataColumns<LedgerRow>()
     const all = [
@@ -44,15 +44,40 @@ export function useLedgerColumns({ compact, onOpen }: { compact?: boolean; onOpe
         header: t('inventory.logs.type'),
         cell: ({ getValue }) => t(`inventory.type.${getValue()}`),
       }),
-      col.accessor((r) => ledgerObject(r.log), {
-        id: 'object',
-        header: t('inventory.logs.object'),
-        cell: ({ getValue }) => t(`inventory.object.${getValue()}`),
+      col.accessor((r) => ledgerChange(r.log), {
+        id: 'quantityChange',
+        header: t('inventory.logs.quantityChange'),
+        enableSorting: true,
+        meta: { align: 'right', label: t('inventory.logs.quantityChange') },
+        cell: ({ row }) => {
+          const { log } = row.original
+          const basis = ledgerObject(log)
+          const reserved = basis === 'RESERVED'
+          return (
+            <div className="flex flex-col items-end gap-0.5 whitespace-nowrap">
+              <span
+                className="text-xs text-muted-foreground"
+                title={t(reserved ? 'inventory.logs.basisReservedNote' : 'inventory.logs.basisActualNote')}
+              >
+                {t(`inventory.object.${basis}`)}
+              </span>
+              <span className="tabular-nums">
+                <Num value={log.beforeQty ?? 0} /> → <Num value={log.afterQty ?? 0} />（
+                <SignedNum value={ledgerChange(log)} />）
+              </span>
+            </div>
+          )
+        },
       }),
       col.accessor((r) => r.log.skuCode, {
         id: 'sku',
         header: t('inventory.sku'),
         cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue())?.name} className="max-w-56" />,
+      }),
+      col.accessor((r) => r.log.customerId, {
+        id: 'owner',
+        header: t('inventory.owner'),
+        cell: ({ getValue }) => customerName(getValue()),
       }),
       col.accessor((r) => r.log.locationCode, {
         id: 'location',
@@ -70,23 +95,6 @@ export function useLedgerColumns({ compact, onOpen }: { compact?: boolean; onOpe
         cell: ({ row }) =>
           row.original.log.qualityType ? <TagLabel meta={qualityMeta[row.original.log.qualityType]} /> : <Empty />,
       }),
-      col.accessor((r) => ledgerChange(r.log), {
-        id: 'change',
-        header: t('inventory.logs.change'),
-        enableSorting: true,
-        meta: { align: 'right' },
-        cell: ({ getValue }) => <SignedNum value={getValue()} />,
-      }),
-      col.display({
-        id: 'beforeAfter',
-        header: t('inventory.logs.beforeAfter'),
-        meta: { align: 'right', label: t('inventory.logs.beforeAfter') },
-        cell: ({ row }) => (
-          <span className="tabular-nums whitespace-nowrap">
-            <Num value={row.original.log.beforeQty ?? 0} /> → <Num value={row.original.log.afterQty ?? 0} />
-          </span>
-        ),
-      }),
       col.accessor((r) => r.log.refNo, {
         id: 'source',
         header: t('inventory.logs.sourceDoc'),
@@ -99,7 +107,7 @@ export function useLedgerColumns({ compact, onOpen }: { compact?: boolean; onOpe
     ]
     const hiddenInCompact = new Set(['sku', 'batch', 'quality', 'operator'])
     return compact ? all.filter((c) => !hiddenInCompact.has(c.id ?? '')) : all
-  }, [compact, onOpen, sku, t])
+  }, [compact, onOpen, sku, customerName, t])
 }
 
 /** 库内操作日志列：动作取库内命令文案 */

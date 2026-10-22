@@ -8,6 +8,7 @@ import { usePdaOutboundSession } from '@/stores/pda-outbound-session'
 import { usePdaPutawaySession } from '@/stores/pda-putaway-session'
 import { useReceiveSession } from '@/stores/pda-receive-session'
 import { usePdaStocktakeSession } from '@/stores/pda-stocktake-session'
+import { useReturnReceiveSession } from '@/stores/return-receive-session'
 import { useWebReceiveSession } from '@/stores/web-receive-session'
 import { useWebVerifySession } from '@/stores/web-verify-session'
 
@@ -37,6 +38,7 @@ export function useResetDemo() {
     useReceiveSession.getState().reset()
     useWebVerifySession.getState().reset()
     useWebReceiveSession.getState().reset()
+    useReturnReceiveSession.getState().reset()
     toast.success(t('common.resetDemoDone'))
   }, [confirm, resetDemo, t])
 }

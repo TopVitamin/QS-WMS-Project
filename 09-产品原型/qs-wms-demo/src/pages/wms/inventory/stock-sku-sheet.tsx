@@ -10,12 +10,12 @@ import { DetailTitle, Section } from '@/components/biz/page-container'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { Button } from '@/components/ui/button'
 import {
-  allocationStatusMeta,
   expiryLevelMeta,
   inventoryTagMeta,
   outboundStatusMeta,
   outboundTypeMeta,
   qualityMeta,
+  serialStatusMeta,
 } from '@/config/status'
 import { isLiveOutbound, type BalanceRow, type SerialRow, type SkuStockRow } from '@/lib/inventory-derive'
 import { ledgerNumbers } from '@/lib/inventory-ledger'
@@ -41,7 +41,7 @@ interface AllocatedRow {
 }
 
 /**
- * SKU库存详情抽屉（库存查询页面骨架）：数量、库位分布、订单占用、已分配来源、SN 与最近流水。
+ * SKU库存详情抽屉（库存查询页面骨架）：当前品质的数量、库位分布、订单预占、已分配来源与最近流水；SN按本仓货主SKU查询。
  * 占用与分配都只读，跳原业务记录；待核对、盘点中不在这里手工解除。
  */
 export function StockSkuSheet({
@@ -66,12 +66,19 @@ export function StockSkuSheet({
 
   const locationRows = useMemo(
     () =>
-      row ? balances.filter((b) => b.record.customerId === row.customerId && b.record.skuCode === row.skuCode) : [],
+      row
+        ? balances.filter(
+            (b) =>
+              b.record.customerId === row.customerId &&
+              b.record.skuCode === row.skuCode &&
+              b.record.qualityType === row.qualityType,
+          )
+        : [],
     [balances, row],
   )
   const reservedRows = useMemo<ReservedRow[]>(
     () =>
-      row
+      row && row.qualityType === 'GOOD'
         ? orders
             .filter(
               (o) =>
@@ -98,7 +105,12 @@ export function StockSkuSheet({
       )
       .flatMap((task) =>
         task.lines
-          .filter((l) => l.skuCode === row.skuCode && l.plannedQty - l.pickedQty - l.shortageQty > 0)
+          .filter(
+            (l) =>
+              l.skuCode === row.skuCode &&
+              inventory.find((r) => r.id === l.inventoryId)?.qualityType === row.qualityType &&
+              l.plannedQty - l.pickedQty - l.shortageQty > 0,
+          )
           .map((l) => ({
             id: l.id,
             kind: 'PICK' as const,
@@ -121,7 +133,7 @@ export function StockSkuSheet({
       .flatMap((o) =>
         o.specified
           .map((sp) => ({ sp, record: inventory.find((r) => r.id === sp.inventoryId) }))
-          .filter(({ record }) => record?.skuCode === row.skuCode)
+          .filter(({ record }) => record?.skuCode === row.skuCode && record.qualityType === row.qualityType)
           .map(({ sp, record }) => ({
             id: `${o.no}-${sp.inventoryId}`,
             kind: 'OTHER' as const,
@@ -136,7 +148,13 @@ export function StockSkuSheet({
   const serialRows = useMemo(
     () =>
       row
-        ? serials.filter((s) => s.customerId === row.customerId && s.skuCode === row.skuCode && s.status === 'IN_STOCK')
+        ? serials.filter(
+            (s) =>
+              s.warehouseCode === row.warehouseCode &&
+              s.customerId === row.customerId &&
+              s.skuCode === row.skuCode &&
+              s.status === 'IN_STOCK',
+          )
         : [],
     [row, serials],
   )
@@ -145,7 +163,11 @@ export function StockSkuSheet({
     const numbers = ledgerNumbers(logs)
     return sortLedger(
       logs.filter(
-        (l) => l.warehouseCode === row.warehouseCode && l.customerId === row.customerId && l.skuCode === row.skuCode,
+        (l) =>
+          l.warehouseCode === row.warehouseCode &&
+          l.customerId === row.customerId &&
+          l.skuCode === row.skuCode &&
+          (l.qualityType ?? 'GOOD') === row.qualityType,
       ),
     )
       .slice(0, 10)
@@ -255,20 +277,9 @@ export function StockSkuSheet({
         header: t('inventory.serialNo'),
         cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
       }),
-      col.accessor('locationCode', {
-        header: t('inventory.location'),
-        cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
-      }),
-      col.accessor((s) => s.batchNo ?? '', {
-        id: 'batch',
-        header: t('inventory.batch'),
-        cell: ({ getValue }) => getValue() || <Empty />,
-      }),
-      col.accessor((s) => s.qualityType ?? '', {
-        id: 'quality',
-        header: t('inventory.quality'),
-        cell: ({ row: r }) =>
-          r.original.qualityType ? <TagLabel meta={qualityMeta[r.original.qualityType]} /> : <Empty />,
+      col.accessor('status', {
+        header: t('inventory.serialStatusLabel'),
+        cell: ({ getValue }) => <StatusBadge meta={serialStatusMeta[getValue()]} />,
       }),
     ])
   }, [t])
@@ -281,7 +292,9 @@ export function StockSkuSheet({
     )
 
   const viewLogs = () =>
-    navigate(`/wms/inventory/logs?customerId=${row.customerId}&sku=${encodeURIComponent(row.skuCode)}`)
+    navigate(
+      `/wms/inventory/logs?customerId=${row.customerId}&sku=${encodeURIComponent(row.skuCode)}&quality=${row.qualityType}`,
+    )
 
   return (
     <DetailSheet
@@ -318,12 +331,8 @@ export function StockSkuSheet({
           <DescriptionItem label={t('inventory.sku')}>
             <CodeName code={row.skuCode} name={sku(row.skuCode)?.name} />
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.allocation')}>
-            {row.pending ? (
-              <TagLabel meta={inventoryTagMeta.pending} />
-            ) : (
-              <TagLabel meta={allocationStatusMeta.NORMAL} />
-            )}
+          <DescriptionItem label={t('inventory.quality')}>
+            <TagLabel meta={qualityMeta[row.qualityType]} />
           </DescriptionItem>
           <DescriptionItem label={t('inventory.pendingSources')} multiline>
             {row.pending?.sources.length ? (
@@ -343,26 +352,16 @@ export function StockSkuSheet({
       </Section>
       <Section title={t('inventory.stock.quantity')}>
         <Descriptions columns={3}>
-          <DescriptionItem label={t('inventory.good')}>
-            <Num value={row.good} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inventory.defective')}>
-            <Num value={row.defective} />
+          <DescriptionItem label={t('inventory.actual')}>
+            <Num value={row.actual} />
           </DescriptionItem>
           <DescriptionItem label={t('inventory.orderReserved')}>
             <Num value={row.orderReserved} />
           </DescriptionItem>
-          <DescriptionItem label={t('inventory.actual')}>
-            <Num value={row.actual} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inventory.preoccupied')}>
-            <Num value={row.preoccupied} />
-          </DescriptionItem>
-          <DescriptionItem label={t('inventory.available')}>
+          <DescriptionItem label={t('inventory.availableQty')}>
             <AvailableQty value={row.available} />
           </DescriptionItem>
         </Descriptions>
-        {row.available < 0 && <p className="text-xs text-destructive">{t('inventory.negativeHint')}</p>}
       </Section>
       <DetailTabs
         items={[
@@ -413,7 +412,12 @@ export function StockSkuSheet({
             label: t('inventory.stock.tabSerials'),
             count: serialRows.length,
             hidden: serialRows.length === 0,
-            content: <DataTable data={serialRows} columns={serialColumns} getRowId={(s) => s.id} paginate={false} />,
+            content: (
+              <>
+                <p className="mb-3 text-sm text-muted-foreground">{t('inventory.stock.skuSerialHint')}</p>
+                <DataTable data={serialRows} columns={serialColumns} getRowId={(s) => s.id} paginate={false} />
+              </>
+            ),
           },
           {
             value: 'logs',

@@ -1,3 +1,4 @@
+import { serialsInWarehouse } from '@/lib/serial-stock'
 import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfirm } from '@/hooks/use-confirm'
@@ -24,6 +25,8 @@ export function usePickFlow() {
   const operator = useSettings((s) => s.operator)
   const tasks = useDb((s) => s.outboundPickTasks)
   const inventory = useDb((s) => s.inventory)
+  const serialStocks = useDb((s) => s.serialStocks)
+  const inventoryLogs = useDb((s) => s.inventoryLogs)
   const skuMasters = useDb((s) => s.skuMasters)
   const skuBarcodes = useDb((s) => s.skuBarcodes)
   const locations = useDb((s) => s.locations)
@@ -56,7 +59,10 @@ export function usePickFlow() {
     [skuMasters],
   )
 
-  const isSn = useCallback((task: OutboundPickTask, skuCode: string) => Boolean(master(task, skuCode)?.snEnabled), [master])
+  const isSn = useCallback(
+    (task: OutboundPickTask, skuCode: string) => Boolean(master(task, skuCode)?.snEnabled),
+    [master],
+  )
 
   /** 商品识别与下架校验一致：SKU 编码 → 本货主启用条码 → 主条码 */
   const resolveSku = useCallback(
@@ -83,8 +89,19 @@ export function usePickFlow() {
 
   /** 来源库存上还没被拣走的序列号（候选与校验用） */
   const lineSerials = useCallback(
-    (line: PickLine) => inventory.find((r) => r.id === line.inventoryId)?.serialNos ?? [],
-    [inventory],
+    (line: PickLine) => {
+      const row = inventory.find((r) => r.id === line.inventoryId)
+      if (!row) return []
+      const used = new Set(tasks.flatMap((task) => task.assignments.flatMap((a) => a.activeSerialNos)))
+      return serialsInWarehouse(
+        { inventory, inventoryLogs, serialStocks },
+        warehouseCode,
+        row.customerId,
+        row.skuCode,
+        row.qualityType,
+      ).filter((sn) => !used.has(sn))
+    },
+    [inventory, inventoryLogs, serialStocks, tasks, warehouseCode],
   )
 
   const countOf = useCallback(
@@ -101,10 +118,7 @@ export function usePickFlow() {
     [warehouseCode],
   )
 
-  const run = useCallback(
-    (command: OutboundCommand) => useDb.getState().outboundAction(command, operator),
-    [operator],
-  )
+  const run = useCallback((command: OutboundCommand) => useDb.getState().outboundAction(command, operator), [operator])
 
   /** 确认下架：每次新的确认标识，重复提交同一标识不会再扣库存 */
   const pick = useCallback(

@@ -1,9 +1,11 @@
+import { warehouseSerialStocks, serialStockId, updateSerialStocks } from '@/lib/serial-stock'
 import { isWorkContainerUsedOnInbound } from '@/lib/inbound-receipt-container'
 import { lineUnreceivedQty, recomputeInboundOrder, stagingLocationCode } from '@/lib/inbound-derive'
 import { countingStocktake } from '@/lib/inventory-derive'
 import { balanceLog } from '@/lib/inventory-ledger'
 import { isNewSku } from '@/lib/new-sku'
 import { nextDocNo } from '@/lib/doc-no'
+import { receiptContainerIssue, upsertReceivingContainers } from './container-actions'
 import type {
   ContainerReceiptLineInput,
   InboundException,
@@ -15,9 +17,7 @@ import type {
 import type { InboundOrder, InventoryLog, InventoryRecord } from '@/types/wms'
 import type { SeedData } from './seed'
 
-type ActionResult =
-  | { ok: true }
-  | { ok: false; errorKey: string; params?: Record<string, string | number> }
+type ActionResult = { ok: true } | { ok: false; errorKey: string; params?: Record<string, string | number> }
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -83,7 +83,11 @@ function appendPutawayPlan(
   return [
     ...orders,
     {
-      putawayNo: nextDocNo('PA', orders.map((o) => o.putawayNo), input.ts),
+      putawayNo: nextDocNo(
+        'PA',
+        orders.map((o) => o.putawayNo),
+        input.ts,
+      ),
       sourceType: 'INBOUND',
       sourceNo: input.inboundNo,
       warehouseCode: input.warehouseCode,
@@ -133,11 +137,19 @@ export function applyReceipt(
     if (c.containerNo && isWorkContainerUsedOnInbound(state.receiptRecords ?? [], inboundNo, c.containerNo)) {
       return { ok: false, errorKey: 'inbound.receive.containerAlreadyUsedNo' }
     }
+    if (c.containerNo) {
+      const issue = receiptContainerIssue(state.containers ?? [], order.warehouseCode, order.customerId, c.containerNo)
+      if (issue) return { ok: false, errorKey: issue }
+    }
   }
 
   /** R04：同一 SKU 历史实收＋拒收，加本次各容器合计，不得超过预计；新品未维护阻断整次提交 */
   const activityBySku = new Map<string, number>()
-  const existingSerials = new Set(state.inventory.flatMap((r) => r.serialNos ?? []))
+  const existingSerials = new Set(
+    warehouseSerialStocks(state)
+      .filter((r) => r.status === 'IN_STOCK')
+      .map(serialStockId),
+  )
   const submittedSerials = new Set<string>()
   for (const c of containers) {
     for (const line of c.lines) {
@@ -167,10 +179,13 @@ export function applyReceipt(
           return { ok: false, errorKey: 'inbound.receive.serialCount' }
         }
         for (const sn of [...goodSerials, ...defectSerials]) {
-          if (existingSerials.has(sn) || submittedSerials.has(sn)) {
+          if (
+            existingSerials.has(serialStockId({ customerId: order.customerId, skuCode: line.skuCode, serialNo: sn })) ||
+            submittedSerials.has(`${line.skuCode}::${sn}`)
+          ) {
             return { ok: false, errorKey: 'inbound.receive.serialDuplicated', params: { serialNo: sn } }
           }
-          submittedSerials.add(sn)
+          submittedSerials.add(`${line.skuCode}::${sn}`)
         }
       }
       activityBySku.set(line.skuCode, (activityBySku.get(line.skuCode) ?? 0) + activity)
@@ -184,7 +199,11 @@ export function applyReceipt(
   const ts = new Date().toISOString()
   const receivingStaging = state.warehouseMasters.find((w) => w.code === order.warehouseCode)?.receivingStagingLocation
   const stagingCode = stagingLocationCode(state.locations, order.warehouseCode, receivingStaging)
-  const receiptNo = nextDocNo('RC', (state.receiptRecords ?? []).map((r) => r.receiptNo), ts)
+  const receiptNo = nextDocNo(
+    'RC',
+    (state.receiptRecords ?? []).map((r) => r.receiptNo),
+    ts,
+  )
   const receiptLines: ReceiptRecordLine[] = containers
     .flatMap((c) => c.lines.map((line) => ({ line, containerNo: c.containerNo })))
     .map(({ line, containerNo }, i) => {
@@ -278,7 +297,9 @@ export function applyReceipt(
         r.locationCode === stagingCode &&
         r.skuCode === skuCode &&
         r.customerId === order.customerId &&
-        r.qualityType === qualityType && r.batchNo === batchNo && r.expiryDate === expiryDate,
+        r.qualityType === qualityType &&
+        r.batchNo === batchNo &&
+        r.expiryDate === expiryDate,
     )
     if (idx >= 0) {
       inventory[idx] = {
@@ -290,19 +311,19 @@ export function applyReceipt(
       return inventory[idx]
     }
     inventory.push({
-        id: uid('INV'),
-        warehouseCode: order.warehouseCode,
-        locationCode: stagingCode,
-        customerId: order.customerId,
-        skuCode,
-        qualityType,
-        batchNo,
-        expiryDate,
-        serialNos: serialNos?.length ? serialNos : undefined,
-        onHandQty: qty,
-        lockedQty: locked,
-        firstInboundAt: ts,
-      })
+      id: uid('INV'),
+      warehouseCode: order.warehouseCode,
+      locationCode: stagingCode,
+      customerId: order.customerId,
+      skuCode,
+      qualityType,
+      batchNo,
+      expiryDate,
+      serialNos: serialNos?.length ? serialNos : undefined,
+      onHandQty: qty,
+      lockedQty: locked,
+      firstInboundAt: ts,
+    })
     return inventory[inventory.length - 1]
   }
 
@@ -318,6 +339,7 @@ export function applyReceipt(
           jobNo: receiptNo,
           sourceType: 'INBOUND',
           sourceLineNo: line.lineNo,
+          serialNos: row.qualityType === 'GOOD' ? line.goodSerialNos : line.defectSerialNos,
           operator,
           createdAt: ts,
         }),
@@ -328,7 +350,14 @@ export function applyReceipt(
       line.goodQty,
     )
     receiveLog(
-      upsertStagingStock(line.skuCode, 'DEFECTIVE', line.defectQty, line.batchNo, line.expiryDate, line.defectSerialNos),
+      upsertStagingStock(
+        line.skuCode,
+        'DEFECTIVE',
+        line.defectQty,
+        line.batchNo,
+        line.expiryDate,
+        line.defectSerialNos,
+      ),
       line.defectQty,
     )
 
@@ -348,9 +377,15 @@ export function applyReceipt(
     }
     putawayOrders = appendPutawayPlan(putawayOrders, { ...plan, qualityType: 'GOOD', qty: line.goodQty })
     putawayOrders = appendPutawayPlan(putawayOrders, { ...plan, qualityType: 'DEFECTIVE', qty: line.defectQty })
-
   }
 
+  const nextContainers = upsertReceivingContainers(state.containers ?? [], {
+    warehouseCode: order.warehouseCode,
+    customerId: order.customerId,
+    containerNos: containers.map((c) => c.containerNo).filter((no): no is string => Boolean(no)),
+    operator,
+    at: ts,
+  })
   return {
     ok: true,
     patch: {
@@ -360,6 +395,8 @@ export function applyReceipt(
       putawayOrders,
       inventory,
       inventoryLogs,
+      serialStocks: updateSerialStocks(state, inventoryLogs.slice(state.inventoryLogs.length)),
+      containers: nextContainers,
     },
   }
 }

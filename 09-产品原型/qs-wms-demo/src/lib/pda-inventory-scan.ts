@@ -1,3 +1,4 @@
+import { warehouseSerialStocks } from './serial-stock'
 import { locationInfo, type LocationUsage } from '@/lib/inventory-derive'
 import type { SeedData } from '@/mock/seed'
 
@@ -9,7 +10,7 @@ export type InventoryScanHit =
 
 type ScanState = Pick<
   SeedData,
-  'locations' | 'locationMasters' | 'skuMasters' | 'skuBarcodes' | 'inventory' | 'inventoryLogs'
+  'locations' | 'locationMasters' | 'skuMasters' | 'skuBarcodes' | 'inventory' | 'inventoryLogs' | 'serialStocks'
 >
 
 /**
@@ -43,34 +44,17 @@ export function resolveInventoryScan(s: ScanState, warehouseCode: string, raw: s
     .forEach((r) => addSku(r.customerId, r.skuCode))
   skus.forEach((k) => hits.push({ kind: 'sku', ...k }))
 
-  const stock = s.inventory.find((r) => r.onHandQty > 0 && r.serialNos?.some((sn) => sn.toUpperCase() === upper))
-  if (stock) {
-    const serialNo = stock.serialNos!.find((sn) => sn.toUpperCase() === upper)!
-    hits.push({
-      kind: 'serial',
-      customerId: stock.customerId,
-      skuCode: stock.skuCode,
-      serialNo,
-      warehouseCode: stock.warehouseCode,
-    })
-  } else {
-    const last = s.inventoryLogs
-      .filter((l) => l.serialNos?.some((sn) => sn.toUpperCase() === upper))
-      .reduce<SeedData['inventoryLogs'][number] | undefined>(
-        (latest, l) => (!latest || l.createdAt >= latest.createdAt ? l : latest),
-        undefined,
-      )
-    if (last) {
-      const serialNo = last.serialNos!.find((sn) => sn.toUpperCase() === upper)!
+  warehouseSerialStocks(s)
+    .filter((r) => r.serialNo.toUpperCase() === upper)
+    .forEach((r) => {
       hits.push({
         kind: 'serial',
-        customerId: last.customerId,
-        skuCode: last.skuCode,
-        serialNo,
-        warehouseCode: last.warehouseCode,
+        customerId: r.customerId,
+        skuCode: r.skuCode,
+        serialNo: r.serialNo,
+        warehouseCode: r.warehouseCode,
       })
-    }
-  }
+    })
   return hits
 }
 

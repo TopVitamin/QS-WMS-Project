@@ -9,6 +9,7 @@ import type {
   AuditLog,
   CarrierMaster,
   ChannelMaster,
+  ContainerMaster,
   Customer,
   CustomerMaster,
   CurrencyCode,
@@ -17,6 +18,7 @@ import type {
   InventoryRecord,
   Location,
   LocationMaster,
+  MasterPushMessage,
   ZoneMaster,
   Sku,
   SkuBarcode,
@@ -31,6 +33,7 @@ import { createLocationMasters } from './location-masters'
 import { createSkuMasters } from './sku-masters'
 import { createWarehouseMasters } from './warehouse-masters'
 import { createZoneMasters } from './zone-masters'
+import { createContainerSeed } from './container-seed'
 import { stagingLocationCode } from '@/lib/inbound-derive'
 import { zoneTypeToLocationType } from '@/lib/location-master'
 import type { InboundResult, NewSkuRecord, UnclaimedRecord } from '@/types/inbound'
@@ -46,7 +49,7 @@ function createRandom(seed: number) {
   return {
     next,
     int: (min: number, max: number) => Math.floor(next() * (max - min + 1)) + min,
-    pick: <T,>(list: readonly T[]): T => list[Math.floor(next() * list.length)],
+    pick: <T>(list: readonly T[]): T => list[Math.floor(next() * list.length)],
   }
 }
 
@@ -113,12 +116,49 @@ export const exchangeRatesToCny: Record<CurrencyCode, number> = {
 }
 
 const productNames: Record<string, string[]> = {
-  C10028: ['USB-C Charger 65W', 'Magnetic Power Bank 10000mAh', 'Braided Lightning Cable 2m', 'Wireless Earbuds Pro', 'Car Phone Mount'],
-  C10031: ['Linen Throw Pillow Cover', 'Ceramic Plant Pot Set', 'LED Desk Lamp', 'Bamboo Storage Box', 'Blackout Curtain 52x84'],
-  C10045: ['Automatic Pet Feeder 4L', 'Cat Scratching Post', 'Dog Chew Toy Set', 'Pet Grooming Brush', 'Collapsible Dog Bowl'],
-  C10052: ['Vitamin C Serum 30ml', 'Hair Straightener Brush', 'Makeup Brush Set 12pcs', 'Facial Cleansing Device', 'LED Makeup Mirror'],
-  C10067: ['Hiking Backpack 40L', 'Camping Lantern', 'Trekking Poles Pair', 'Insulated Water Bottle 1L', 'Folding Camp Chair'],
-  C10073: ['Magnetic Building Tiles 60pcs', 'RC Stunt Car', 'Kids Drawing Tablet', 'Plush Dinosaur 30cm', 'Wooden Puzzle Set'],
+  'SELF-001': ['自营标准件样品', '自营大件样品'],
+  C10028: [
+    'USB-C Charger 65W',
+    'Magnetic Power Bank 10000mAh',
+    'Braided Lightning Cable 2m',
+    'Wireless Earbuds Pro',
+    'Car Phone Mount',
+  ],
+  C10031: [
+    'Linen Throw Pillow Cover',
+    'Ceramic Plant Pot Set',
+    'LED Desk Lamp',
+    'Bamboo Storage Box',
+    'Blackout Curtain 52x84',
+  ],
+  C10045: [
+    'Automatic Pet Feeder 4L',
+    'Cat Scratching Post',
+    'Dog Chew Toy Set',
+    'Pet Grooming Brush',
+    'Collapsible Dog Bowl',
+  ],
+  C10052: [
+    'Vitamin C Serum 30ml',
+    'Hair Straightener Brush',
+    'Makeup Brush Set 12pcs',
+    'Facial Cleansing Device',
+    'LED Makeup Mirror',
+  ],
+  C10067: [
+    'Hiking Backpack 40L',
+    'Camping Lantern',
+    'Trekking Poles Pair',
+    'Insulated Water Bottle 1L',
+    'Folding Camp Chair',
+  ],
+  C10073: [
+    'Magnetic Building Tiles 60pcs',
+    'RC Stunt Car',
+    'Kids Drawing Tablet',
+    'Plush Dinosaur 30cm',
+    'Wooden Puzzle Set',
+  ],
 }
 
 function buildSkus(): Sku[] {
@@ -195,6 +235,8 @@ export interface SeedData extends OutboundData, ReturnData {
   inboundResults: import('@/types/inbound').InboundResult[]
   newSkuRecords: NewSkuRecord[]
   unclaimedRecords: UnclaimedRecord[]
+  /** 仓库级SN身份，与批次库位数量独立 */
+  serialStocks?: import('@/lib/serial-stock').SerialStock[]
   inventory: InventoryRecord[]
   inventoryLogs: InventoryLog[]
   /** 盘点单 */
@@ -202,6 +244,8 @@ export interface SeedData extends OutboundData, ReturnData {
   /** 移库作业 */
   stockMoves: StockMove[]
   auditLogs: AuditLog[]
+  masterMessages: MasterPushMessage[]
+  containers: ContainerMaster[]
 }
 
 export function createSeedData(): SeedData {
@@ -363,21 +407,24 @@ export function createSeedData(): SeedData {
     .filter((o) => o.status === 'COMPLETED')
     .slice(0, 3)
     .forEach((o) => {
-      auditLogs.push(
-        {
-          id: `AUD-SEED-${o.inboundNo}-PUT`,
-          refType: 'INBOUND',
-          refNo: o.inboundNo,
-          action: 'PUTAWAY',
-          operator: 'system',
-          detail: o.items.map((i) => `${i.skuCode}×${i.putawayQty}`).join(', '),
-          createdAt: o.updatedAt,
-        },
-      )
+      auditLogs.push({
+        id: `AUD-SEED-${o.inboundNo}-PUT`,
+        refType: 'INBOUND',
+        refNo: o.inboundNo,
+        action: 'PUTAWAY',
+        operator: 'system',
+        detail: o.items.map((i) => `${i.skuCode}×${i.putawayQty}`).join(', '),
+        createdAt: o.updatedAt,
+      })
     })
 
   const withOutbound = playOutboundSeedFlows({
-    ...createOutboundSeed(inventory, locations, skuMasters, warehouses.map(w => w.code)),
+    ...createOutboundSeed(
+      inventory,
+      locations,
+      skuMasters,
+      warehouses.map((w) => w.code),
+    ),
     warehouses,
     warehouseMasters: createWarehouseMasters(),
     zoneMasters,
@@ -407,6 +454,13 @@ export function createSeedData(): SeedData {
     inventoryCounts: [],
     stockMoves: [],
     auditLogs,
+    masterMessages: [],
+    containers: [],
   })
-  return playInventorySeedFlows(withOutbound)
+  const seeded = playInventorySeedFlows(withOutbound)
+  return {
+    ...seeded,
+    inventoryLogs: seeded.inventoryLogs.map((l) => (l.level === 'SKU' ? { ...l, qualityType: 'GOOD' as const } : l)),
+    containers: createContainerSeed(seeded),
+  }
 }

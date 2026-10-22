@@ -22,7 +22,7 @@ import { SignedNum } from './inventory-shared'
 
 /**
  * 确认盘点差异（盘点单前端Demo版PRD 第三节）：主管二次确认，按盘盈、盘亏、正常／不良变化汇总，
- * 提示确认后可用为负的 SKU 和将解除的待核对；提交一次生效，重复确认返回原结果。
+ * 提示会导致负库存并阻断的SKU 和将解除的待核对；提交一次生效，重复确认返回原结果。
  */
 export function StocktakeConfirmDialog({ count, onClose }: { count: InventoryCount; onClose: () => void }) {
   const { t } = useTranslation()
@@ -56,10 +56,12 @@ export function StocktakeConfirmDialog({ count, onClose }: { count: InventoryCou
       },
       count.warehouseCode,
     )
-    // 盘亏照常调整：正常品减少后剩下的不够订单占用，可用为负（库存查询主PRD 第二节）
+    // 预演后会造成负库存则禁止确认，服务动作仍重新校验最新余额。
     const negative = count.skus
       .map((k) => {
-        const row = skus.find((r) => r.customerId === k.customerId && r.skuCode === k.skuCode)
+        const row = skus.find(
+          (r) => r.customerId === k.customerId && r.skuCode === k.skuCode && r.qualityType === 'GOOD',
+        )
         const goodDiff = sum(
           diffs.filter(
             (d) => d.l.customerId === k.customerId && d.l.skuCode === k.skuCode && d.l.qualityType === 'GOOD',
@@ -147,7 +149,9 @@ export function StocktakeConfirmDialog({ count, onClose }: { count: InventoryCou
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={submit}>{t('inventory.stocktake.confirm')}</Button>
+          <Button onClick={submit} disabled={summary.negative.length > 0}>
+            {t('inventory.stocktake.confirm')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

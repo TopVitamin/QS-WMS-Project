@@ -76,8 +76,12 @@ describe('退货收货', () => {
     const order = useDb.getState().returnOrders[0]
     const result = useDb.getState().receiveReturn({
       returnNo: order.returnNo,
-      containerNo: 'RT-BOX-01',
-      lines: [{ skuCode: order.items[0].skuCode, goodQty: 3, defectQty: 0, rejectedQty: 1, rejectReason: 'DAMAGED' }],
+      containers: [
+        {
+          containerNo: 'RT-BOX-01',
+          lines: [{ skuCode: order.items[0].skuCode, goodQty: 3, defectQty: 0, rejectedQty: 1, rejectReason: 'DAMAGED' }],
+        },
+      ],
       operator: 'tester',
     })
     expect(result).toEqual({ ok: true })
@@ -125,7 +129,7 @@ describe('退货收货', () => {
     const another = useDb.getState().returnOrders.find((o) => o.status === 'PENDING_RECEIVE')!
     useDb.getState().receiveReturn({
       returnNo: another.returnNo,
-      lines: [{ skuCode: another.items[0].skuCode, goodQty: 1, defectQty: 0 }],
+      containers: [{ bulkPiece: true, lines: [{ skuCode: another.items[0].skuCode, goodQty: 1, defectQty: 0 }] }],
       operator: 'tester',
     })
     expect(useDb.getState().cancelReturnOrder(another.returnNo).ok).toBe(false)
@@ -135,9 +139,202 @@ describe('退货收货', () => {
     const order = useDb.getState().returnOrders[0]
     const result = useDb.getState().receiveReturn({
       returnNo: order.returnNo,
-      lines: [{ skuCode: order.items[0].skuCode, goodQty: order.items[0].plannedQty + 1, defectQty: 0 }],
+      containers: [
+        { bulkPiece: true, lines: [{ skuCode: order.items[0].skuCode, goodQty: order.items[0].plannedQty + 1, defectQty: 0 }] },
+      ],
       operator: 'tester',
     })
     expect(result).toEqual({ ok: false, errorKey: 'return.error.overRemain' })
+  })
+})
+
+describe('退货收货补齐（多容器、派送失败、SN 核对）', () => {
+  beforeEach(resetDb)
+
+  it('多容器一次提交生成一条收货记录，按容器×品质生成上架单', () => {
+    const order = useDb.getState().returnOrders[0]
+    const sku = order.items[0].skuCode
+    const result = useDb.getState().receiveReturn({
+      returnNo: order.returnNo,
+      containers: [
+        { containerNo: 'RT-BOX-A', lines: [{ skuCode: sku, goodQty: 1, defectQty: 0 }] },
+        { containerNo: 'RT-BOX-B', lines: [{ skuCode: sku, goodQty: 1, defectQty: 1 }] },
+      ],
+      operator: 'tester',
+    })
+    expect(result).toEqual({ ok: true })
+    const receipt = useDb.getState().returnReceipts[0]
+    expect(receipt.lines.map((l) => l.containerNo)).toEqual(['RT-BOX-A', 'RT-BOX-B'])
+    const putaways = useDb.getState().putawayOrders.filter(
+      (p) => p.sourceType === 'RETURN' && p.sourceNo === order.returnNo,
+    )
+    expect(putaways.map((p) => `${p.containerNo}:${p.qualityType}`).sort()).toEqual([
+      'RT-BOX-A:GOOD',
+      'RT-BOX-B:DEFECTIVE',
+      'RT-BOX-B:GOOD',
+    ])
+  })
+
+  it('同一容器号不能在一次提交里重复，也不能在本单重复使用', () => {
+    const order = useDb.getState().returnOrders[0]
+    const sku = order.items[0].skuCode
+    const dup = useDb.getState().receiveReturn({
+      returnNo: order.returnNo,
+      containers: [
+        { containerNo: 'RT-BOX-A', lines: [{ skuCode: sku, goodQty: 1, defectQty: 0 }] },
+        { containerNo: 'rt-box-a', lines: [{ skuCode: sku, goodQty: 1, defectQty: 0 }] },
+      ],
+      operator: 'tester',
+    })
+    expect(dup).toEqual({ ok: false, errorKey: 'return.error.containerDuplicated' })
+
+    const first = useDb.getState().receiveReturn({
+      returnNo: order.returnNo,
+      containers: [{ containerNo: 'RT-BOX-A', lines: [{ skuCode: sku, goodQty: 1, defectQty: 0 }] }],
+      operator: 'tester',
+    })
+    expect(first).toEqual({ ok: true })
+    const again = useDb.getState().receiveReturn({
+      returnNo: order.returnNo,
+      containers: [{ containerNo: 'RT-BOX-A', lines: [{ skuCode: sku, goodQty: 1, defectQty: 0 }] }],
+      operator: 'tester',
+    })
+    expect(again).toMatchObject({ ok: false, errorKey: 'return.error.containerAlreadyUsed' })
+  })
+
+  it('派送失败扫原 B2C 出库单建退货单，按已发数量生成明细', () => {
+    const outbound = useDb.getState().outboundOrders.find((o) => o.status === 'SHIPPED' && o.type === 'B2C')!
+    const result = useDb.getState().createDeliveryFailedReturn({ outboundNo: outbound.no, operator: 'tester' })
+    expect(result.ok).toBe(true)
+    const order = useDb.getState().returnOrders.find((o) => o.returnNo === result.returnNo)!
+    expect(order.sourceType).toBe('DELIVERY_FAILED')
+    expect(order.originalOutboundNo).toBe(outbound.no)
+    expect(order.items.map((i) => i.plannedQty)).toEqual(outbound.items.filter((i) => i.shippedQty > 0).map((i) => i.shippedQty))
+  })
+
+  it('有原出库 SN 依据时，不一致的 SN 只能拒收', () => {
+    const state = useDb.getState()
+    const outbound = state.outboundOrders.find((o) => o.status === 'SHIPPED' && o.type === 'B2C')!
+    const sku = 'SN-DEMO-01'
+    useDb.setState({
+      outboundOrders: state.outboundOrders.map((o) =>
+        o.no === outbound.no
+          ? { ...o, items: o.items.map((i, idx) => (idx === 0 ? { ...i, skuCode: sku } : i)) }
+          : o,
+      ),
+      outboundVerifications: [
+        ...state.outboundVerifications,
+        {
+          no: `VF-${outbound.no}-TEST`,
+          orderNo: outbound.no,
+          method: 'PACK',
+          containerType: 'PACKAGE',
+          containerNo: 'PKG-TEST',
+          lines: [{ assignmentId: 'A-TEST', itemNo: 1, skuCode: sku, qty: 1, effectiveQty: 1, serialNos: ['SN00000001'] }],
+          at: new Date().toISOString(),
+          operator: 'seed',
+        },
+      ],
+    })
+    const forecast = useDb.getState().mockReturnForecast({
+      customerId: outbound.customerId,
+      warehouseCode: outbound.warehouseCode,
+      sourceType: 'CUSTOMER',
+      upstreamNo: 'OMS-RT-SN-TEST',
+      skuCode: sku,
+      plannedQty: 1,
+      originalOutboundNo: outbound.no,
+    })
+    expect(forecast.ok).toBe(true)
+
+    const mismatch = useDb.getState().receiveReturn({
+      returnNo: forecast.returnNo!,
+      containers: [{ bulkPiece: true, lines: [{ skuCode: sku, goodQty: 1, defectQty: 0, goodSerialNos: ['SN99999999'] }] }],
+      operator: 'tester',
+    })
+    expect(mismatch).toMatchObject({ ok: false, errorKey: 'return.error.snMismatchRejectOnly' })
+
+    const rejected = useDb.getState().receiveReturn({
+      returnNo: forecast.returnNo!,
+      containers: [
+        {
+          bulkPiece: true,
+          lines: [
+            {
+              skuCode: sku,
+              goodQty: 0,
+              defectQty: 0,
+              rejectedQty: 1,
+              rejectReason: 'SN_MISMATCH',
+              rejectedSerialNos: ['SN99999999'],
+            },
+          ],
+        },
+      ],
+      operator: 'tester',
+    })
+    expect(rejected).toEqual({ ok: true })
+    const receipt = useDb.getState().returnReceipts.find((r) => r.returnNo === forecast.returnNo)!
+    expect(receipt.lines[0].serialCheckBasis).toBe('ORIGINAL_OUTBOUND')
+    expect(receipt.lines[0].rejectedSerialNos).toEqual(['SN99999999'])
+  })
+})
+
+describe('OMS Mock 基础资料推送', () => {
+  beforeEach(resetDb)
+
+  it('推送启用商品被接受，停用货主被拒绝并留痕', () => {
+    const accepted = useDb.getState().mockPushMasterData({ masterType: 'SKU', ownerCode: 'ANKR', skuCode: 'CABLE-01' })
+    expect(accepted).toEqual({ ok: true })
+    expect(useDb.getState().masterMessages[0]).toMatchObject({ masterType: 'SKU', status: 'ACCEPTED' })
+
+    const rejected = useDb.getState().mockPushMasterData({ masterType: 'OWNER', ownerCode: 'KIDO' })
+    expect(rejected).toMatchObject({ ok: false, errorKey: 'masterPush.error.ownerInvalid' })
+    expect(useDb.getState().masterMessages[0]).toMatchObject({ masterType: 'OWNER', status: 'REJECTED' })
+    expect(useDb.getState().auditLogs[0].action).toBe('MASTER_MOCK_PUSH')
+  })
+})
+
+describe('一期演示数据覆盖', () => {
+  beforeEach(resetDb)
+
+  it('自营货主、大件/异形/带电商品和美东/德国库区货位有种子', () => {
+    const s = useDb.getState()
+    expect(s.skuMasters.some((m) => m.ownerCode === 'OWNER-SELF' && m.code === 'OWNER-SELF-001')).toBe(true)
+    expect(s.inbounds.some((o) => o.customerId === 'SELF-001')).toBe(true)
+    expect(s.skuMasters.find((m) => m.code === 'BIG-01')?.productForm).toBe('LARGE')
+    expect(s.skuMasters.find((m) => m.code === 'ODD-01')?.productForm).toBe('IRREGULAR')
+    expect(s.skuMasters.find((m) => m.code === 'BATT-01')?.isBattery).toBe(true)
+    expect(s.zoneMasters.some((z) => z.warehouseCode === 'US-NJ-01')).toBe(true)
+    expect(s.zoneMasters.some((z) => z.warehouseCode === 'DE-FRA-01')).toBe(true)
+    expect(s.locationMasters.some((l) => l.warehouseCode === 'US-NJ-01')).toBe(true)
+    expect(s.locationMasters.some((l) => l.warehouseCode === 'DE-FRA-01')).toBe(true)
+  })
+})
+
+describe('退货结果重试', () => {
+  beforeEach(resetDb)
+
+  it('失败结果重试沿用原结果，不重复上架或扣库', () => {
+    const order = useDb.getState().returnOrders[0]
+    const state = useDb.getState()
+    useDb.setState({
+      returnResults: [
+        {
+          returnNo: order.returnNo,
+          upstreamNo: order.upstreamNo,
+          status: 'FAILED',
+          attempts: 1,
+          items: [{ skuCode: order.items[0].skuCode, receivedQty: 0, rejectedQty: 0, putawayQty: 0 }],
+          at: new Date().toISOString(),
+        },
+        ...state.returnResults,
+      ],
+    })
+    expect(useDb.getState().retryReturnResult(order.returnNo)).toEqual({ ok: true })
+    const result = useDb.getState().returnResults.find((r) => r.returnNo === order.returnNo)!
+    expect(result.status).toBe('SENT')
+    expect(result.attempts).toBe(2)
+    expect(useDb.getState().putawayOrders.filter((p) => p.sourceNo === order.returnNo)).toHaveLength(0)
   })
 })

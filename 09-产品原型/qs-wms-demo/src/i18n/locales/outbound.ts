@@ -13,8 +13,14 @@ const labels = {
   createOther: ['创建其他出库', 'Create other outbound'],
   mock: ['OMS Mock', 'OMS Mock'],
   messages: ['指令处理记录', 'Instruction messages'],
-  messageNotice: ['重发按原消息标识重放，返回原处理结论；改内容请新建消息', 'Resend replays the same message ID and returns the original result. Use a new message to change content.'],
-  cancelNotice: ['受理后出库单立即已取消：释放预占与未拣分配，已确认实拣自动退拣生成返库单', 'Cancellation takes effect immediately: reservations and un-picked allocations are released, and picked goods are un-picked into a put-back order.'],
+  messageNotice: [
+    '重发按原消息标识重放，返回原处理结论；改内容请新建消息',
+    'Resend replays the same message ID and returns the original result. Use a new message to change content.',
+  ],
+  cancelNotice: [
+    '受理后出库单立即已取消：释放预占与未拣分配，已确认实拣自动退拣生成返库单',
+    'Cancellation takes effect immediately: reservations and un-picked allocations are released, and picked goods are un-picked into a put-back order.',
+  ],
   resend: ['重发', 'Resend'],
   results: ['出库结果', 'Shipment results'],
   no: ['单号', 'Document no.'],
@@ -274,6 +280,10 @@ const handoverMethods = {
   PICKUP: ['客户自提', 'Customer pickup'],
 } as const
 const errors = {
+  negativeInventory: [
+    '操作将导致负库存：{{sku}}良品{{actual}}、预占／分配{{reserved}}，已阻断',
+    'Blocked: negative inventory for {{sku}} (good {{actual}}, reserved/allocated {{reserved}})',
+  ],
   countFrozen: [
     '该SKU盘点中，暂停库存变动；请先完成或取消盘点',
     'This SKU is being counted. Finish or cancel the stocktake before changing stock.',
@@ -551,14 +561,20 @@ const ui = {
   packInfo: ['补包裹信息', 'Package info'],
   deleteVerify: ['删除', 'Delete'],
   shipTitle: ['确认出库 · {{no}}', 'Confirm shipment · {{no}}'],
-  shipDesc: ['确认后按实发扣减出库暂存库存，不能撤销。', 'Shipped quantities leave outbound staging. This cannot be undone.'],
+  shipDesc: [
+    '确认后按实发扣减出库暂存库存，不能撤销。',
+    'Shipped quantities leave outbound staging. This cannot be undone.',
+  ],
   shipCheck: ['逐行检查', 'Line check'],
   shipOk: ['可出库', 'Ready'],
   shipShortAllowed: ['可缺量结案', 'Short shipment allowed'],
   shipSubmit: ['确认出库（实发 {{count}} 件）', 'Confirm shipment ({{count}} units)'],
   withHandover: ['同时登记交接', 'Register handover now'],
   problemOpenTask: ['还有未完成的拣货任务', 'A pick task is still open'],
-  problemUnverified: ['已拣 {{picked}}，已复核 {{verified}}，须全部复核', 'Picked {{picked}}, verified {{verified}}: verify all picked goods'],
+  problemUnverified: [
+    '已拣 {{picked}}，已复核 {{verified}}，须全部复核',
+    'Picked {{picked}}, verified {{verified}}: verify all picked goods',
+  ],
   problemShort: ['还差 {{count}} 件，本类型须足量', '{{count}} short; this type must ship in full'],
   problemPackage: ['B2C 包裹信息未齐（包裹号、重量、运单）', 'B2C package information is incomplete'],
   problemNone: ['没有可出库的数量', 'Nothing to ship'],
@@ -572,7 +588,10 @@ const ui = {
   qtyMax: ['不超过有效 {{count}}', 'Up to {{count}}'],
   packTitle: ['补包裹信息 · {{no}}', 'Package info · {{no}}'],
   packNo: ['包裹号', 'Package no.'],
-  packHint: ['保存后生成 Mock 运单号，不增加复核数量。', 'Saving creates a mock tracking number; verified quantity is unchanged.'],
+  packHint: [
+    '保存后生成 Mock 运单号，不增加复核数量。',
+    'Saving creates a mock tracking number; verified quantity is unchanged.',
+  ],
   cancelConfirmTitle: ['取消出库单 {{no}}？', 'Cancel order {{no}}?'],
   cancelConfirmDesc: [
     '取消立即生效：释放预占与未拣分配，已拣自动退拣生成返库上架单。',
@@ -612,59 +631,119 @@ const ui = {
   stationClearLine: ['清空本行', 'Clear this line'],
   stationPacking: ['装箱', 'Packing'],
   stationProgress: ['本单复核进度', 'Order verification'],
-  stationProgressHint: ['已有复核记录 {{count}} 条；删除或补包裹去出库单详情', '{{count}} verification records so far. Delete or add package info on the order page.'],
+  stationProgressHint: [
+    '已有复核记录 {{count}} 条；删除或补包裹去出库单详情',
+    '{{count}} verification records so far. Delete or add package info on the order page.',
+  ],
   stationProgressEmpty: ['扫描出库单号开始复核', 'Scan an outbound no. to start'],
-  stationLineProgress: ['已拣 {{picked}} · 已复核 {{verified}} · 本次 {{count}}', 'Picked {{picked}} · verified {{verified}} · this time {{count}}'],
+  stationLineProgress: [
+    '已拣 {{picked}} · 已复核 {{verified}} · 本次 {{count}}',
+    'Picked {{picked}} · verified {{verified}} · this time {{count}}',
+  ],
   stationSubmit: ['提交复核（{{count}} 件）', 'Submit verification ({{count}} units)'],
   stationSubmit_one: ['提交复核（{{count}} 件）', 'Submit verification ({{count}} unit)'],
   stationClear: ['清空本次', 'Clear this session'],
-  stationClearConfirm: ['本次已扫的 {{count}} 件和装箱信息都会丢掉，已提交的复核记录不受影响。', 'The {{count}} units scanned this time and the packing details will be discarded. Submitted records are not affected.'],
+  stationClearConfirm: [
+    '本次已扫的 {{count}} 件和装箱信息都会丢掉，已提交的复核记录不受影响。',
+    'The {{count}} units scanned this time and the packing details will be discarded. Submitted records are not affected.',
+  ],
   stationChangeOrder: ['换一单', 'Switch order'],
   stationOrderDetail: ['出库单详情', 'Order details'],
   stationScanOrderTitle: ['扫描出库单号', 'Scan the outbound no.'],
-  stationScanOrderDetail: ['按原单复核：扫面单或拣货单上的出库单号，或点下方列表', 'Verify by original order: scan the outbound no. on the label or pick list, or pick one below'],
+  stationScanOrderDetail: [
+    '按原单复核：扫面单或拣货单上的出库单号，或点下方列表',
+    'Verify by original order: scan the outbound no. on the label or pick list, or pick one below',
+  ],
   stationOpenedTitle: ['已打开 {{no}}', 'Opened {{no}}'],
-  stationOpenedDetail: ['本单待复核 {{count}} 件，逐件扫商品条码或序列号', '{{count}} units to verify. Scan each item barcode or serial number'],
+  stationOpenedDetail: [
+    '本单待复核 {{count}} 件，逐件扫商品条码或序列号',
+    '{{count}} units to verify. Scan each item barcode or serial number',
+  ],
   stationOrderMissTitle: ['不能复核这张单：{{code}}', 'Cannot verify this order: {{code}}'],
-  stationReasonNotFound: ['它不在当前仓库。请核对单号，或在顶栏切换仓库', 'It is not in the current warehouse. Check the number or switch warehouse in the top bar'],
+  stationReasonNotFound: [
+    '它不在当前仓库。请核对单号，或在顶栏切换仓库',
+    'It is not in the current warehouse. Check the number or switch warehouse in the top bar',
+  ],
   stationReasonShipped: ['它已经出库，复核记录只读', 'It has already shipped; verification records are read-only'],
-  stationReasonCancelled: ['它已经取消，已拣的货会走返库上架', 'It was cancelled; picked goods go back through put-back'],
-  stationReasonNothing: ['它没有待复核的商品：还没拣货，或已拣都复核过了', 'Nothing to verify: it has not been picked, or everything picked is verified'],
+  stationReasonCancelled: [
+    '它已经取消，已拣的货会走返库上架',
+    'It was cancelled; picked goods go back through put-back',
+  ],
+  stationReasonNothing: [
+    '它没有待复核的商品：还没拣货，或已拣都复核过了',
+    'Nothing to verify: it has not been picked, or everything picked is verified',
+  ],
   stationScanItemTitle: ['扫描商品条码或序列号', 'Scan item barcode or serial number'],
-  stationScanItemDetail: ['本次已扫 {{count}} 件，还差 {{left}} 件；同一商品多批次先点选对应行', '{{count}} scanned, {{left}} to go. For several batches of one SKU, click the batch line first'],
+  stationScanItemDetail: [
+    '本次已扫 {{count}} 件，还差 {{left}} 件；同一商品多批次先点选对应行',
+    '{{count}} scanned, {{left}} to go. For several batches of one SKU, click the batch line first',
+  ],
   stationAllScannedTitle: ['本单已扫齐 {{count}} 件', 'All {{count}} units scanned'],
   stationAllScannedDetail: ['核对装箱信息后点「提交复核」', 'Check the packing details, then submit'],
   stationBumpTitle: ['{{sku}} +1', '{{sku}} +1'],
-  stationBumpDetail: ['本次已扫 {{count}} 件，这个商品还差 {{left}} 件', '{{count}} scanned this time; {{left}} left for this SKU'],
+  stationBumpDetail: [
+    '本次已扫 {{count}} 件，这个商品还差 {{left}} 件',
+    '{{count}} scanned this time; {{left}} left for this SKU',
+  ],
   stationMissTitle: ['没找到这个商品：{{code}}', 'Item not found: {{code}}'],
-  stationMissDetail: ['它不是本单待复核的商品。请核对条码，或确认实物是否属于这张出库单', 'It is not an item to verify on this order. Check the barcode, or whether the goods belong to this order'],
+  stationMissDetail: [
+    '它不是本单待复核的商品。请核对条码，或确认实物是否属于这张出库单',
+    'It is not an item to verify on this order. Check the barcode, or whether the goods belong to this order',
+  ],
   stationNeedSnTitle: ['{{sku}} 要逐件扫序列号', '{{sku}} needs serial numbers'],
-  stationNeedSnDetail: ['序列号商品按件核对，请扫商品上的序列号标签', 'Serialised items are checked one by one. Scan the serial number label'],
+  stationNeedSnDetail: [
+    '序列号商品按件核对，请扫商品上的序列号标签',
+    'Serialised items are checked one by one. Scan the serial number label',
+  ],
   stationSnDupTitle: ['序列号 {{sn}} 本次已经扫过', 'Serial {{sn}} already scanned this time'],
   stationSnVerifiedTitle: ['序列号 {{sn}} 已经复核过', 'Serial {{sn}} is already verified'],
   stationSnDupDetail: ['同一序列号不能重复计数，请扫下一件', 'A serial number counts only once. Scan the next unit'],
   stationFullTitle: ['{{sku}} 已经扫满', '{{sku}} is complete'],
-  stationFullDetail: ['本次已扫 {{count}} 件，等于待复核数。多出的实物请核对是否拿错', '{{count}} scanned, matching what is left to verify. Check any extra units'],
+  stationFullDetail: [
+    '本次已扫 {{count}} 件，等于待复核数。多出的实物请核对是否拿错',
+    '{{count}} scanned, matching what is left to verify. Check any extra units',
+  ],
   stationOverTitle: ['{{sku}} 超出待复核数量', '{{sku}} exceeds the quantity to verify'],
-  stationOverDetail: ['这一行最多 {{max}} 件，数量已保留原值', 'This line allows up to {{max}}. The previous value is kept'],
+  stationOverDetail: [
+    '这一行最多 {{max}} 件，数量已保留原值',
+    'This line allows up to {{max}}. The previous value is kept',
+  ],
   stationSwitchBlockedTitle: ['本次还有 {{count}} 件没提交', '{{count}} units not submitted yet'],
-  stationSwitchBlockedDetail: ['先提交本单复核，或点「换一单」清空后再扫新单号', 'Submit this order first, or use Switch order to discard them'],
+  stationSwitchBlockedDetail: [
+    '先提交本单复核，或点「换一单」清空后再扫新单号',
+    'Submit this order first, or use Switch order to discard them',
+  ],
   stationEmptyTitle: ['本次还没有扫任何商品', 'Nothing scanned yet'],
   stationEmptyDetail: ['先扫商品条码或序列号，再提交', 'Scan item barcodes or serial numbers, then submit'],
   stationContainerNoTitle: ['{{type}}号还没填', '{{type}} no. is missing'],
-  stationContainerNoDetail: ['在装箱区填写或扫描容器号；不装容器请选「无」', 'Enter or scan the container no. in Packing, or choose None'],
+  stationContainerNoDetail: [
+    '在装箱区填写或扫描容器号；不装容器请选「无」',
+    'Enter or scan the container no. in Packing, or choose None',
+  ],
   stationSortUsedTitle: ['本单已有随分拣复核记录', 'This order already has a verify-while-sorting record'],
-  stationSortUsedDetail: ['同一张单只记一条随分拣复核，请改选随打包装箱', 'Only one verify-while-sorting record per order. Choose verify while packing'],
+  stationSortUsedDetail: [
+    '同一张单只记一条随分拣复核，请改选随打包装箱',
+    'Only one verify-while-sorting record per order. Choose verify while packing',
+  ],
   stationB2cPackageTitle: ['B2C 随打包装箱须装进包裹', 'B2C packing needs a package'],
-  stationB2cPackageDetail: ['容器类型选「包裹」，并填写包裹号与重量', 'Choose Package and enter the package no. and weight'],
+  stationB2cPackageDetail: [
+    '容器类型选「包裹」，并填写包裹号与重量',
+    'Choose Package and enter the package no. and weight',
+  ],
   stationWeightTitle: ['包裹重量还没填', 'Package weight is missing'],
-  stationWeightDetail: ['填一个大于 0 的模拟重量（kg），提交后生成 Mock 运单', 'Enter a mock weight above 0 kg; a mock tracking no. is created on submit'],
+  stationWeightDetail: [
+    '填一个大于 0 的模拟重量（kg），提交后生成 Mock 运单',
+    'Enter a mock weight above 0 kg; a mock tracking no. is created on submit',
+  ],
   stationSubmitFailTitle: ['复核没有提交成功', 'Verification was not submitted'],
   stationSubmittedTitle: ['已提交复核 {{no}}：{{count}} 件', 'Verification {{no}} submitted: {{count}} units'],
   stationSubmittedTitle_one: ['已提交复核 {{no}}：{{count}} 件', 'Verification {{no}} submitted: {{count}} unit'],
   stationSubmittedContainer: ['{{type}} {{no}}', '{{type}} {{no}}'],
   stationSubmittedTracking: ['运单 {{no}}', 'tracking {{no}}'],
-  stationSubmittedLeft: ['本单还待复核 {{count}} 件，继续装下一个容器', '{{count}} units still to verify; pack the next container'],
+  stationSubmittedLeft: [
+    '本单还待复核 {{count}} 件，继续装下一个容器',
+    '{{count}} units still to verify; pack the next container',
+  ],
   stationSubmittedDone: ['{{no}} 已全部复核，扫描下一张出库单', '{{no}} fully verified. Scan the next order'],
 } as const
 /** PDA 拣货：按库位一站一站拣（PDA拣货前端Demo版PRD） */
@@ -715,7 +794,10 @@ const pdaPick = {
   ],
   errFull: ['{{sku}} 已数满 {{count}} 件', '{{sku}} already counted {{count}}'],
   errLocationDone: ['{{location}} 已拣完，请前往 {{next}}', '{{location}} is done. Go to {{next}}'],
-  errNotStop: ['{{code}} 不是本任务的拣货库位，请前往 {{location}}', '{{code}} is not in this task. Go to {{location}}'],
+  errNotStop: [
+    '{{code}} 不是本任务的拣货库位，请前往 {{location}}',
+    '{{code}} is not in this task. Go to {{location}}',
+  ],
   errLocationFirst: [
     '扫到的是商品 {{sku}}：请先扫描库位 {{location}}',
     'That is item {{sku}}. Scan location {{location}} first',
@@ -728,7 +810,10 @@ const pdaPick = {
   shortTitle: ['上报缺货', 'Report shortage'],
   shortQty: ['缺货数量', 'Shortage qty'],
   shortReason: ['缺货原因', 'Reason'],
-  shortCounted: ['已数的 {{count}} 件会先确认下架，再报缺货', 'The {{count}} counted are picked first, then the shortage is reported'],
+  shortCounted: [
+    '已数的 {{count}} 件会先确认下架，再报缺货',
+    'The {{count}} counted are picked first, then the shortage is reported',
+  ],
   shortHint: [
     '上报后释放这部分分配，系统换位一次；该商品标记待核对，盘点确认后才恢复分配',
     'This releases the allocation and tries one re-allocation. The SKU is marked for checking until a count is confirmed.',
@@ -746,7 +831,10 @@ const pdaPick = {
   ],
   doneTitle: ['本任务已全部拣完', 'All lines are picked'],
   doneStaging: ['把货送到出库暂存库位', 'Take the goods to outbound staging'],
-  doneHint: ['确认时已经下架到出库暂存；提交只结束任务，不再移库', 'Goods moved when confirmed. Submitting only closes the task.'],
+  doneHint: [
+    '确认时已经下架到出库暂存；提交只结束任务，不再移库',
+    'Goods moved when confirmed. Submitting only closes the task.',
+  ],
   submit: ['提交拣货任务', 'Submit task'],
   submitTitle: ['提交拣货任务 {{no}}？', 'Submit pick task {{no}}?'],
   submitDesc: [
@@ -775,14 +863,20 @@ const pdaReturn = {
   lineMeta: ['应返库 {{expected}} · 已保存 {{saved}}', 'Expected {{expected}} · saved {{saved}}'],
   savedTitle: ['已保存落位（{{count}}）', 'Saved placements ({{count}})'],
   redo: ['重录', 'Redo'],
-  hintLocation: ['先扫描目标库位 {{location}}；放到别处就扫那个库位', 'Scan {{location}} first, or the location you place it in'],
+  hintLocation: [
+    '先扫描目标库位 {{location}}；放到别处就扫那个库位',
+    'Scan {{location}} first, or the location you place it in',
+  ],
   hintItem: ['扫一件 +1，数满自动保存落位', 'Scan to count; a full line is saved automatically'],
   save: ['保存落位（{{count}} 件）', 'Save ({{count}})'],
   saveIdle: ['保存落位', 'Save placement'],
   closed: ['返库上架单 {{no}} 已完成', 'Put-back {{no}} is completed'],
   saveFailed: ['落位没有保存成功', 'Placement not saved'],
   okArrived: ['已到达 {{location}}，扫描商品', 'At {{location}}. Scan the items'],
-  okOther: ['改放到 {{location}}（建议 {{suggested}}），扫描商品', 'Placing in {{location}} (suggested {{suggested}}). Scan the items'],
+  okOther: [
+    '改放到 {{location}}（建议 {{suggested}}），扫描商品',
+    'Placing in {{location}} (suggested {{suggested}}). Scan the items',
+  ],
   okSaved: ['{{sku}} 已保存 {{count}} 件到 {{location}}', '{{sku}}: {{count}} saved to {{location}}'],
   okStopDone: [
     '{{sku}} 已保存 {{count}} 件到 {{location}}。本库位放完，前往 {{next}}',
@@ -793,14 +887,26 @@ const pdaReturn = {
     '{{sku}} has {{count}} unsaved: save them first, or keep scanning {{sku}}',
   ],
   errFull: ['{{sku}} 已数满 {{count}} 件', '{{sku}} already counted {{count}}'],
-  errTarget: ['{{location}} 不能放返库货：只能放存储、拣货或不良隔离库位', '{{location}} cannot take put-back goods. Use storage, pick or defect locations'],
-  errTargetFirst: ['扫到的是商品 {{sku}}：请先扫描目标库位 {{location}}', 'That is item {{sku}}. Scan location {{location}} first'],
+  errTarget: [
+    '{{location}} 不能放返库货：只能放存储、拣货或不良隔离库位',
+    '{{location}} cannot take put-back goods. Use storage, pick or defect locations',
+  ],
+  errTargetFirst: [
+    '扫到的是商品 {{sku}}：请先扫描目标库位 {{location}}',
+    'That is item {{sku}}. Scan location {{location}} first',
+  ],
   errScanLocation: ['没认出 {{code}}：请扫描库位 {{location}}', 'Unknown code {{code}}. Scan location {{location}}'],
   errOtherStop: ['{{sku}} 建议放回 {{location}}，不在这一站', '{{sku}} belongs to {{location}}, not this stop'],
-  errNotInOrder: ['没找到这个码：{{code}}，它不是本单要返库的商品', 'Unknown code {{code}}: not an item on this put-back'],
+  errNotInOrder: [
+    '没找到这个码：{{code}}，它不是本单要返库的商品',
+    'Unknown code {{code}}: not an item on this put-back',
+  ],
   doneTitle: ['全部已保存落位', 'All placements saved'],
   placementCount: ['落位', 'Placements'],
-  doneHint: ['提交后才把库存从出库暂存移到各目标库位，提交后不能再改', 'Stock moves from staging to the targets only on submit, and cannot change afterwards.'],
+  doneHint: [
+    '提交后才把库存从出库暂存移到各目标库位，提交后不能再改',
+    'Stock moves from staging to the targets only on submit, and cannot change afterwards.',
+  ],
   submit: ['提交返库上架', 'Submit put-back'],
   submitTitle: ['提交返库上架单 {{no}}？', 'Submit put-back {{no}}?'],
   submitDesc: [
@@ -820,8 +926,14 @@ const pdaVerify = {
   thisTime: ['本次', 'This time'],
   promptItem: ['扫描商品条码或序列号，每扫一件 +1', 'Scan item barcode or serial: +1 per scan'],
   rowsTitle: ['待复核商品（{{count}}）', 'Items to verify ({{count}})'],
-  okBump: ['{{sku}} +1，本次 {{count}} 件，这个商品还差 {{left}} 件', '{{sku}} +1: {{count}} this time, {{left}} left for this SKU'],
-  errSwitch: ['本次还有 {{count}} 件没提交：先装箱提交，或清空本次再换单', '{{count}} units not submitted: submit or clear before switching'],
+  okBump: [
+    '{{sku}} +1，本次 {{count}} 件，这个商品还差 {{left}} 件',
+    '{{sku}} +1: {{count}} this time, {{left}} left for this SKU',
+  ],
+  errSwitch: [
+    '本次还有 {{count}} 件没提交：先装箱提交，或清空本次再换单',
+    '{{count}} units not submitted: submit or clear before switching',
+  ],
   hintScan: ['逐件扫描本单商品；扫齐自动进入装箱', 'Scan each unit; packing opens when all are scanned'],
   next: ['装箱提交（{{count}} 件）', 'Pack ({{count}})'],
   nextIdle: ['装箱提交', 'Pack'],
@@ -833,7 +945,10 @@ const pdaVerify = {
     '已提交复核 {{no}}：{{count}} 件。本单还待复核 {{left}} 件',
     'Verification {{no}}: {{count}} units. {{left}} still to verify',
   ],
-  doneAll: ['已提交复核 {{no}}：{{count}} 件。{{order}} 已全部复核', 'Verification {{no}}: {{count}} units. {{order}} is fully verified'],
+  doneAll: [
+    '已提交复核 {{no}}：{{count}} 件。{{order}} 已全部复核',
+    'Verification {{no}}: {{count}} units. {{order}} is fully verified',
+  ],
 } as const
 /** 管理端补录页：Web 端拣货、Web 端返库（拣货任务、返库上架单前端Demo版PRD） */
 const entry = {
@@ -866,7 +981,10 @@ const entry = {
   serialCount: ['序列号条数须等于数量 {{count}}', 'Enter {{count}} serial numbers to match the quantity'],
   save: ['保存（实拣 {{picked}} · 缺货 {{short}}）', 'Save (picked {{picked}} · short {{short}})'],
   saveIdle: ['保存', 'Save'],
-  savedPick: ['{{location}} · {{sku}} 实拣 {{count}} 件，已下架到出库暂存', '{{location}} · {{sku}}: {{count}} picked to staging'],
+  savedPick: [
+    '{{location}} · {{sku}} 实拣 {{count}} 件，已下架到出库暂存',
+    '{{location}} · {{sku}}: {{count}} picked to staging',
+  ],
   pickProgressHint: [
     '每行实拣加缺货等于应拣后提交；提交只结束任务，不再移库',
     'Submit once every line is picked or reported short. Submitting does not move stock again.',
@@ -886,8 +1004,8 @@ const entry = {
   useSuggestion: ['建议 {{location}}，点此填入', 'Use suggested {{location}}'],
   returnQty: ['本次数量', 'Quantity'],
   returnSerialHint: [
-    '每行一个，须是本行还没落位的序列号，条数等于本次数量',
-    'One per line, from this line’s unplaced serials; count equals the quantity',
+    '可留空按数量返库；逐件核实时每行一个SN，须属于本行且数量一致，不自动分配SN库位',
+    'Optional for quantity-only putaway. Enter one confirmed serial per line; it must belong to this line and match the quantity. Serial locations are not assigned automatically.',
   ],
   returnLineFirst: ['请先选择应返库行', 'Select an expected line first'],
   targetRequired: ['请填写目标库位', 'Enter a target location'],

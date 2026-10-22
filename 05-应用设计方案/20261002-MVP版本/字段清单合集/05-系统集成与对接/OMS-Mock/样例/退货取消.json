@@ -1,0 +1,11 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-RT-CANCEL-001",
+  "messageType": "CANCEL_RETURN",
+  "businessType": "RETURN",
+  "upstreamNo": "OMS-RT-DEMO-001",
+  "expectedVersion": 1,
+  "payload": {
+    "reason": "零实收，上游取消退货"
+  }
+}

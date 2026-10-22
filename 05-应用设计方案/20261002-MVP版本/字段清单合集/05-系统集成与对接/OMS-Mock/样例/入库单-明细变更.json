@@ -1,0 +1,15 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-IN-CHANGE-001",
+  "messageType": "CHANGE_INBOUND",
+  "businessType": "NORMAL",
+  "upstreamNo": "OMS-IN-DEMO-001",
+  "expectedVersion": 1,
+  "payload": {
+    "items": [
+      { "skuCode": "CABLE-01", "plannedQty": 520 },
+      { "skuCode": "SN-DEMO-01", "plannedQty": 20 }
+    ],
+    "reason": "上游调整预计数量"
+  }
+}

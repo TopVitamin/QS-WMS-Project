@@ -1,0 +1,19 @@
+{
+  "source": "OMS_MOCK",
+  "messageId": "MSG-DEMO-RT-001",
+  "messageType": "CREATE_RETURN_FORECAST",
+  "businessType": "RETURN",
+  "upstreamNo": "OMS-RT-DEMO-001",
+  "expectedVersion": 0,
+  "payload": {
+    "warehouseCode": "US-LA-01",
+    "ownerCode": "ANKR",
+    "sourceType": "CUSTOMER",
+    "trackingNo": "1Z999AA10123456701",
+    "originalOutboundNo": "OB-20261015-0007",
+    "items": [
+      { "skuCode": "CABLE-01", "plannedQty": 2 }
+    ],
+    "remark": "客户退货预报"
+  }
+}
