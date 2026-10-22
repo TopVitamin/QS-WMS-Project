@@ -1,0 +1,39 @@
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '09-产品原型/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: 09-产品原型/qs-wms-demo
+        run: npm ci
+
+      - name: Build
+        working-directory: 09-产品原型/qs-wms-demo
+        run: npm run build
+
+      - name: Deploy via webhook
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          cd "09-产品原型/qs-wms-demo/dist"
+          tar czf ../../../deploy.tar.gz .
+          cd ../../..
+          curl -sf -X POST https://pmvitamin.com/deploy/QS-WMS-Project \
+            -H "Authorization: Bearer $DEPLOY_TOKEN" \
+            --data-binary @deploy.tar.gz
