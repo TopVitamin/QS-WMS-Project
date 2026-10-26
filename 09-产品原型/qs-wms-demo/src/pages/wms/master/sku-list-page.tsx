@@ -39,7 +39,6 @@ interface Filters {
   snEnabled: string
   batchEnabled: string
   expiryEnabled: string
-  qcRequired: string
   upstreamSkuId: string
   updatedFrom: string
   updatedTo: string
@@ -55,7 +54,6 @@ const emptyFilters: Filters = {
   snEnabled: FILTER_ALL,
   batchEnabled: FILTER_ALL,
   expiryEnabled: FILTER_ALL,
-  qcRequired: FILTER_ALL,
   upstreamSkuId: '',
   updatedFrom: '',
   updatedTo: '',
@@ -76,7 +74,6 @@ function matchSku(row: SkuMaster, filters: Filters): boolean {
   if (!matchYesNo(row.snEnabled, filters.snEnabled)) return false
   if (!matchYesNo(row.batchEnabled, filters.batchEnabled)) return false
   if (!matchYesNo(row.expiryEnabled, filters.expiryEnabled)) return false
-  if (!matchYesNo(row.qcRequired, filters.qcRequired)) return false
   if (
     filters.upstreamSkuId &&
     !row.upstreamSkuId.toLowerCase().includes(filters.upstreamSkuId.trim().toLowerCase())
@@ -172,11 +169,6 @@ export function SkuListPage() {
         meta: { label: t('masterSku.expiryEnabled') },
         cell: ({ getValue }) => yesNo(getValue()),
       }),
-      col.accessor('qcRequired', {
-        header: t('masterSku.qcRequired'),
-        meta: { label: t('masterSku.qcRequired') },
-        cell: ({ getValue }) => yesNo(getValue()),
-      }),
       col.accessor('isBattery', {
         header: t('masterSku.isBattery'),
         meta: { label: t('masterSku.isBattery') },
@@ -262,9 +254,6 @@ export function SkuListPage() {
                   onValueChange={(v) => setDraft({ ...draft, expiryEnabled: v })}
                 />
               </FilterItem>
-              <FilterItem label={t('masterSku.qcRequired')}>
-                <YesNoFilter value={draft.qcRequired} onValueChange={(v) => setDraft({ ...draft, qcRequired: v })} />
-              </FilterItem>
               <FilterItem label={t('masterSku.upstreamSkuId')}>
                 <Input
                   value={draft.upstreamSkuId}
@@ -327,7 +316,6 @@ export function SkuListPage() {
             snEnabled: false,
             batchEnabled: false,
             expiryEnabled: false,
-            qcRequired: false,
             isBattery: false,
             spec: false,
             upstreamSkuId: false,

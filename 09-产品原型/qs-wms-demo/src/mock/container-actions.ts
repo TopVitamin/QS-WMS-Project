@@ -1,6 +1,8 @@
 import type { ContainerMaster, ContainerStatus, ContainerType, ContainerSource } from '@/types/wms'
 import type { PutawayOrder } from '@/types/inbound'
 import type { SeedData } from './seed'
+import { containerIdOf } from '@/lib/container-id'
+import type { InventoryRecord } from '@/types/wms'
 
 type ActionResult = { ok: true } | { ok: false; errorKey: string; params?: Record<string, string | number> }
 
@@ -103,24 +105,75 @@ export function syncPutawayContainers(
   order: PutawayOrder,
   operator: string,
   at: string,
+  putawayOrders: PutawayOrder[] = [order],
+  inventory: InventoryRecord[] = [],
 ): ContainerMaster[] {
   if (!order.containerNo) return containers
+  const containerId = order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo)
   const idx = containers.findIndex(
     (c) => keyOf(c.warehouseCode, c.containerNo) === keyOf(order.warehouseCode, order.containerNo!),
   )
   if (idx < 0) return containers
-  const locations = [...new Set(order.actualLines.map((a) => a.locationCode))]
-  const one = locations.length === 1 ? locations[0] : undefined
+  const pending = putawayOrders.some(
+    (candidate) =>
+      (candidate.containerId ?? containerIdOf(candidate.warehouseCode, candidate.containerNo)) === containerId &&
+      candidate.status !== 'COMPLETED',
+  )
+  const rows = inventory.filter((r) => r.containerId === containerId && r.onHandQty > 0)
+  const locations = [...new Set(rows.map((r) => r.locationCode))]
+  const one = !pending && rows.length > 0 && locations.length === 1 ? locations[0] : undefined
   const next = [...containers]
   next[idx] = {
     ...next[idx],
-    status: one ? 'IN_STOCK' : 'RELEASED',
+    status: pending ? 'PUTAWAYING' : one ? 'IN_STOCK' : 'RELEASED',
     currentLocationCode: one,
     lastScannedAt: at,
     lastScannedBy: operator,
     updatedAt: at,
     updatedBy: operator,
   }
+  return next
+}
+
+/** 出库复核成功后绑定已建档的箱/托。 */
+export function bindOutboundContainers(
+  containers: ContainerMaster[],
+  input: {
+    warehouseCode: string
+    customerId: string
+    containerNo: string
+    containerType: Extract<ContainerType, 'CARTON' | 'PALLET'>
+    parentContainerNo?: string
+    operator: string
+    at: string
+  },
+): ContainerMaster[] {
+  const next = [...containers]
+  const bind = (
+    containerNo: string,
+    containerType: Extract<ContainerType, 'CARTON' | 'PALLET'>,
+    parentContainerNo?: string,
+  ) => {
+    const found = findContainer(next, input.warehouseCode, containerNo)
+    if (!found) return
+    const index = next.indexOf(found)
+    next[index] = {
+      ...found,
+      containerType,
+      parentContainerNo: parentContainerNo || undefined,
+      status: 'OUTBOUND',
+      currentLocationCode: undefined,
+      lastScannedAt: input.at,
+      lastScannedBy: input.operator,
+      updatedAt: input.at,
+      updatedBy: input.operator,
+    }
+  }
+
+  const childNo = input.containerNo.trim()
+  const parentNo = input.parentContainerNo?.trim()
+  bind(childNo, input.containerType, parentNo)
+  if (parentNo) bind(parentNo, 'PALLET')
   return next
 }
 

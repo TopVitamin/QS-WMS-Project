@@ -1,5 +1,5 @@
 import type { PutawayOrder, PutawayPlanLine } from '@/types/inbound'
-import type { InventoryRecord, Location } from '@/types/wms'
+import type { InventoryRecord, Location, LocationMaster, ProductFormFactor, SkuMaster } from '@/types/wms'
 import { compareLocation } from './outbound-pick-route'
 
 /** 上架单是否还在作业中（未提交） */
@@ -102,6 +102,60 @@ export interface PutawayLocationContext {
   locations: Location[]
   inventory: InventoryRecord[]
   putawayOrders: PutawayOrder[]
+  locationMasters?: LocationMaster[]
+  skuMasters?: SkuMaster[]
+}
+
+/** AFTER_RECEIVE 在单据生成时冻结推荐；AT_PUTAWAY_SCAN 在打开作业时实时计算。 */
+export function putawayRecommendationForLine(
+  order: PutawayOrder,
+  line: PutawayPlanLine,
+  ctx: PutawayLocationContext,
+): string | undefined {
+  if (order.putawayRecommendTiming === 'NONE') return undefined
+  if (order.putawayRecommendTiming === 'AFTER_RECEIVE') return line.suggestedLocationCode
+  if (order.putawayRecommendTiming === 'AT_PUTAWAY_SCAN') return suggestPutawayLocation(order, line.skuCode, ctx)
+  // 兼容尚未保存推荐方式的历史种子/本地数据。
+  return line.suggestedLocationCode ?? suggestPutawayLocation(order, line.skuCode, ctx)
+}
+
+/** 在生成上架单或追加新的应上架行时，按当时的货主配置保存推荐快照。 */
+export function snapshotPutawayRecommendation(
+  order: PutawayOrder,
+  line: PutawayPlanLine,
+  ctx: PutawayLocationContext,
+): PutawayPlanLine {
+  if (order.putawayRecommendTiming !== 'AFTER_RECEIVE') return line
+  return { ...line, suggestedLocationCode: suggestPutawayLocation(order, line.skuCode, ctx) }
+}
+
+function comparePutawayLocation(a: string, b: string, warehouseCode: string, ctx: PutawayLocationContext): number {
+  const sequenceOf = (code: string) =>
+    ctx.locationMasters?.find((l) => l.warehouseCode === warehouseCode && l.code === code)?.putawaySequence
+  const aSequence = sequenceOf(a)
+  const bSequence = sequenceOf(b)
+  if (aSequence != null && bSequence != null && aSequence !== bSequence) return aSequence - bSequence
+  if (aSequence != null && bSequence == null) return -1
+  if (aSequence == null && bSequence != null) return 1
+  return compareLocation(a, b)
+}
+
+function productFormOf(order: PutawayOrder, skuCode: string, ctx: PutawayLocationContext): ProductFormFactor | undefined {
+  return ctx.skuMasters?.find((m) => m.customerId === order.customerId && m.code === skuCode)?.productForm
+}
+
+function formFitsLocation(
+  order: PutawayOrder,
+  skuCode: string | undefined,
+  locationCode: string,
+  ctx: PutawayLocationContext,
+): boolean {
+  if (!skuCode) return true
+  const productForm = productFormOf(order, skuCode, ctx)
+  const location = ctx.locationMasters?.find(
+    (l) => l.warehouseCode === order.warehouseCode && l.code === locationCode,
+  )
+  return !productForm || !location?.productForms.length || location.productForms.includes(productForm)
 }
 
 /** 目标货位校验；通过返回 null，否则返回文案 key（上架单主PRD 第三节、PDA 上架 PRD §4） */
@@ -135,8 +189,9 @@ export function suggestPutawayLocation(
   skuCode: string | undefined,
   ctx: PutawayLocationContext,
 ): string | undefined {
-  const usable = (code: string) => validatePutawayLocation(order, code, ctx) === null
-  const sameStock = ctx.inventory.find(
+  const usable = (code: string) => validatePutawayLocation(order, code, ctx) === null && formFitsLocation(order, skuCode, code, ctx)
+  const sameStock = ctx.inventory
+    .filter(
     (r) =>
       r.warehouseCode === order.warehouseCode &&
       r.customerId === order.customerId &&
@@ -144,16 +199,19 @@ export function suggestPutawayLocation(
       r.qualityType === order.qualityType &&
       r.onHandQty > 0 &&
       usable(r.locationCode),
-  )
+    )
+    .sort((a, b) => comparePutawayLocation(a.locationCode, b.locationCode, order.warehouseCode, ctx))[0]
   if (sameStock) return sameStock.locationCode
   const emptyType = order.qualityType === 'DEFECTIVE' ? 'DEFECT' : 'STORAGE'
-  const empty = ctx.locations.find(
-    (l) =>
-      l.warehouseCode === order.warehouseCode &&
-      l.type === emptyType &&
-      usable(l.code) &&
-      !ctx.inventory.some((r) => r.warehouseCode === order.warehouseCode && r.locationCode === l.code && r.onHandQty > 0),
-  )
+  const empty = ctx.locations
+    .filter(
+      (l) =>
+        l.warehouseCode === order.warehouseCode &&
+        l.type === emptyType &&
+        usable(l.code) &&
+        !ctx.inventory.some((r) => r.warehouseCode === order.warehouseCode && r.locationCode === l.code && r.onHandQty > 0),
+    )
+    .sort((a, b) => comparePutawayLocation(a.code, b.code, order.warehouseCode, ctx))[0]
   return empty?.code
 }
 
@@ -174,13 +232,14 @@ export function putawayStops(order: PutawayOrder, ctx: PutawayLocationContext): 
   const map = new Map<string, PutawayPlanLine[]>()
   for (const line of order.planLines) {
     if (remainingQty(order, line.lineNo) <= 0) continue
-    const location = suggestPutawayLocation(order, line.skuCode, ctx) ?? NO_SUGGESTED_STOP
+    const location = putawayRecommendationForLine(order, line, ctx) ?? NO_SUGGESTED_STOP
     map.set(location, [...(map.get(location) ?? []), line])
   }
   return [...map.entries()]
     .sort(
       ([a], [b]) =>
-        Number(a === NO_SUGGESTED_STOP) - Number(b === NO_SUGGESTED_STOP) || compareLocation(a, b),
+        Number(a === NO_SUGGESTED_STOP) - Number(b === NO_SUGGESTED_STOP) ||
+        comparePutawayLocation(a, b, order.warehouseCode, ctx),
     )
     .map(([location, lines]) => ({ location, lines }))
 }

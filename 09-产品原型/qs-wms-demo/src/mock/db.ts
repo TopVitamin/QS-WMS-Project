@@ -40,13 +40,15 @@ import {
 } from './putaway-actions'
 import { applySubmitNewSkuMeasure, type SubmitNewSkuMeasureInput } from './new-sku-actions'
 import { applyRegisterUnclaimed, type RegisterUnclaimedInput } from './unclaimed-actions'
-import { applyDeliveryFailedReturn, applyReturnReceipt } from './return-actions'
+import { applyDeliveryFailedReturn, applyReturnReceipt, applyReturnReceiptClose } from './return-actions'
 import { recomputeReturnOrder } from '@/lib/return-derive'
 import { createSeedData, type SeedData } from './seed'
 import type { ReturnOrder, ReturnReceiptContainerInput } from '@/types/return'
 import { nextDocNo } from '@/lib/doc-no'
 import { currentOperator } from './current-operator'
 import { createMasterActions } from './master-actions'
+import { migrateContainerReferences } from './container-migration'
+import { migrateInventoryProductionDates } from './production-date-migration'
 import {
   bindContainerAction,
   createContainerAction,
@@ -110,12 +112,16 @@ interface DbActions {
     containers: ReturnReceiptContainerInput[]
     operator: string
   }) => ActionResult
+  /** 管理端确认退货收货完结；未收数量由此定型为最终短少。 */
+  closeReturnReceipt: (input: { returnNo: string; operator: string }) => ActionResult
   /** 派送失败退回：扫原 B2C 出库单生成退货单 */
   createDeliveryFailedReturn: (input: { outboundNo: string; operator: string }) => ActionResult & {
     returnNo?: string
   }
   /** 重试退货完成结果回传（Demo 只重试已有结果） */
   retryReturnResult: (returnNo: string) => ActionResult
+  /** Demo：模拟退货结果回传失败，供系统集成页走查重交入口。 */
+  simulateReturnResultFailure: (returnNo: string) => ActionResult
   /** OMS Mock 基础资料推送：货主或商品；接受/拒绝都留痕 */
   mockPushMasterData: (input: { masterType: 'OWNER' | 'SKU'; ownerCode: string; skuCode?: string }) => ActionResult
   /** 收货绑定容器：首次扫描自动建档，已停用/货主不符/占用中阻断 */
@@ -151,7 +157,11 @@ interface DbActions {
     skuCode: string
     plannedQty: number
     trackingNo?: string
+    platformReturnNo?: string
     originalOutboundNo?: string
+    originalSalesNo?: string
+    originalTrackingNo?: string
+    remark?: string
   }) => ActionResult & { returnNo?: string }
   /** 上游取消退货单：仅整单零实收 */
   cancelReturnOrder: (returnNo: string, reason?: string) => ActionResult
@@ -349,19 +359,52 @@ export const useDb = create<DbState>()(
         const existing = new Set(state.returnResults.map((r) => r.returnNo))
         const added = state.returnOrders
           .filter((o) => o.status === 'COMPLETED' && !existing.has(o.returnNo))
-          .map((o) => ({
-            returnNo: o.returnNo,
-            upstreamNo: o.upstreamNo,
-            status: 'SENT' as const,
-            attempts: 1,
-            items: o.items.map((l) => ({
-              skuCode: l.skuCode,
-              receivedQty: l.receivedQty,
-              rejectedQty: l.rejectedQty,
-              putawayQty: l.putawayQty,
-            })),
-            at: nowIso(),
-          }))
+          .map((o) => {
+            const bySku = new Map<
+              string,
+              {
+                skuCode: string
+                plannedQty: number
+                receivedQty: number
+                goodQty: number
+                defectQty: number
+                rejectedQty: number
+                shortQty: number
+                putawayQty: number
+              }
+            >()
+            o.items.forEach((line) => {
+              const row = bySku.get(line.skuCode) ?? {
+                skuCode: line.skuCode,
+                plannedQty: 0,
+                receivedQty: 0,
+                goodQty: 0,
+                defectQty: 0,
+                rejectedQty: 0,
+                shortQty: 0,
+                putawayQty: 0,
+              }
+              row.plannedQty += line.plannedQty
+              row.receivedQty += line.receivedQty
+              row.goodQty += line.goodQty
+              row.defectQty += line.defectQty
+              row.rejectedQty += line.rejectedQty
+              row.shortQty += Math.max(0, line.plannedQty - line.receivedQty - line.rejectedQty)
+              row.putawayQty += line.putawayQty
+              bySku.set(line.skuCode, row)
+            })
+            return {
+              sequence: 1,
+              returnNo: o.returnNo,
+              upstreamNo: o.upstreamNo,
+              sourceType: o.sourceType,
+              sourceAssociationNo: o.originalOutboundNo ?? o.platformReturnNo ?? o.upstreamNo,
+              status: 'SENT' as const,
+              attempts: 1,
+              items: [...bySku.values()],
+              at: nowIso(),
+            }
+          })
         if (added.length) set({ returnResults: [...added, ...state.returnResults] })
       }
 
@@ -369,6 +412,7 @@ export const useDb = create<DbState>()(
         ...createSeedData(),
         ...createMasterActions(get, set),
         outboundAction: (command, operator) => {
+          get().inventoryAction({ type: 'PROCESS_EXPIRED_CONVERSIONS' }, 'SYSTEM', 'SYSTEM')
           const result = applyOutboundAction(get(), command, operator)
           if (result.patch)
             set({
@@ -377,6 +421,7 @@ export const useDb = create<DbState>()(
                 ? appendAudit({ ...outboundAuditRef(get(), command, result.no), action: 'OUTBOUND_ACTION', operator })
                 : get().auditLogs,
             })
+          if (result.ok) get().inventoryAction({ type: 'PROCESS_EXPIRED_CONVERSIONS' }, 'SYSTEM', 'SYSTEM')
           return result.ok
             ? { ok: true, no: result.no }
             : { ok: false, errorKey: result.errorKey, params: result.params }
@@ -385,6 +430,11 @@ export const useDb = create<DbState>()(
         inventoryAction: (command, operator, terminal = 'WEB') => {
           const result = applyInventoryAction(get(), command, operator, undefined, terminal)
           if (!result.ok) return { ok: false, errorKey: result.errorKey, params: result.params }
+          if (
+            command.type === 'PROCESS_EXPIRED_CONVERSIONS' &&
+            result.patch.inventoryLogs.length === get().inventoryLogs.length
+          )
+            return { ok: true, no: result.no }
           set({
             ...result.patch,
             auditLogs: appendAudit({ ...inventoryAuditRef(command, result.no), action: 'INVENTORY_ACTION', operator }),
@@ -655,6 +705,24 @@ export const useDb = create<DbState>()(
           return { ok: true }
         },
 
+        closeReturnReceipt: ({ returnNo, operator }) => {
+          const result = applyReturnReceiptClose(get(), { returnNo, operator })
+          if (!result.ok) return result
+          if (result.patch) {
+            set({
+              ...result.patch,
+              auditLogs: appendAudit({
+                refType: 'RETURN',
+                refNo: returnNo,
+                action: 'RETURN_RECEIPT_CLOSE',
+                operator,
+              }),
+            })
+          }
+          finalizeReturnResults()
+          return { ok: true }
+        },
+
         createDeliveryFailedReturn: ({ outboundNo, operator }) => {
           const result = applyDeliveryFailedReturn(get(), { outboundNo, operator })
           if (!result.ok) return result
@@ -686,6 +754,26 @@ export const useDb = create<DbState>()(
               refType: 'RETURN',
               refNo: returnNo,
               action: 'RETURN_RESULT_RETRY',
+              operator: currentOperator(),
+            }),
+          })
+          return { ok: true }
+        },
+
+        simulateReturnResultFailure: (returnNo) => {
+          const state = get()
+          const result = state.returnResults.find((candidate) => candidate.returnNo === returnNo)
+          if (!result) return { ok: false, errorKey: 'return.error.resultNotFound' }
+          set({
+            returnResults: state.returnResults.map((candidate) =>
+              candidate.returnNo === returnNo
+                ? { ...candidate, status: 'FAILED', at: nowIso() }
+                : candidate,
+            ),
+            auditLogs: appendAudit({
+              refType: 'RETURN',
+              refNo: returnNo,
+              action: 'RETURN_RESULT_SIMULATE_FAILURE',
               operator: currentOperator(),
             }),
           })
@@ -812,6 +900,12 @@ export const useDb = create<DbState>()(
         mockReturnForecast: (input) => {
           const state = get()
           if (!input.upstreamNo.trim()) return { ok: false, errorKey: 'return.error.upstreamRequired' }
+          if (input.sourceType === 'CUSTOMER' && !input.trackingNo?.trim()) {
+            return { ok: false, errorKey: 'return.error.trackingRequired' }
+          }
+          if (input.sourceType === 'PLATFORM' && !input.platformReturnNo?.trim()) {
+            return { ok: false, errorKey: 'return.error.platformReturnRequired' }
+          }
           if (!Number.isInteger(input.plannedQty) || input.plannedQty <= 0) {
             return { ok: false, errorKey: 'return.error.qtyInvalid' }
           }
@@ -851,6 +945,10 @@ export const useDb = create<DbState>()(
             upstreamNo: input.upstreamNo.trim(),
             trackingNo: input.trackingNo?.trim() || undefined,
             originalOutboundNo: input.originalOutboundNo?.trim() || undefined,
+            platformReturnNo: input.platformReturnNo?.trim() || undefined,
+            originalSalesNo: input.originalSalesNo?.trim() || undefined,
+            originalTrackingNo: input.originalTrackingNo?.trim() || undefined,
+            remark: input.remark?.trim() || undefined,
             status: 'PENDING_RECEIVE',
             items: [
               {
@@ -1059,9 +1157,9 @@ export const useDb = create<DbState>()(
     },
     {
       name: 'qs-wms-demo-db',
-      // 修改 seed.ts 或数据结构后把版本号 +1，浏览器里的旧演示数据会被替换为新种子
-      /** 36：按品质库存、非负拦截与仓库级SN台账；旧演示数据保留备份 */
-      version: 36,
+      // 修改 seed.ts 或数据结构后把版本号 +1，并按本次变更决定迁移旧数据或重建种子。
+      /** 36：按品质库存与仓库级SN台账；37：容器库存维度；38：库存明细生产日期按唯一原始证据回填。 */
+      version: 38,
       migrate: (_persisted: unknown, fromVersion: number) => {
         if (fromVersion < 36) {
           if (typeof localStorage !== 'undefined' && !localStorage.getItem('qs-wms-demo-db-before-inventory-v36')) {
@@ -1072,7 +1170,10 @@ export const useDb = create<DbState>()(
           }
           return createSeedData() as unknown as typeof _persisted
         }
-        return _persisted
+        let persisted = _persisted
+        if (fromVersion < 37) persisted = migrateContainerReferences(persisted)
+        if (fromVersion < 38) persisted = migrateInventoryProductionDates(persisted)
+        return persisted as typeof _persisted
       },
       partialize: (s) => ({
         serialStocks: s.serialStocks,

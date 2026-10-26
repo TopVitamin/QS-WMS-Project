@@ -33,7 +33,6 @@ export type SkuMasterFormErrors = Partial<
     | 'inboundDays'
     | 'nearExpiryDays'
     | 'expiredDays'
-    | 'qcFlowType'
     | 'snFormat'
     | 'expiryInequality',
     string
@@ -73,10 +72,6 @@ export function validateSkuMasterForm(form: SkuMaster): SkuMasterFormErrors {
     ) {
       errors.expiryInequality = 'invalid'
     }
-  }
-
-  if (form.qcRequired && !form.qcFlowType?.trim()) {
-    errors.qcFlowType = 'required'
   }
 
   return errors

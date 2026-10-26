@@ -87,7 +87,7 @@ export function isNewSku(records, customerId, skuCode): boolean   // 无记录�
 | 维护记录号 | 常显 | `Input` | 包含 | `newSku.filters.recordNoPlaceholder` |
 | 货主 | 常显 | `Select` 可搜索 + 全部 | 精确 | `common.selectPlaceholder` |
 | 商品编码 | 常显 | `Input` | 包含 | `newSku.filters.skuPlaceholder` |
-| 维护仓库 | 常显 | `Select` 全部 + 授权仓库 | 精确 | `common.selectPlaceholder` |
+| 维护仓库 | 常显 | `Select` 全部 + 四仓预置 | 精确 | `common.selectPlaceholder` |
 | 维护时间 | 常显 | `DateRangePickerField` | 范围 | `newSku.filters.maintainedRangePlaceholder` |
 | 来源入库单号 | advanced | `Input` | 包含 | `newSku.filters.inboundNoPlaceholder` |
 

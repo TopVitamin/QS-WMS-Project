@@ -1,4 +1,4 @@
-import type { QualityType } from '@/types/wms'
+import type { PutawayRecommendTiming, QualityType } from '@/types/wms'
 
 /** 入库单单据状态（多数由数量派生；已取消由上游取消受理写入后保持终态） */
 export type InboundOrderStatus =
@@ -57,6 +57,8 @@ export interface ReceiptRecordLine {
   skuCode: string
   /** 本行实物所在作业容器；无容器收货时为空 */
   containerNo?: string
+  /** 容器自然键；散件收货为空。 */
+  containerId?: string
   receivedQty: number
   rejectedQty: number
   goodQty: number
@@ -118,6 +120,8 @@ export interface PutawayPlanLine {
   batchNo?: string
   productionDate?: string
   expiryDate?: string
+  /** AFTER_RECEIVE 模式在生成上架单时保存的推荐库位快照；后续打开或保存落位不自动重算。 */
+  suggestedLocationCode?: string
 }
 
 export interface PutawayActualLine {
@@ -144,7 +148,10 @@ export interface PutawayOrder {
   receiptNo: string
   /** 来源暂存库位，取自收货记录，生成后不变 */
   stagingLocationCode: string
+  /** 生成上架单时的货主推荐设置快照；旧数据为空时按兼容逻辑处理。 */
+  putawayRecommendTiming?: PutawayRecommendTiming
   containerNo?: string
+  containerId?: string
   qualityType: QualityType
   status: PutawayOrderStatus
   planLines: PutawayPlanLine[]

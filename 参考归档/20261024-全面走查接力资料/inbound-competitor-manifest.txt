@@ -1,0 +1,17 @@
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-006_使用WMS处理退件.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-007_使用WMS实现FBA退货入库.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-022_使用PDA实现收货.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-030_使用WMS进行入库认领.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-031_使用WMS操作入库管理.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-032_使用WMS操作上架管理.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-039_使用OMP_WMS_OMS实现序列号管理.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/领星WMS/01-原始页面/LX-WMS-043_使用WMS和OMP实现批次库存管理.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-IN-005-物流商退货支持A仓出B仓入.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-IN-009-海外仓按托入库批量签收收货.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-IN-010-海外仓收货入库，WMS和卖家OMS沟通.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-IN-013-仓库入库认领流程.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-IN-014-极风WMS仓库端退货入库流程.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-IN-016-标准入库流程.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-PDA-027-pda创建退货单，扫描sku自动带出客户信息.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-OMS-RET-001-退货入库认领流程.md
+/Users/mpp/Documents/AI&SC Course/QS-WMS项目/02-竞品调研和分析/极风WMS/01-原始页面/JF-OMS-RET-002-客户退货入库流程.md

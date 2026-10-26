@@ -105,6 +105,14 @@ export const wmsMenu: MenuGroup[] = [
       { path: '/wms/system/params', titleKey: 'menu.params', milestone: 'M4' },
     ],
   },
+  {
+    key: 'systemIntegration',
+    titleKey: 'menu.systemIntegration',
+    icon: Settings2,
+    children: [
+      { path: '/wms/system/instructions-results', titleKey: 'menu.instructionsResults', milestone: 'M1' },
+    ],
+  },
 ]
 
 export const allMenuLeaves: MenuLeaf[] = wmsMenu.flatMap((g) => g.children)

@@ -20,7 +20,7 @@
 
 菜单：**基础资料 → 商品管理**（`config/menu.ts` → `path: '/wms/master/skus'`，`titleKey: 'menu.skus'`）。列表 `PageContainer title={t('menu.skus')}`（中文「商品管理」，与仓库/库位等「…管理」一致；路由仍为 `/skus`），勿另起与菜单不一致的 listTitle。
 
-顶栏「当前仓库」只影响**业务单据**默认过滤；商品列表展示**授权可见货主下全部 SKU**（与主 PRD 一致）。
+顶栏「当前仓库」只影响**业务单据**默认过滤；商品列表展示全部货主的 SKU。一期不提供登录、角色或用户仓库授权校验。
 
 本地：`cd 09-产品原型/qs-wms-demo && npm run dev`。
 

@@ -26,10 +26,10 @@ import { usePutaway } from '@/hooks/use-putaway'
 import {
   findLocation,
   planQty,
+  putawayRecommendationForLine,
   recordedQty,
   remainingQty,
   skuKindCount,
-  suggestPutawayLocation,
   validatePutawayLocation,
 } from '@/lib/putaway'
 import {
@@ -119,7 +119,7 @@ function EntryWorkspace({ order, listSearch }: { order: PutawayOrder; listSearch
   /** 提示里指认一行：名称，同商品多批次时带批次 */
   const labelOf = (line: PutawayPlanLine) => (line.batchNo ? `${nameOf(line)} · ${line.batchNo}` : nameOf(line))
   const isSerialLine = (_line: PutawayPlanLine) => false
-  const suggestionOf = (line: PutawayPlanLine) => suggestPutawayLocation(order, line.skuCode, putaway.locationContext)
+  const suggestionOf = (line: PutawayPlanLine) => putawayRecommendationForLine(order, line, putaway.locationContext)
   const lineOf = (lineNo: number) => order.planLines.find((l) => l.lineNo === lineNo)
 
   const drafts = entryDrafts(order, edited)

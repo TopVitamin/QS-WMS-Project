@@ -11,7 +11,7 @@ import { taskOrderNos } from '@/mock/outbound-actions'
 import type { OutboundPickTask } from '@/types/outbound'
 import type { PickFlow } from './use-pick-flow'
 
-/** 选任务（PDA拣货 PRD 第二节）：扫任务号、出库单号或波次号定位；命中一个直接开始拣 */
+/** 选任务：混合波次必须扫波次号；单任务可扫任务号或出库单号。 */
 export function PickListStep({ flow }: { flow: PickFlow }) {
   const { t, nav, openTasks } = flow
   const [message, setMessage] = useState<ScanMessage>()
@@ -21,9 +21,12 @@ export function PickListStep({ flow }: { flow: PickFlow }) {
   const onScan = (code: string) => {
     const key = code.trim().toUpperCase()
     const hit =
-      openTasks.find((x) => x.no.toUpperCase() === key) ??
       openTasks.find((x) => x.waveNo?.toUpperCase() === key) ??
-      openTasks.find((x) => taskOrderNos(x).some((no) => no.toUpperCase() === key))
+      openTasks.find(
+        (x) =>
+          !x.waveNo &&
+          (x.no.toUpperCase() === key || taskOrderNos(x).some((no) => no.toUpperCase() === key)),
+      )
     if (!hit) {
       setMessage({ tone: 'error', text: t('outbound.pdaPick.taskNotFound', { code: code.trim() }) })
       return false
@@ -41,7 +44,7 @@ export function PickListStep({ flow }: { flow: PickFlow }) {
           label={t('outbound.pdaPick.scanTask')}
           onScan={onScan}
           message={message}
-          candidates={openTasks.slice(0, 3).map((x) => ({ value: x.no }))}
+          candidates={openTasks.slice(0, 3).map((x) => ({ value: x.waveNo ?? x.no }))}
         />
         <PdaSection title={t('outbound.pdaPick.listTitle', { count: openTasks.length })}>
           {openTasks.length === 0 && (
@@ -52,7 +55,16 @@ export function PickListStep({ flow }: { flow: PickFlow }) {
             const owner = taskOwnerDoc(task)
             const openLines = task.lines.filter((l) => pickLineRemaining(l) > 0)
             return (
-              <PdaListItem key={task.no} onClick={() => open(task)}>
+              <PdaListItem
+                key={task.no}
+                onClick={() => {
+                  if (task.waveNo) {
+                    setMessage({ tone: 'error', text: t('outbound.pdaPick.scanWaveFirst') })
+                    return
+                  }
+                  open(task)
+                }}
+              >
                 <div className="flex items-center gap-2">
                   <DocNoTail value={task.no} tail={4} className="text-base whitespace-nowrap" />
                   <span className="ml-auto">

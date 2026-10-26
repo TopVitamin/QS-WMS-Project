@@ -1,7 +1,7 @@
 import { Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { BizCode, CodeName, DateTime, Empty, Num } from '@/components/biz/display'
@@ -13,9 +13,10 @@ import { SummaryCard, SummaryMetrics } from '@/components/biz/summary-card'
 import { Button } from '@/components/ui/button'
 import { containerStatusMeta, containerTypeMeta } from '@/config/status'
 import { containerContents, containerRelatedDocs, containerSummary } from '@/lib/container-derive'
+import { containerIdOf } from '@/lib/container-id'
 import { findContainer } from '@/mock/container-actions'
 import { useDb, useLookups } from '@/mock/db'
-import { useCurrentWarehouse } from '@/stores/settings'
+import { useCurrentWarehouse, useSettings } from '@/stores/settings'
 import type { ContainerContentLine } from '@/lib/container-derive'
 import { ContainerFormDialog } from './container-dialogs'
 
@@ -24,10 +25,13 @@ export function ContainerDetailPage() {
   const { containerNo } = useParams<{ containerNo: string }>()
   const [params] = useSearchParams()
   const current = useCurrentWarehouse()
+  const navigate = useNavigate()
+  const operator = useSettings((s) => s.operator)
   const warehouseCode = params.get('wh') ?? current.code
   const db = useDb()
   const container = findContainer(db.containers, warehouseCode, containerNo ?? '')
   const setStatus = useDb((s) => s.setContainerStatus)
+  const inventoryAction = useDb((s) => s.inventoryAction)
   const { customerCode, customerName } = useLookups()
   const [editOpen, setEditOpen] = useState(false)
 
@@ -68,6 +72,42 @@ export function ContainerDetailPage() {
               <Pencil data-icon="inline-start" />
               {t('common.edit')}
             </Button>
+            {container.status === 'IN_STOCK' && summary.qty > 0 && (
+              <Button variant="outline" asChild>
+                <Link to={`/pda/move?containerId=${encodeURIComponent(containerIdOf(container.warehouseCode, container.containerNo) ?? '')}`}>
+                  {t('inventory.move.title')}
+                </Link>
+              </Button>
+            )}
+            {container.status === 'IN_STOCK' && summary.qty > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const skus = [
+                    ...new Map<string, { customerId: string; skuCode: string }>(
+                      contents.map((line) => [line.skuCode, { customerId: container.customerId, skuCode: line.skuCode }]),
+                    ).values(),
+                  ]
+                  const result = inventoryAction(
+                    {
+                      type: 'CREATE_STOCKTAKE',
+                      warehouseCode: container.warehouseCode,
+                      containerId: containerIdOf(container.warehouseCode, container.containerNo),
+                      skus,
+                    },
+                    operator,
+                  )
+                  if (!result.ok) {
+                    toast.error(t(result.errorKey, result.params))
+                    return
+                  }
+                  toast.success(t('inventory.stocktake.createSuccess', { no: result.no ?? '' }))
+                  if (result.no) navigate(`/wms/inventory/counts/${encodeURIComponent(result.no)}`)
+                }}
+              >
+                {t('inventory.stocktake.create')}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => {
@@ -219,6 +259,10 @@ function ContentTable({ contents }: { contents: ContainerContentLine[] }) {
           header: t('inbound.batchNo'),
           cell: ({ getValue }) => (getValue ? <BizCode>{getValue()}</BizCode> : <Empty />),
         }),
+        col.accessor('productionDate', {
+          header: t('inventory.productionDate'),
+          cell: ({ getValue }) => getValue ?? <Empty />,
+        }),
         col.accessor('qualityType', {
           header: t('container.quality'),
           cell: ({ getValue }) => <TagLabel>{t(`enum.quality.${getValue()}`)}</TagLabel>,
@@ -242,7 +286,7 @@ function ContentTable({ contents }: { contents: ContainerContentLine[] }) {
           cell: ({ getValue }) => t(`container.contentSource.${getValue()}`),
         }),
       ])}
-      getRowId={(l) => `${l.skuCode}:${l.batchNo ?? ''}:${l.qualityType}:${l.locationCode ?? ''}:${l.source}`}
+      getRowId={(l) => `${l.skuCode}:${l.batchNo ?? ''}:${l.productionDate ?? ''}:${l.qualityType}:${l.locationCode ?? ''}:${l.source}`}
     />
   )
 }

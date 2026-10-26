@@ -7,6 +7,7 @@ export interface ReturnReceiveDraft {
   rejectedQty: string
   rejectReason: string
   batchNo: string
+  productionDate: string
   expiryDate: string
   goodSerialNos: string
   defectSerialNos: string
@@ -19,6 +20,7 @@ export const emptyReturnReceiveDraft = (): ReturnReceiveDraft => ({
   rejectedQty: '',
   rejectReason: '',
   batchNo: '',
+  productionDate: '',
   expiryDate: '',
   goodSerialNos: '',
   defectSerialNos: '',

@@ -43,8 +43,6 @@ function SkuEditForm({ master, ownerCode, skuCode }: { master: SkuMaster; ownerC
         inboundDays: next.inboundDays,
         nearExpiryDays: next.nearExpiryDays,
         expiredDays: next.expiredDays,
-        qcRequired: next.qcRequired,
-        qcFlowType: next.qcFlowType,
         grossWeightKg: next.grossWeightKg,
         netWeightKg: next.netWeightKg,
         lengthCm: next.lengthCm,

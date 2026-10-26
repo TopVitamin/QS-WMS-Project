@@ -4,6 +4,7 @@ import { Navigate, useParams, useSearchParams } from 'react-router'
 import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
 import { useMasterForm } from '@/hooks/use-master-form'
+import { useLocationWorkReferences } from '@/hooks/use-location-work-references'
 import {
   blockingLocationCodes,
   createEmptyZoneForm,
@@ -24,13 +25,14 @@ export function ZoneEditPage() {
   const updateZoneMaster = useDb((s) => s.updateZoneMaster)
   const locationMasters = useDb((s) => s.locationMasters)
   const inventory = useDb((s) => s.inventory)
+  const work = useLocationWorkReferences()
   const zone = useDb((s) =>
     warehouseCode && code ? s.zoneMasters.find((z) => z.warehouseCode === warehouseCode && z.code === code) : undefined,
   )
 
   const warehouseReadOnly = useMemo(
-    () => (zone ? blockingLocationCodes(zone, locationMasters, inventory).length > 0 : false),
-    [zone, locationMasters, inventory],
+    () => (zone ? blockingLocationCodes(zone, locationMasters, inventory, work).length > 0 : false),
+    [zone, locationMasters, inventory, work],
   )
 
   const { form, setForm, errors, fieldError, onSave, onCancel } = useMasterForm<ZoneMaster, ZoneMasterFormErrors>({

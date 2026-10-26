@@ -156,6 +156,7 @@ export function usePickFlow() {
     t,
     nav,
     warehouseCode,
+    locationMasters,
     openTasks,
     findTask,
     latestTask,

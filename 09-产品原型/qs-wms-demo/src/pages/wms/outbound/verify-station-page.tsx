@@ -17,7 +17,9 @@ import { sum } from '@/lib/outbound-derive'
 import {
   defaultPackageNo,
   defaultVerifySession,
+  normalizeVerifySession,
   toVerifyQty,
+  verifyPackProblem,
   verifyRows,
   type VerifyRow as StationRow,
 } from '@/lib/outbound-verify'
@@ -44,6 +46,7 @@ export function OutboundVerifyStationPage() {
       outboundOrders: s.outboundOrders,
       outboundPickTasks: s.outboundPickTasks,
       outboundVerifications: s.outboundVerifications,
+      containers: s.containers,
       skuMasters: s.skuMasters,
       skuBarcodes: s.skuBarcodes,
       outboundAction: s.outboundAction,
@@ -61,6 +64,7 @@ export function OutboundVerifyStationPage() {
 
   const scanRef = useRef<HTMLInputElement>(null)
   const containerNoRef = useRef<HTMLInputElement>(null)
+  const parentContainerNoRef = useRef<HTMLInputElement>(null)
   const weightRef = useRef<HTMLInputElement>(null)
   const [scanValue, setScanValue] = useState('')
   const [flash, setFlash] = useState<ScanFlash>()
@@ -82,7 +86,7 @@ export function OutboundVerifyStationPage() {
   )
   const key = order ? webVerifyKey(warehouse, order.no) : ''
   const session: WebVerifySession | undefined = order
-    ? (sessions[key] ?? defaultVerifySession(order, records))
+    ? normalizeVerifySession(order, records, sessions[key] ?? defaultVerifySession(order, records))
     : undefined
   const update = (patch: Partial<WebVerifySession>) => {
     if (order && session) saveSession(key, { ...session, ...patch })
@@ -295,22 +299,26 @@ export function OutboundVerifyStationPage() {
     const lines = rows.filter((r) => r.qty > 0)
     if (!lines.length) return fail(t('outbound.ui.stationEmptyTitle'), t('outbound.ui.stationEmptyDetail'))
     const containerNo = session.containerNo.trim()
-    if (session.containerType !== 'NONE' && !containerNo)
-      return fail(
-        t('outbound.ui.stationContainerNoTitle', { type: t(`outbound.containers.${session.containerType}`) }),
-        t('outbound.ui.stationContainerNoDetail'),
-        containerNoRef,
-      )
-    if (session.method === 'SORT' && records.some((v) => v.method === 'SORT'))
-      return fail(t('outbound.ui.stationSortUsedTitle'), t('outbound.ui.stationSortUsedDetail'))
-    if (order.type === 'B2C' && session.method === 'PACK' && session.containerType !== 'PACKAGE')
-      return fail(t('outbound.ui.stationB2cPackageTitle'), t('outbound.ui.stationB2cPackageDetail'))
-    const weight = session.method === 'PACK' && session.weight.trim() ? Number(session.weight) : undefined
-    if (
-      (weight !== undefined && (!Number.isFinite(weight) || weight <= 0)) ||
-      (order.type === 'B2C' && session.method === 'PACK' && weight === undefined)
-    )
-      return fail(t('outbound.ui.stationWeightTitle'), t('outbound.ui.stationWeightDetail'), weightRef)
+    const problem = verifyPackProblem(order, session, records, db.containers)
+    if (problem) {
+      const title =
+        problem.key === 'stationContainerNo'
+          ? t('outbound.ui.stationContainerNoTitle', {
+              type: t(`outbound.containers.${problem.params?.type ?? session.containerType}`),
+            })
+          : t(`outbound.ui.${problem.key}Title`)
+      const focus = problem.key === 'stationContainerNo'
+        ? containerNoRef
+        : problem.key.includes('Parent')
+          ? parentContainerNoRef
+          : problem.key === 'stationWeight'
+            ? weightRef
+            : undefined
+      return fail(title, t(`outbound.ui.${problem.key}Detail`), focus)
+    }
+    const weight = order.type === 'B2C' && session.method === 'PACK' && session.weight.trim()
+      ? Number(session.weight)
+      : undefined
     const res = db.outboundAction(
       {
         type: 'VERIFY',
@@ -318,6 +326,7 @@ export function OutboundVerifyStationPage() {
         method: session.method,
         containerType: session.containerType,
         containerNo: session.containerType === 'NONE' ? '' : containerNo,
+        parentContainerNo: session.parentContainerNo?.trim() || undefined,
         weightKg: weight,
         lines: lines.map((r) => ({ assignmentId: r.id, qty: r.qty, serialNos: r.serialNos })),
       },
@@ -509,7 +518,7 @@ export function OutboundVerifyStationPage() {
                     <ChoiceRow
                       label={t('outbound.ui.method')}
                       value={session.method}
-                      options={(['SORT', 'PACK'] as const).map((v) => ({
+                      options={(order.type === 'FBA' ? ['PACK'] as const : ['SORT', 'PACK'] as const).map((v) => ({
                         value: v,
                         label: t(`outbound.verifyMethods.${v}`),
                       }))}
@@ -518,12 +527,21 @@ export function OutboundVerifyStationPage() {
                     <ChoiceRow
                       label={t('outbound.ui.containerType')}
                       value={session.containerType}
-                      options={(['NONE', 'PACKAGE', 'BOX', 'PALLET'] as const).map((v) => ({
+                      options={(
+                        order.type === 'FBA'
+                          ? ['BOX', 'PALLET'] as const
+                          : order.type === 'WHOLESALE'
+                            ? ['NONE', 'BOX', 'PALLET'] as const
+                            : ['NONE', 'PACKAGE', 'BOX', 'PALLET'] as const
+                      ).map((v) => ({
                         value: v,
                         label: t(`outbound.containers.${v}`),
                       }))}
                       onChange={(containerType) => {
-                        update({ containerType })
+                        update({
+                          containerType,
+                          parentContainerNo: containerType === 'PALLET' ? '' : session.parentContainerNo,
+                        })
                         refocusScan()
                       }}
                     />
@@ -537,12 +555,41 @@ export function OutboundVerifyStationPage() {
                           className="h-10 w-64 text-base"
                           value={session.containerNo}
                           placeholder={t('common.inputPlaceholder')}
-                          onChange={(e) => update({ containerNo: e.target.value })}
+                          onChange={(e) => {
+                            const containerNo = e.target.value
+                            const container = db.containers.find(
+                              (row) =>
+                                row.warehouseCode === order.warehouseCode &&
+                                row.containerNo.trim().toUpperCase() === containerNo.trim().toUpperCase(),
+                            )
+                            update({
+                              containerNo,
+                              parentContainerNo: container?.parentContainerNo ?? '',
+                            })
+                          }}
                           onKeyDown={(e) => e.key === 'Enter' && refocusScan()}
                         />
                       </label>
                     )}
-                    {session.method === 'PACK' && (
+                    {order.type === 'FBA' && session.containerType === 'BOX' && (
+                      <label className="flex flex-col gap-1">
+                        <span className="text-sm text-muted-foreground">{t('outbound.ui.parentContainerNo')}</span>
+                        <Input
+                          ref={parentContainerNoRef}
+                          className="h-10 w-64 text-base"
+                          value={session.parentContainerNo ?? ''}
+                          placeholder={t('common.inputPlaceholder')}
+                          onChange={(e) => update({ parentContainerNo: e.target.value })}
+                          onKeyDown={(e) => e.key === 'Enter' && refocusScan()}
+                        />
+                      </label>
+                    )}
+                    {order.type === 'FBA' && (
+                      <Link className="pb-2 text-sm text-primary hover:underline" to="/wms/master/containers">
+                        {t('outbound.ui.manageContainers')}
+                      </Link>
+                    )}
+                    {order.type === 'B2C' && session.method === 'PACK' && (
                       <label className="flex flex-col gap-1">
                         <span className="text-sm text-muted-foreground">{t('outbound.ui.weight')}</span>
                         <Input

@@ -445,11 +445,13 @@ export function snapshotRows(
   s: Pick<SeedData, 'inventory' | 'locations' | 'locationMasters'>,
   warehouseCode: string,
   skus: StocktakeSku[],
+  containerId?: string,
 ): InventoryRecord[] {
   return s.inventory.filter(
     (r) =>
       r.warehouseCode === warehouseCode &&
       r.onHandQty > 0 &&
+      (!containerId || r.containerId === containerId) &&
       skus.some((k) => k.customerId === r.customerId && k.skuCode === r.skuCode) &&
       isWorkLocation(locationUsage(s, warehouseCode, r.locationCode)),
   )

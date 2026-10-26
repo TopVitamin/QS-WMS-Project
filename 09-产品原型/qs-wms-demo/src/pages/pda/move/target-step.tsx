@@ -110,6 +110,22 @@ function TargetWorkspace({ flow, row, current }: { flow: MoveFlow; row: Inventor
       <MoveContext flow={flow} source={row.locationCode} />
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
         <MoveRowCard flow={flow} row={row} />
+        {current.containerId && (
+          <PdaCard className="text-sm text-muted-foreground">
+            {t('inventory.containerNo')}: {current.containerId.split('::').at(-1)} · {t('pdaMove.containerHint')}
+          </PdaCard>
+        )}
+        {row.containerId && current.containerId && (
+          <PdaButton
+            variant="outline"
+            onClick={() => setCurrent({ containerId: undefined, asLoose: true, qty: 1, serialNos: [] })}
+          >
+            {t('pdaMove.asLoose')}
+          </PdaButton>
+        )}
+        {row.containerId && current.asLoose && (
+          <PdaCard className="text-sm text-muted-foreground">{t('pdaMove.looseHint')}</PdaCard>
+        )}
         {flow.pending(row) && <p className="text-sm text-muted-foreground">{t('pdaMove.pendingHint')}</p>}
         <PdaCard className="flex min-h-14 items-center gap-3">
           {current.targetLocation ? (
@@ -163,7 +179,7 @@ function TargetWorkspace({ flow, row, current }: { flow: MoveFlow; row: Inventor
       <PdaFooter
         hint={sn && qty === 0 ? t('pdaMove.hintSerial') : !current.targetLocation ? t('pdaMove.hintTarget') : undefined}
       >
-        {!sn && (
+        {!sn && (!current.containerId || current.asLoose) && (
           <QtyStepper
             hideLabel
             label={t('pdaMove.qtyLabel')}

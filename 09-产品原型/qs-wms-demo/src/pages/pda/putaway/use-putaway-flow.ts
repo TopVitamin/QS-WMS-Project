@@ -49,7 +49,13 @@ export function usePutawayFlow() {
   /** 最新的库位校验与推荐上下文（扫码处理用） */
   const liveLocationContext = useCallback(() => {
     const s = useDb.getState()
-    return { locations: s.locations, inventory: s.inventory, putawayOrders: s.putawayOrders }
+    return {
+      locations: s.locations,
+      inventory: s.inventory,
+      putawayOrders: s.putawayOrders,
+      locationMasters: s.locationMasters,
+      skuMasters: s.skuMasters,
+    }
   }, [])
 
   /** 商品解析与收货一致：SKU 编码 → 货主条码 → 主条码；范围默认是本上架单的商品 */

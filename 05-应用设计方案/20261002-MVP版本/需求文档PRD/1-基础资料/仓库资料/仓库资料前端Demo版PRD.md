@@ -80,7 +80,7 @@
 | 保存成功 | 保存成功 |
 | 校验失败 | 字段下提示 ± 顶部 `Alert` |
 
-四仓种子见 `mock/warehouse-masters.ts`，与权限 Mock、`mock/seed` 对齐；改种子时 `persist version +1`。写库：`mock/db.ts` → `updateWarehouseMaster`；创建与启停动作一期不得开放。
+四仓种子见 `mock/warehouse-masters.ts`，与 `mock/seed` 对齐；一期不提供登录、角色或仓库授权校验。改种子时 `persist version +1`。写库：`mock/db.ts` → `updateWarehouseMaster`；创建与启停动作一期不得开放。
 
 ## 七、代码索引
 

@@ -11,6 +11,7 @@ import { RowActions } from '@/components/biz/row-actions'
 import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { SummaryCard, SummaryMetrics, SummaryProgress } from '@/components/biz/summary-card'
 import { Button } from '@/components/ui/button'
+import { OptionSelect } from '@/components/biz/option-select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,8 @@ import {
   putbackReturned,
   taskQtyForOrder,
 } from '@/lib/outbound-derive'
+import { FILTER_ALL } from '@/lib/master-data'
+import { containerIdOf } from '@/lib/container-id'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type {
@@ -94,12 +97,14 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
   const allHandovers = useDb((s) => s.outboundHandovers)
   const auditLogs = useDb((s) => s.auditLogs)
   const inventory = useDb((s) => s.inventory)
+  const containers = useDb((s) => s.containers)
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const channelMasters = useDb((s) => s.channelMasters)
   const carrierMasters = useDb((s) => s.carrierMasters)
   const [modal, setModal] = useState<Modal>()
   const [packNo, setPackNo] = useState<string>()
   const [sheet, setSheet] = useState<OutboundVerification>()
+  const [allocationContainerId, setAllocationContainerId] = useState<string>(FILTER_ALL)
 
   const db = { outboundPickTasks: allTasks, outboundVerifications: allVerifications, outboundResults: allResults }
   const acts = orderActions(o, db)
@@ -115,6 +120,27 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
   const shipped = o.status === 'SHIPPED'
   const live = !shipped && o.status !== 'CANCELLED'
   const isOther = o.type === 'OTHER'
+  const allocationContainerOptions = useMemo(() => {
+    const availableIds = new Set(
+      inventory
+        .filter(
+          (r) =>
+            r.warehouseCode === o.warehouseCode &&
+            r.customerId === o.customerId &&
+            r.qualityType === 'GOOD' &&
+            r.containerId &&
+            r.onHandQty > (r.allocatedQty ?? 0) &&
+            o.items.some((item) => item.skuCode === r.skuCode),
+        )
+        .map((r) => r.containerId!),
+    )
+    return containers
+      .filter((container) => availableIds.has(containerIdOf(container.warehouseCode, container.containerNo) ?? ''))
+      .map((container) => ({
+        value: containerIdOf(container.warehouseCode, container.containerNo)!,
+        label: container.containerNo,
+      }))
+  }, [containers, inventory, o.customerId, o.items, o.warehouseCode])
 
   const manualCancel = async () => {
     const ok = await confirm({
@@ -128,7 +154,15 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
     const ok = await confirm({ title: t('outbound.ui.deleteVerifyTitle', { no: v.no }), variant: 'destructive' })
     if (ok) run({ type: 'DELETE_VERIFY', no: v.no }, () => t('outbound.ui.toastDeleted', { no: v.no }))
   }
-  const allocate = () => run({ type: 'ALLOCATE', no: o.no }, (no) => t('outbound.ui.toastAllocated', { no }))
+  const allocate = () =>
+    run(
+      {
+        type: 'ALLOCATE',
+        no: o.no,
+        containerId: allocationContainerId === FILTER_ALL ? undefined : allocationContainerId,
+      },
+      (no) => t('outbound.ui.toastAllocated', { no }),
+    )
 
   const moreItems = [
     acts.unpick && { key: 'unpick', label: t('outbound.ui.unpick'), onSelect: () => setModal('UNPICK') },
@@ -210,6 +244,10 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
       }),
       col.accessor('containerNo', {
         header: t('outbound.ui.containerNo'),
+        cell: ({ getValue }) => (getValue() ? <BizCode>{getValue()}</BizCode> : <Empty />),
+      }),
+      col.accessor('parentContainerNo', {
+        header: t('outbound.ui.parentContainerNo'),
         cell: ({ getValue }) => (getValue() ? <BizCode>{getValue()}</BizCode> : <Empty />),
       }),
       col.accessor('trackingNo', {
@@ -381,6 +419,19 @@ function OrderDetail({ order: o, backTo }: { order: OutboundOrder; backTo: strin
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {(acts.allocate || acts.reallocate) && allocationContainerOptions.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{t('inventory.containerNo')}</span>
+              <div className="w-44">
+                <OptionSelect
+                  allOption
+                  value={allocationContainerId}
+                  onValueChange={setAllocationContainerId}
+                  options={allocationContainerOptions}
+                />
+              </div>
+            </div>
           )}
           {acts.reallocate && (
             <Button variant="outline" onClick={allocate}>

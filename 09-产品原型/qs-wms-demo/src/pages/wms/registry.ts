@@ -13,6 +13,10 @@ export const wmsPageRegistry: Record<string, ComponentType> = {
   ),
   '/wms/returns/orders': lazyPage(() => import('./returns/return-list-page'), 'ReturnListPage'),
   '/wms/system/logs': lazyPage(() => import('./system/operation-log-page'), 'OperationLogPage'),
+  '/wms/system/instructions-results': lazyPage(
+    () => import('./system/instructions-results-page'),
+    'InstructionsResultsPage',
+  ),
   '/wms/inventory/counts': lazyPage(() => import('./inventory/stocktake-list-page'), 'StocktakeListPage'),
   '/wms/inventory/moves': lazyPage(() => import('./inventory/move-list-page'), 'MoveListPage'),
   '/wms/inventory/logs': lazyPage(() => import('./inventory/logs-page'), 'InventoryLogsPage'),

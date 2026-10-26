@@ -4,6 +4,7 @@ import type { OutboundCommand } from '@/types/outbound'
 import type { InventoryLog, InventoryLogSource, InventoryRecord, QualityType } from '@/types/wms'
 import { applyInventoryAction, inventoryAuditRef, type InventoryTerminal } from './inventory-actions'
 import { applyOutboundAction } from './outbound-actions'
+import { containerIdOf } from '@/lib/container-id'
 import type { SeedData } from './seed'
 
 const LA = 'US-LA-01'
@@ -24,7 +25,8 @@ const CITY: Record<string, string> = {
 
 type BalanceKey = Pick<
   InventoryRecord,
-  'warehouseCode' | 'customerId' | 'skuCode' | 'locationCode' | 'qualityType' | 'batchNo' | 'expiryDate'
+  'warehouseCode' | 'customerId' | 'skuCode' | 'locationCode' | 'qualityType' | 'batchNo' | 'productionDate' | 'expiryDate'
+  | 'containerId'
 >
 
 interface Movement {
@@ -43,7 +45,7 @@ interface Movement {
 }
 
 const balanceKey = (k: BalanceKey) =>
-  [k.warehouseCode, k.customerId, k.skuCode, k.locationCode, k.batchNo ?? '', k.qualityType].join('|')
+  [k.warehouseCode, k.customerId, k.skuCode, k.locationCode, k.containerId ?? '', k.batchNo ?? '', k.productionDate ?? '', k.expiryDate ?? '', k.qualityType].join('|')
 
 /**
  * 种子里直接写入的业务事实回放成流水：入库收货记录、已完成上架单，以及出库种子单据的初始预占。
@@ -51,11 +53,12 @@ const balanceKey = (k: BalanceKey) =>
  */
 function openingLedger(seed: SeedData): InventoryLog[] {
   const moves: Movement[] = []
-  /** 批次、效期只对启用批次或效期管理的商品是库存维度；其他商品收货登记的批次不分库存明细 */
-  const lot = (customerId: string, skuCode: string, batchNo?: string, expiryDate?: string) => {
+  /** 批次属性只对启用批次或效期管理的商品保留；其他商品收货登记的批次不分库存明细 */
+  const lot = (customerId: string, skuCode: string, batchNo?: string, productionDate?: string, expiryDate?: string) => {
     const m = seed.skuMasters.find((x) => x.customerId === customerId && x.code === skuCode)
     return {
       batchNo: m?.batchEnabled || m?.expiryEnabled ? batchNo : undefined,
+      productionDate: m?.expiryEnabled ? productionDate : undefined,
       expiryDate: m?.expiryEnabled ? expiryDate : undefined,
     }
   }
@@ -76,8 +79,9 @@ function openingLedger(seed: SeedData): InventoryLog[] {
               customerId: r.customerId,
               skuCode: l.skuCode,
               locationCode: r.stagingLocationCode,
+              containerId: l.containerId ?? containerIdOf(r.warehouseCode, l.containerNo),
               qualityType,
-              ...lot(r.customerId, l.skuCode, l.batchNo, l.expiryDate),
+              ...lot(r.customerId, l.skuCode, l.batchNo, l.productionDate, l.expiryDate),
             },
             change: qty,
             refNo: r.inboundNo,
@@ -111,8 +115,9 @@ function openingLedger(seed: SeedData): InventoryLog[] {
             warehouseCode: p.warehouseCode,
             customerId: p.customerId,
             skuCode: a.skuCode,
+            containerId: p.containerId ?? containerIdOf(p.warehouseCode, p.containerNo),
             qualityType: p.qualityType,
-            ...lot(p.customerId, a.skuCode, plan?.batchNo, plan?.expiryDate),
+            ...lot(p.customerId, a.skuCode, plan?.batchNo, plan?.productionDate, plan?.expiryDate),
           }
           moves.push({ ...base, key: { ...key, locationCode: p.stagingLocationCode }, change: -a.qty })
           moves.push({ ...base, key: { ...key, locationCode: a.locationCode }, change: a.qty })
@@ -126,7 +131,10 @@ function openingLedger(seed: SeedData): InventoryLog[] {
   moves.forEach((m) => shift(balanceKey(m.key), -m.change))
   seed.inventoryLogs
     .filter((l) => l.level === 'DETAIL')
-    .forEach((l) => shift(balanceKey({ ...l, qualityType: l.qualityType ?? 'GOOD' }), -l.qtyChange))
+    .forEach((l) => {
+      const record = l.inventoryId ? seed.inventory.find((r) => r.id === l.inventoryId) : undefined
+      shift(balanceKey({ ...l, productionDate: record?.productionDate, qualityType: l.qualityType ?? 'GOOD' }), -l.qtyChange)
+    })
   const logs: InventoryLog[] = []
   const pairs = new Map<string, InventoryLog>()
   moves
@@ -136,10 +144,12 @@ function openingLedger(seed: SeedData): InventoryLog[] {
       const k = balanceKey(m.key)
       const before = running.get(k) ?? 0
       running.set(k, before + m.change)
+      const { productionDate, ...logDimensions } = m.key
+      void productionDate
       const log: InventoryLog = {
         id: `LOG-SEED-IB-${i}`,
         level: 'DETAIL',
-        ...m.key,
+        ...logDimensions,
         inventoryId: seed.inventory.find((r) => balanceKey(r) === k)?.id,
         type: m.type,
         refNo: m.refNo,

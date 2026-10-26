@@ -1,0 +1,27 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "退货收货" [level=1]
+  - generic: US-LA-01
+- generic: 扫描退货单号或原出库运单号
+- textbox "扫描退货单号或原出库运单号" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "RT-20261019-0001"
+- button "RT-20261019-0002"
+- button "OB-20261018-0002RT-20261019-0002"
+- paragraph: 也可以扫原 B2C 出库运单，现场建派送失败退货单
+- generic: 待收货退货单
+- button "RT-20261019-0001 客户退货 · 1 SKU":
+  - generic: RT-20261019-0001
+  - generic: 客户退货 · 1 SKU
+- button "RT-20261019-0002 派送失败 · 1 SKU":
+  - generic: RT-20261019-0002
+  - generic: 派送失败 · 1 SKU
+- region "Notifications alt+T"
+- text: 解释

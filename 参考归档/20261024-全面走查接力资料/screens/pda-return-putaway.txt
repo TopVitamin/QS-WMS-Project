@@ -1,0 +1,35 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "返库上架" [level=1]
+  - generic: US-LA-01
+- generic: 扫描返库上架单号或原出库单号
+- textbox "扫描返库上架单号或原出库单号" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "PB-20261015-0001"
+- button "PB-20261015-0002"
+- generic: 待返库（2）
+- button "PB-20261015-0001 待上架 取消 OB-20261015-0008 · 1 个库位 · 1 行 已保存 0/2":
+  - generic: PB-20261015-0001
+  - generic: 待上架
+  - generic: 取消
+  - generic: OB-20261015-0008
+  - generic: ·
+  - generic: 1 个库位 · 1 行
+  - generic: 已保存 0/2
+- button "PB-20261015-0002 待上架 取消 OB-20261015-0020 · 2 个库位 · 2 行 已保存 0/2":
+  - generic: PB-20261015-0002
+  - generic: 待上架
+  - generic: 取消
+  - generic: OB-20261015-0020
+  - generic: ·
+  - generic: 2 个库位 · 2 行
+  - generic: 已保存 0/2
+- region "Notifications alt+T"
+- text: 解释

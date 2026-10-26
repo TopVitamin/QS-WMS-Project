@@ -1,6 +1,9 @@
 import { negativeInventoryIssue } from '@/lib/inventory-constraints'
+import { applyExpiredConversions } from '@/lib/expiry-conversion'
 import { serialsInWarehouse, updateSerialStocks } from '@/lib/serial-stock'
 import { nextDocNo } from '@/lib/doc-no'
+import { containerIdOf } from '@/lib/container-id'
+import { completeExpiryDatePair } from '@/lib/expiry-date'
 import {
   countingStocktake,
   isWorkLocation,
@@ -19,7 +22,7 @@ import type { SeedData } from './seed'
 
 type Patch = Pick<
   SeedData,
-  'inventory' | 'inventoryLogs' | 'inventoryCounts' | 'stockMoves' | 'skuAllocationControls' | 'serialStocks'
+  'inventory' | 'inventoryLogs' | 'inventoryCounts' | 'stockMoves' | 'skuAllocationControls' | 'serialStocks' | 'containers'
 >
 type Params = Record<string, string | number>
 type WriteMeta = Omit<
@@ -69,6 +72,7 @@ export function applyInventoryAction(
     inventoryCounts: state.inventoryCounts,
     stockMoves: state.stockMoves,
     skuAllocationControls: state.skuAllocationControls,
+    containers: state.containers,
   })
   const s = { ...state, ...patch }
   const finish = (no?: string): InventoryActionResult => {
@@ -102,7 +106,14 @@ export function applyInventoryAction(
   const balanceAt = (
     from: Pick<
       InventoryRecord,
-      'warehouseCode' | 'customerId' | 'skuCode' | 'batchNo' | 'expiryDate' | 'firstInboundAt'
+      | 'warehouseCode'
+      | 'customerId'
+      | 'skuCode'
+      | 'batchNo'
+      | 'productionDate'
+      | 'expiryDate'
+      | 'firstInboundAt'
+      | 'containerId'
     >,
     locationCode: string,
     qualityType: QualityType,
@@ -113,8 +124,10 @@ export function applyInventoryAction(
         r.customerId === from.customerId &&
         r.skuCode === from.skuCode &&
         r.locationCode === locationCode &&
+        (r.containerId ?? '') === (from.containerId ?? '') &&
         r.qualityType === qualityType &&
         (r.batchNo ?? '') === (from.batchNo ?? '') &&
+        (r.productionDate ?? '') === (from.productionDate ?? '') &&
         (r.expiryDate ?? '') === (from.expiryDate ?? ''),
     )
     if (!to) {
@@ -122,10 +135,12 @@ export function applyInventoryAction(
         id: `INV-INV-${at}-${s.inventory.length}`,
         warehouseCode: from.warehouseCode,
         customerId: from.customerId,
+        containerId: from.containerId,
         skuCode: from.skuCode,
         locationCode,
         qualityType,
         batchNo: from.batchNo,
+        productionDate: from.productionDate,
         expiryDate: from.expiryDate,
         onHandQty: 0,
         lockedQty: 0,
@@ -166,6 +181,7 @@ export function applyInventoryAction(
     source: InventoryCount['source'],
     discoveries: StocktakeDiscovery[],
     remark?: string,
+    containerId?: string,
   ) => {
     if (!skus.length) reject('skuEmpty')
     if (new Set(skus.map((k) => `${k.customerId}::${k.skuCode}`)).size !== skus.length) reject('skuEmpty')
@@ -174,7 +190,7 @@ export function applyInventoryAction(
     })
     const blocker = stocktakeBlockers(s, warehouseCode, skus)[0]
     if (blocker) reject(`stocktakeBlocked.${blocker.kind}`, { sku: blocker.skuCode, ref: blocker.ref })
-    const rows = snapshotRows(s, warehouseCode, skus).sort(
+    const rows = snapshotRows(s, warehouseCode, skus, containerId).sort(
       (a, b) =>
         a.locationCode.localeCompare(b.locationCode) ||
         a.skuCode.localeCompare(b.skuCode) ||
@@ -189,6 +205,7 @@ export function applyInventoryAction(
     s.inventoryCounts.push({
       no,
       warehouseCode,
+      containerId,
       skus,
       source,
       discoveries,
@@ -200,9 +217,11 @@ export function applyInventoryAction(
         lineNo: i + 1,
         inventoryId: r.id,
         locationCode: r.locationCode,
+        containerId: r.containerId,
         customerId: r.customerId,
         skuCode: r.skuCode,
         batchNo: r.batchNo,
+        productionDate: r.productionDate,
         expiryDate: r.expiryDate,
         qualityType: r.qualityType,
         bookQty: r.onHandQty,
@@ -215,6 +234,11 @@ export function applyInventoryAction(
   try {
     let resultNo: string | undefined
     switch (c.type) {
+      case 'PROCESS_EXPIRED_CONVERSIONS': {
+        if (terminal !== 'SYSTEM') reject('systemOnly')
+        applyExpiredConversions(s, at)
+        return finish()
+      }
       case 'CONVERT_QUALITY': {
         if (s.inventoryLogs.some((l) => l.actionId === c.requestId)) return finish(c.requestId)
         const r = row(c.inventoryId)
@@ -260,6 +284,29 @@ export function applyInventoryAction(
         const existing = s.stockMoves.find((m) => m.requestId === c.requestId)
         if (existing) return finish(existing.no)
         if (!c.lines.length) reject('moveEmpty')
+        const containerLines = new Map<string, typeof c.lines>()
+        c.lines.forEach((line) => {
+          const r = row(line.inventoryId)
+          if (line.targetContainerId) {
+            if (r.containerId !== line.targetContainerId) reject('containerMoveWhole')
+            containerLines.set(line.targetContainerId, [...(containerLines.get(line.targetContainerId) ?? []), line])
+          }
+        })
+        for (const [containerId, lines] of containerLines) {
+          const actualRows = s.inventory.filter((r) => r.containerId === containerId && r.onHandQty > 0)
+          const lineById = new Map(lines.map((line) => [line.inventoryId, line]))
+          const targets = new Set(lines.map((line) => line.targetLocation.trim().toUpperCase()))
+          if (
+            lineById.size !== lines.length ||
+            actualRows.length !== lineById.size ||
+            actualRows.some((r) => {
+              const line = lineById.get(r.id)
+              return !line || Boolean(r.allocatedQty) || line.qty !== r.onHandQty
+            }) ||
+            targets.size !== 1
+          )
+            reject('containerMoveWhole')
+        }
         const no = nextDocNo(
           'MV',
           s.stockMoves.map((m) => m.no),
@@ -292,7 +339,7 @@ export function applyInventoryAction(
           )
           if (input.serialNos.some((sn) => usedSerials.has(sn))) reject('serial', { sku: r.skuCode, line })
           input.serialNos.forEach((sn) => usedSerials.add(sn))
-          const to = balanceAt(r, targetCode, r.qualityType)
+          const to = balanceAt({ ...r, containerId: input.targetContainerId }, targetCode, r.qualityType)
           r.onHandQty -= input.qty
           r.serialNos = input.serialNos.length ? r.serialNos?.filter((sn) => !input.serialNos.includes(sn)) : undefined
           to.onHandQty += input.qty
@@ -314,6 +361,7 @@ export function applyInventoryAction(
             skuCode: r.skuCode,
             sourceLocation: r.locationCode,
             targetLocation: targetCode,
+            containerId: input.targetContainerId,
             batchNo: r.batchNo,
             expiryDate: r.expiryDate,
             qualityType: r.qualityType,
@@ -333,6 +381,23 @@ export function applyInventoryAction(
           terminal: 'PDA',
           lines,
         })
+        containerLines.forEach((lines, containerId) => {
+          const target = lines[0].targetLocation.trim().toUpperCase()
+          const idx = s.containers.findIndex(
+            (container) => containerIdOf(container.warehouseCode, container.containerNo) === containerId,
+          )
+          if (idx >= 0) {
+            s.containers[idx] = {
+              ...s.containers[idx],
+              currentLocationCode: target,
+              lastScannedAt: at,
+              lastScannedBy: operator,
+              updatedAt: at,
+              updatedBy: operator,
+            }
+          }
+        })
+        patch.containers = s.containers
         resultNo = no
         break
       }
@@ -343,7 +408,7 @@ export function applyInventoryAction(
         break
       }
       case 'CREATE_STOCKTAKE': {
-        resultNo = createStocktake(c.warehouseCode, c.skus, 'PLAN', [], c.remark)
+        resultNo = createStocktake(c.warehouseCode, c.skus, 'PLAN', [], c.remark, c.containerId)
         break
       }
       case 'CREATE_STOCKTAKE_FROM_DISCREPANCY': {
@@ -393,10 +458,11 @@ export function applyInventoryAction(
           if (e.serialNos.some((sn) => elsewhere.includes(sn) || inBatch.includes(sn)))
             reject('serial', { sku: l.skuCode })
           l.countedQty = e.qty
-          l.countedSerialNos =
-            master(l.customerId, l.skuCode)?.snEnabled && (e.serialNos.length > 0 || e.qty === 0)
-              ? [...e.serialNos]
-              : undefined
+          // 数量盘点只校正数量；只有现场逐件扫到的 SN 才能作为身份差异依据。
+          // 尤其数字录入为 0 时，空 SN 列表不代表已逐件确认所有账面 SN 均丢失。
+          l.countedSerialNos = master(l.customerId, l.skuCode)?.snEnabled && e.serialNos.length > 0
+            ? [...e.serialNos]
+            : undefined
           l.countedBy = operator
           l.countedAt = at
           if (e.note !== undefined) l.diffNote = e.note.trim() || undefined
@@ -407,6 +473,9 @@ export function applyInventoryAction(
       case 'ADD_COUNT_LINE': {
         const p = stocktake(c.no)
         if (p.status !== 'COUNTING') reject('stocktakeClosed')
+        if (p.containerId && c.containerId && p.containerId !== c.containerId) reject('containerCountScope')
+        if (p.containerId && !p.lines.some((line) => line.locationCode === c.locationCode.trim().toUpperCase()))
+          reject('containerCountScope')
         if (!p.skus.some((k) => k.customerId === c.customerId && k.skuCode === c.skuCode))
           reject('skuOutOfScope', { sku: c.skuCode })
         const code = c.locationCode.trim().toUpperCase()
@@ -415,7 +484,9 @@ export function applyInventoryAction(
         if (occupiedByOtherOwner(s, p.warehouseCode, code, c.customerId)) reject('countOccupied', { location: code })
         const m = master(c.customerId, c.skuCode)
         if ((m?.batchEnabled || m?.expiryEnabled) && !c.batchNo?.trim()) reject('batchRequired')
-        if (m?.expiryEnabled && !c.expiryDate) reject('batchRequired')
+        const dates = m?.expiryEnabled ? completeExpiryDatePair(c, m.shelfLifeDays) : undefined
+        if (m?.expiryEnabled && !dates) reject('expiryDateOrProductionRequired')
+        if (dates?.productionDate && dates.expiryDate && dates.productionDate > dates.expiryDate) reject('dateOrderInvalid')
         if (!positive(c.qty)) reject('countQty')
         checkSerials(c.customerId, c.skuCode, c.qty, c.serialNos)
         // 同一 SN 只能盘在一行：其他行已录到的不能再新增
@@ -430,7 +501,10 @@ export function applyInventoryAction(
               l.locationCode === code &&
               l.customerId === c.customerId &&
               l.skuCode === c.skuCode &&
+              (l.containerId ?? '') === (c.containerId ?? p.containerId ?? '') &&
               (l.batchNo ?? '') === (batchNo ?? '') &&
+              (l.productionDate ?? '') === (dates?.productionDate ?? '') &&
+              (l.expiryDate ?? '') === (dates?.expiryDate ?? '') &&
               l.qualityType === c.qualityType,
           )
         )
@@ -438,10 +512,12 @@ export function applyInventoryAction(
         p.lines.push({
           lineNo: Math.max(0, ...p.lines.map((l) => l.lineNo)) + 1,
           locationCode: code,
+          containerId: c.containerId ?? p.containerId,
           customerId: c.customerId,
           skuCode: c.skuCode,
           batchNo,
-          expiryDate: c.expiryDate || undefined,
+          productionDate: dates?.productionDate,
+          expiryDate: dates?.expiryDate,
           qualityType: c.qualityType,
           bookQty: 0,
           bookSerialNos: [],
@@ -471,7 +547,9 @@ export function applyInventoryAction(
                   warehouseCode: p.warehouseCode,
                   customerId: l.customerId,
                   skuCode: l.skuCode,
+                  containerId: l.containerId ?? p.containerId,
                   batchNo: l.batchNo,
+                  productionDate: l.productionDate,
                   expiryDate: l.expiryDate,
                   firstInboundAt: at,
                 },
@@ -530,6 +608,7 @@ export function applyInventoryAction(
             ),
         )
         patch.skuAllocationControls = s.skuAllocationControls
+        applyExpiredConversions(s, at)
         resultNo = p.no
         break
       }
@@ -542,6 +621,7 @@ export function applyInventoryAction(
         p.cancelledBy = operator
         p.cancelledAt = at
         p.cancelReason = c.reason.trim()
+        applyExpiredConversions(s, at)
         resultNo = p.no
         break
       }
@@ -560,6 +640,8 @@ export function inventoryAuditRef(
 ): { refType: AuditRefType; refNo: string; command: string; detail?: string } {
   const base = { command: c.type }
   switch (c.type) {
+    case 'PROCESS_EXPIRED_CONVERSIONS':
+      return { ...base, refType: 'SYSTEM', refNo: '-', detail: 'EXPIRED' }
     case 'CONVERT_QUALITY':
       return { ...base, refType: 'INVENTORY', refNo: c.inventoryId, detail: `× ${c.qty}` }
     case 'SUBMIT_MOVE':

@@ -108,7 +108,7 @@ export function useStocktakeFlow() {
 
   /** 可盘库位：启用的存储、拣货、不良隔离库位；暂存库位跟随收发单据，不在盘点范围 */
   const checkLocation = useCallback(
-    (code: string): Check => {
+    (code: string, count?: InventoryCount): Check => {
       const hits = resolveInventoryScan(useDb.getState(), warehouse.code, code)
       const loc = hits.find((h) => h.kind === 'location')
       if (!loc) {
@@ -125,6 +125,8 @@ export function useStocktakeFlow() {
           ok: false,
           text: t('pdaStocktake.errLocationUsage', { code: loc.code, usage: t(`inventory.usage.${loc.usage}`) }),
         }
+      if (count?.containerId && !count.lines.some((line) => line.locationCode === loc.code))
+        return { ok: false, text: t('inventory.error.containerCountScope') }
       return { ok: true, code: loc.code }
     },
     [t, warehouse.code],
@@ -252,6 +254,8 @@ export function useStocktakeFlow() {
               customerId: d.add!.customerId,
               skuCode: d.add!.skuCode,
               batchNo: d.add!.batchNo,
+              containerId: count.containerId,
+              productionDate: d.add!.productionDate,
               expiryDate: d.add!.expiryDate,
               qualityType: d.add!.qualityType,
               qty,
@@ -296,8 +300,8 @@ export function useStocktakeFlow() {
     counted: count.lines.filter((l) => l.countedQty !== undefined).length,
     total: count.lines.length,
   })
-  const lineBatch = (l: Pick<StocktakeLine, 'batchNo' | 'expiryDate'>) =>
-    [l.batchNo, l.expiryDate].filter(Boolean).join(' · ') || undefined
+  const lineBatch = (l: Pick<StocktakeLine, 'batchNo' | 'productionDate' | 'expiryDate'>) =>
+    [l.batchNo, l.productionDate, l.expiryDate].filter(Boolean).join(' · ') || undefined
   /** 待核对来源说明：发现环节 + 原单号或库位 */
   const sourceText = (source: string) => {
     const d = discoveryOf(source)

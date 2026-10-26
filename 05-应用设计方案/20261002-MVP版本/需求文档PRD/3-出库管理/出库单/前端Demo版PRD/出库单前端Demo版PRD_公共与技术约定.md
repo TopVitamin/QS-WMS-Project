@@ -79,7 +79,7 @@
 | `orderTotals(order)` | 各行需求、预占、缺货（非其他出库：需求−预占）、已拣、待拣（非其他出库：预占−已拣；其他出库：需求−已拣）、已复核、实发、未发（已出库：需求−实发） | 列表、详情汇总卡、商品明细 |
 | `lineQty(order, item)` | 同上，单行 | 商品明细 |
 | `orderTasks(db, no)` | 按单、补拣任务 `orderNo = no`，波次任务按份额包含本单 | 拣货任务页签、状态判定 |
-| `orderActions(order, db)` | 返回 `{allocate, reallocate, verify, unpick, ship, handover, mockChange, mockCancel, manualCancel, retryResult}` 布尔值，**逐条实现主PRD §6.4**（不按角色裁剪，等同全权限） | 详情页头、更多菜单 |
+| `orderActions(order, db)` | 返回 `{allocate, reallocate, verify, unpick, ship, handover, mockChange, mockCancel, manualCancel, retryResult}` 布尔值，**逐条实现主PRD §6.4**；只按单据状态和业务规则决定 | 详情页头、更多菜单 |
 | `shipCheck(order, db)` | 逐行返回 `{skuCode, demand, picked, verified, shipQty, unshipped, problem?}`，行级 `problem` 为 `unverified`／`short`；整单 `orderProblem` 为 `openTask`（有未完成任务）或 `package`（B2C 包裹信息未齐）；整单 `ok` 与 `shipTotal` | 确认出库弹窗 |
 | `taskQtyForOrder(task, no)` | 波次任务只取本单份额的应拣、实拣 | 拣货任务页签 |
 
@@ -122,7 +122,7 @@
 | 交接时间 | `DateTimeField`（按展示时区录入，提交 `toUtcIso(local, tz)`） |
 | 数字录入 | `Input type="number"`，`min=1`、整数校验；不用 `QtyStepper`（PDA 专用） |
 
-**动作可见性**：不提供登录与角色切换；页头按钮与动作层按主PRD §6.4 状态矩阵展示，等同全权限。
+**动作可见性**：不提供登录与角色切换；页头按钮与动作层按主PRD §6.4 状态矩阵展示，不做角色裁剪。
 
 ---
 

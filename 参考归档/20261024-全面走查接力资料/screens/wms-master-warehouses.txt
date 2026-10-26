@@ -1,0 +1,257 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - link "库存查询":
+      - /url: "#/wms/inventory/stock"
+      - generic: 库存查询
+    - link "库存流水":
+      - /url: "#/wms/inventory/logs"
+      - generic: 库存流水
+    - link "移库作业":
+      - /url: "#/wms/inventory/moves"
+      - generic: 移库作业
+    - link "盘点单":
+      - /url: "#/wms/inventory/counts"
+      - generic: 盘点单
+    - button "出库管理":
+      - generic: 出库管理
+    - link "出库单":
+      - /url: "#/wms/outbound/orders"
+      - generic: 出库单
+    - link "波次管理":
+      - /url: "#/wms/outbound/waves"
+      - generic: 波次管理
+    - link "拣货任务":
+      - /url: "#/wms/outbound/pick-tasks"
+      - generic: 拣货任务
+    - link "复核工作台":
+      - /url: "#/wms/outbound/verify-station"
+      - generic: 复核工作台
+    - link "返库上架单":
+      - /url: "#/wms/outbound/return-putaway"
+      - generic: 返库上架单
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - link "仓库管理":
+      - /url: "#/wms/master/warehouses"
+      - generic: 仓库管理
+    - link "库区管理":
+      - /url: "#/wms/master/zones"
+      - generic: 库区管理
+    - link "货位管理":
+      - /url: "#/wms/master/locations"
+      - generic: 货位管理
+    - link "容器管理":
+      - /url: "#/wms/master/containers"
+      - generic: 容器管理
+    - link "商品管理":
+      - /url: "#/wms/master/skus"
+      - generic: 商品管理
+    - link "货主管理":
+      - /url: "#/wms/master/customers"
+      - generic: 货主管理
+    - link "物流承运商管理":
+      - /url: "#/wms/master/carriers"
+      - generic: 物流承运商管理
+    - link "物流渠道管理":
+      - /url: "#/wms/master/channels"
+      - generic: 物流渠道管理
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 基础资料
+    - generic: /
+    - generic: 仓库管理
+  - button "US-LA-01 美西仓 19:18":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:18
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭":
+    - text: 库存流水
+    - button "关闭":
+  - tab "移库作业 关闭":
+    - text: 移库作业
+    - button "关闭":
+  - tab "盘点单 关闭":
+    - text: 盘点单
+    - button "关闭":
+  - tab "波次管理 关闭":
+    - text: 波次管理
+    - button "关闭":
+  - tab "拣货任务 关闭":
+    - text: 拣货任务
+    - button "关闭":
+  - tab "复核工作台 关闭":
+    - text: 复核工作台
+    - button "关闭":
+  - tab "返库上架单 关闭":
+    - text: 返库上架单
+    - button "关闭":
+  - tab "仓库管理 关闭" [selected]:
+    - text: 仓库管理
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "仓库管理" [level=1]
+  - button "导出":
+    - text: 导出
+  - generic: 仓库编码
+  - textbox "仓库编码":
+    - /placeholder: 请输入仓库编码
+  - generic: 仓库名称
+  - textbox "仓库名称":
+    - /placeholder: 请输入仓库名称
+  - generic: 状态
+  - combobox "状态":
+    - generic: 全部
+  - combobox
+  - generic: 国家/地区
+  - combobox "国家/地区":
+    - generic: 全部
+  - combobox
+  - generic: 最后修改时间
+  - button "最后修改时间":
+    - generic: 选择日期范围
+  - button "查询":
+    - text: 查询
+  - button "重置":
+    - text: 重置
+  - button "列设置":
+  - table:
+    - rowgroup:
+      - row "仓库编码 仓库名称 时区 状态 地址完整展示 最后修改时间 最后修改人 操作":
+        - columnheader "仓库编码"
+        - columnheader "仓库名称"
+        - columnheader "时区"
+        - columnheader "状态"
+        - columnheader "地址完整展示"
+        - columnheader "最后修改时间":
+          - button "最后修改时间":
+            - text: 最后修改时间
+        - columnheader "最后修改人"
+        - columnheader "操作"
+    - rowgroup:
+      - row "DE-FRA-01 德国仓 Europe/Berlin 启用 德国 · Frankfurt · Logistikpark 12 · 60327 2026-10-01 01:00 system 编辑":
+        - cell "DE-FRA-01":
+          - button "DE-FRA-01"
+        - cell "德国仓"
+        - cell "Europe/Berlin"
+        - cell "启用":
+          - generic: 启用
+        - cell "德国 · Frankfurt · Logistikpark 12 · 60327":
+          - generic "德国 · Frankfurt · Logistikpark 12 · 60327"
+        - cell "2026-10-01 01:00"
+        - cell "system"
+        - cell "编辑":
+          - button "编辑"
+      - row "HK-WH-01 香港仓 Asia/Hong_Kong 启用 中国香港 · 新界 · 荃湾 · 青山公路 某物流园 A 座 · 8/F · 999077 2026-10-01 01:00 system 编辑":
+        - cell "HK-WH-01":
+          - button "HK-WH-01"
+        - cell "香港仓"
+        - cell "Asia/Hong_Kong"
+        - cell "启用":
+          - generic: 启用
+        - cell "中国香港 · 新界 · 荃湾 · 青山公路 某物流园 A 座 · 8/F · 999077":
+          - generic "中国香港 · 新界 · 荃湾 · 青山公路 某物流园 A 座 · 8/F · 999077"
+        - cell "2026-10-01 01:00"
+        - cell "system"
+        - cell "编辑":
+          - button "编辑"
+      - row "US-LA-01 美西仓 America/Los_Angeles 启用 美国 · CA · Los Angeles · 1234 Warehouse Blvd · 90001 2026-10-01 01:00 system 编辑":
+        - cell "US-LA-01":
+          - button "US-LA-01"
+        - cell "美西仓"
+        - cell "America/Los_Angeles"
+        - cell "启用":
+          - generic: 启用
+        - cell "美国 · CA · Los Angeles · 1234 Warehouse Blvd · 90001":
+          - generic "美国 · CA · Los Angeles · 1234 Warehouse Blvd · 90001"
+        - cell "2026-10-01 01:00"
+        - cell "system"
+        - cell "编辑":
+          - button "编辑"
+      - row "US-NJ-01 美东仓 America/New_York 启用 美国 · NJ · Newark · 88 Distribution Way · 07114 2026-10-01 01:00 system 编辑":
+        - cell "US-NJ-01":
+          - button "US-NJ-01"
+        - cell "美东仓"
+        - cell "America/New_York"
+        - cell "启用":
+          - generic: 启用
+        - cell "美国 · NJ · Newark · 88 Distribution Way · 07114":
+          - generic "美国 · NJ · Newark · 88 Distribution Way · 07114"
+        - cell "2026-10-01 01:00"
+        - cell "system"
+        - cell "编辑":
+          - button "编辑"
+  - generic: 共 4 条
+  - combobox:
+    - generic: 20 条/页
+  - generic: 第 1 / 1 页
+  - button "上一页" [disabled]:
+  - button "下一页" [disabled]:
+- region "Notifications alt+T"
+- text: 解释

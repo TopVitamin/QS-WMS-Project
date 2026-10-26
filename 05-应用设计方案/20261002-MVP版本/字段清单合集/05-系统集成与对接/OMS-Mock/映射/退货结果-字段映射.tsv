@@ -1,0 +1,19 @@
+Mock字段路径	WMS对象	WMS字段名称	回传必填	说明
+source	消息信封	消息来源	是	固定 WMS
+messageType	消息信封	消息类别	是	RETURN_RESULT
+businessType	消息信封	业务类型	是	固定 RETURN
+upstreamNo	消息信封	来源业务标识	是	沿用原退货预报或派送失败建单关联，不新造来源号
+resultSequence	消息信封	结果序号	是	同一退货单完成结果固定序号；失败重交沿用原序号与原内容
+payload.returnNo	退货单	退货单号	是	WMS生成的RT单号
+payload.status	退货单	完成状态	是	固定 COMPLETED；零实收取消不生成完成结果
+payload.sourceType	退货单	退货来源	是	CUSTOMER｜PLATFORM｜DELIVERY_FAILED
+payload.sourceAssociationNo	退货单	来源关联单号	是	优先原出库单号；否则平台侧退货单号；再否则沿用原预报标识
+payload.items	退货单明细	按SKU汇总的结果明细	是	派送失败包裹行在结果中按SKU汇总，保留原始包裹行在退货单及收货记录
+payload.items[].skuCode	退货单明细	SKU编码	是	货主范围内的SKU
+payload.items[].plannedQty	退货单明细	预计数量	是	退货单预计数量合计
+payload.items[].receivedQty	退货单明细	实收数量	是	良品数量＋不良品数量
+payload.items[].goodQty	退货单明细	良品数量	是	计入实收的良品数量
+payload.items[].defectQty	退货单明细	不良品数量	是	计入实收的不良品数量
+payload.items[].rejectedQty	退货单明细	拒收数量	是	拒收不计实收、不进入库存
+payload.items[].shortQty	退货单明细	最终短少	是	收货完结后定型的未收数量
+payload.items[].putawayQty	退货单明细	已上架数量	是	已提交的良品与不良品上架数量

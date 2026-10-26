@@ -9,6 +9,7 @@ export interface PdaCountNewLine {
   locationCode: string
   qualityType: QualityType
   batchNo?: string
+  productionDate?: string
   expiryDate?: string
 }
 

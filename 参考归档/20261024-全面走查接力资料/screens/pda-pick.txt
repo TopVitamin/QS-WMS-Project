@@ -1,0 +1,52 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "拣货" [level=1]
+  - generic: US-LA-01
+- generic: 扫描拣货任务号、出库单号或波次号
+- textbox "扫描拣货任务号、出库单号或波次号" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "PK-20261015-0008"
+- button "PK-20261015-0003"
+- button "PK-20261015-0004"
+- generic: 待拣任务（4）
+- button "PK-20261015-0008 拣货中 按单拣货 OB-20261015-0018 · 1 个库位 · 1 个商品 已拣 2/5":
+  - generic: PK-20261015-0008
+  - generic: 拣货中
+  - generic: 按单拣货
+  - generic: OB-20261015-0018
+  - generic: ·
+  - generic: 1 个库位 · 1 个商品
+  - generic: 已拣 2/5
+- button "PK-20261015-0003 待拣货 基础波次 WV-20261015-0001 · 1 个库位 · 1 个商品 已拣 0/2":
+  - generic: PK-20261015-0003
+  - generic: 待拣货
+  - generic: 基础波次
+  - generic: WV-20261015-0001
+  - generic: ·
+  - generic: 1 个库位 · 1 个商品
+  - generic: 已拣 0/2
+- button "PK-20261015-0004 待拣货 按单拣货 OB-20261015-0013 · 1 个库位 · 1 个商品 已拣 0/4":
+  - generic: PK-20261015-0004
+  - generic: 待拣货
+  - generic: 按单拣货
+  - generic: OB-20261015-0013
+  - generic: ·
+  - generic: 1 个库位 · 1 个商品
+  - generic: 已拣 0/4
+- button "PK-20261015-0010 待拣货 按单拣货 OB-20261015-0019 · 2 个库位 · 2 个商品 已拣 0/4":
+  - generic: PK-20261015-0010
+  - generic: 待拣货
+  - generic: 按单拣货
+  - generic: OB-20261015-0019
+  - generic: ·
+  - generic: 2 个库位 · 2 个商品
+  - generic: 已拣 0/4
+- region "Notifications alt+T"
+- text: 解释

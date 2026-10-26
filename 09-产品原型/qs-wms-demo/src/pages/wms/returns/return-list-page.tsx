@@ -96,7 +96,7 @@ export function ReturnListPage() {
         header: t('return.originalOutboundNo'),
         cell: ({ getValue }) => getValue() || <Empty />,
       }),
-      col.accessor((o) => o.items.length, {
+      col.accessor((o) => new Set(o.items.map((line) => line.skuCode)).size, {
         id: 'skuCount',
         header: t('return.columns.skuCount'),
         meta: { align: 'right' },

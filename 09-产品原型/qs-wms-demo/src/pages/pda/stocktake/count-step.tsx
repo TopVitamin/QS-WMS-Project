@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { deriveSerials } from '@/lib/inventory-derive'
+import { updateExpiryDatePair } from '@/lib/expiry-date'
 import { resolveInventoryScan, skuScanValue } from '@/lib/pda-inventory-scan'
 import { beep } from '@/lib/scan-beep'
 import { useDb } from '@/mock/db'
@@ -21,7 +22,7 @@ import type { StocktakeFlow } from './use-stocktake-flow'
 
 /**
  * 录入实盘（PDA盘点 PRD 第一节）：盲盘，不显示账面。普通商品再扫同一商品 +1，件数多时改数；
- * SN 商品逐个扫 SN，实盘数量按 SN 数计。账面外新增的批次商品先填批次和有效期。
+ * SN 商品逐个扫 SN，实盘数量按 SN 数计。账面外新增的批次商品先填批次；效期商品录入生产日期或失效日期后自动补另一端。
  */
 export function StocktakeCountStep({ flow }: { flow: StocktakeFlow }) {
   const subject = useCountSubject(flow)
@@ -45,6 +46,7 @@ function CountWorkspace({
   const sn = flow.isSn(subject)
   const needBatch = !line && flow.needsBatch(subject)
   const needExpiry = !line && flow.needsExpiry(subject)
+  const skuMaster = state.skuMasters.find((m) => m.customerId === subject.customerId && m.code === subject.skuCode)
   const qty = sn ? draft.serialNos.length : draft.qty
   const [message, setMessage] = useState<ScanMessage>()
 
@@ -108,7 +110,7 @@ function CountWorkspace({
                 r.skuCode === subject.skuCode &&
                 r.batchNo,
             )
-            .map((r) => [r.batchNo!, { batchNo: r.batchNo!, expiryDate: r.expiryDate }]),
+            .map((r) => [r.batchNo!, { batchNo: r.batchNo!, productionDate: r.productionDate, expiryDate: r.expiryDate }]),
         ).values(),
       ].slice(0, 4)
     : []
@@ -133,7 +135,7 @@ function CountWorkspace({
     : [{ value: skuScanValue(state, subject.customerId, subject.skuCode), label: subject.skuCode }]
 
   const blocked = !line && qty <= 0
-  const batchMissing = needBatch && (!draft.add?.batchNo?.trim() || (needExpiry && !draft.add?.expiryDate))
+  const batchMissing = needBatch && (!draft.add?.batchNo?.trim() || (needExpiry && (!draft.add?.productionDate || !draft.add?.expiryDate)))
 
   return (
     <>
@@ -173,7 +175,7 @@ function CountWorkspace({
                 value={batches.find((b) => b.batchNo === draft.add?.batchNo)?.batchNo}
                 onChange={(v) => {
                   const b = batches.find((x) => x.batchNo === v)
-                  if (b) updateAdd({ batchNo: b.batchNo, expiryDate: b.expiryDate })
+                  if (b) updateAdd({ batchNo: b.batchNo, productionDate: b.productionDate, expiryDate: b.expiryDate })
                 }}
                 options={batches.map((b) => ({ value: b.batchNo, label: b.batchNo }))}
               />
@@ -190,16 +192,35 @@ function CountWorkspace({
                 />
               </div>
               {needExpiry && (
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="pda-count-expiry">{t('inventory.expiryDate')}</Label>
-                  <Input
-                    id="pda-count-expiry"
-                    type="date"
-                    className="h-12"
-                    value={draft.add?.expiryDate ?? ''}
-                    onChange={(e) => updateAdd({ expiryDate: e.target.value || undefined })}
-                  />
-                </div>
+                <>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="pda-count-production">{t('inbound.productionDate')}</Label>
+                    <Input
+                      id="pda-count-production"
+                      type="date"
+                      className="h-12"
+                      value={draft.add?.productionDate ?? ''}
+                      onChange={(e) => {
+                        const dates = updateExpiryDatePair(draft.add ?? {}, 'productionDate', e.target.value, skuMaster?.shelfLifeDays)
+                        updateAdd(dates)
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="pda-count-expiry">{t('inventory.expiryDate')}</Label>
+                    <Input
+                      id="pda-count-expiry"
+                      type="date"
+                      className="h-12"
+                      value={draft.add?.expiryDate ?? ''}
+                      onChange={(e) => {
+                        const dates = updateExpiryDatePair(draft.add ?? {}, 'expiryDate', e.target.value, skuMaster?.shelfLifeDays)
+                        updateAdd(dates)
+                      }}
+                    />
+                  </div>
+                  <p className="col-span-2 text-xs text-muted-foreground">{t('inbound.expiryDateCalculationHint')}</p>
+                </>
               )}
             </div>
           </PdaCard>

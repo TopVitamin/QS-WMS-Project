@@ -9,6 +9,8 @@ import type {
   PickLine,
   WaveStatus,
 } from '@/types/outbound'
+import type { ContainerMaster, InventoryRecord, SkuMaster } from '@/types/wms'
+import { fbaContainerIssue, fbaPalletHasActiveChildContent } from './outbound-container'
 
 /** 本类型数量是否允许进入待出库（不含未完成任务、包裹信息等提交校验） */
 export function outboundConfirmQtyReady(order: OutboundOrder): boolean {
@@ -175,6 +177,11 @@ export function putbackPlacements(p: OutboundPutback) {
 }
 
 type Db = Pick<OutboundData, 'outboundPickTasks' | 'outboundVerifications' | 'outboundResults'>
+type ShipCheckDb = Db & {
+  containers: ContainerMaster[]
+  inventory: InventoryRecord[]
+  skuMasters: SkuMaster[]
+}
 
 /** 有效实拣（可退拣）的归属 */
 export function activeAssignments(db: Pick<OutboundData, 'outboundPickTasks'>, no: string) {
@@ -232,6 +239,7 @@ export type ShipProblem =
   | { key: 'unverified'; picked: number; verified: number }
   | { key: 'short'; count: number }
   | { key: 'package' }
+  | { key: 'fbaContainer' }
 
 export interface ShipCheckLine {
   lineNo: number
@@ -246,7 +254,7 @@ export interface ShipCheckLine {
 }
 
 /** 确认出库前逐行检查（出库单主PRD R10、R11）；结果只用于弹窗展示，提交仍由动作重新校验 */
-export function shipCheck(order: OutboundOrder, db: Db) {
+export function shipCheck(order: OutboundOrder, db: ShipCheckDb) {
   const shortAllowed = order.type === 'FBA' || order.type === 'WHOLESALE'
   const hasOpenTask = orderTasks(db, order.no).some(openTask)
   const lines: ShipCheckLine[] = order.items.map((i) => {
@@ -271,11 +279,118 @@ export function shipCheck(order: OutboundOrder, db: Db) {
     db.outboundVerifications
       .filter((v) => v.orderNo === order.no && !v.deleted && v.lines.some((l) => l.effectiveQty > 0))
       .some((v) => v.containerType !== 'PACKAGE' || !v.containerNo || !v.trackingNo || !v.weightKg)
+  const fbaVerifications = db.outboundVerifications.filter(
+    (verification) =>
+      verification.orderNo === order.no &&
+      !verification.deleted &&
+      verification.lines.some((line) => line.effectiveQty > 0),
+  )
+  const assignmentRows = db.outboundPickTasks.flatMap((task) =>
+    task.assignments
+      .filter((assignment) => assignment.orderNo === order.no)
+      .map((assignment) => ({ ...assignment, line: task.lines.find((line) => line.id === assignment.lineId)! })),
+  )
+  const assignmentById = new Map(assignmentRows.map((assignment) => [assignment.id, assignment]))
+  const inventoryById = new Map(db.inventory.map((record) => [record.id, record]))
+  const pickedByBatch = new Map<string, number>()
+  assignmentRows.forEach((assignment) => {
+    if (assignment.activeQty <= 0) return
+    const key = [
+      assignment.line.skuCode,
+      assignment.line.batchNo ?? '',
+      inventoryById.get(assignment.stagingInventoryId)?.productionDate ?? '',
+    ].join('|')
+    pickedByBatch.set(key, (pickedByBatch.get(key) ?? 0) + assignment.activeQty)
+  })
+  const verifiedByBatch = new Map<string, number>()
+  const serialsByAssignment = new Map<string, string[]>()
+  let fbaContainerInvalid = false
+  if (order.type === 'FBA') {
+    if (!fbaVerifications.length) fbaContainerInvalid = true
+    fbaVerifications.forEach((verification) => {
+      if (
+        verification.method !== 'PACK' ||
+        !['BOX', 'PALLET'].includes(verification.containerType) ||
+        !verification.containerNo.trim()
+      ) {
+        fbaContainerInvalid = true
+        return
+      }
+      const issue = fbaContainerIssue(db.containers, {
+        warehouseCode: order.warehouseCode,
+        customerId: order.customerId,
+        orderNo: order.no,
+        containerType: verification.containerType as 'BOX' | 'PALLET',
+        containerNo: verification.containerNo,
+        parentContainerNo: verification.parentContainerNo,
+        records: fbaVerifications,
+      })
+      if (issue) fbaContainerInvalid = true
+      if (
+        verification.containerType === 'PALLET' &&
+        fbaPalletHasActiveChildContent(fbaVerifications, order.no, verification.containerNo)
+      )
+        fbaContainerInvalid = true
+      verification.lines.forEach((line) => {
+        if (line.effectiveQty <= 0) return
+        const assignment = assignmentById.get(line.assignmentId)
+        if (!assignment || assignment.line.skuCode !== line.skuCode || assignment.itemNo !== line.itemNo) {
+          fbaContainerInvalid = true
+          return
+        }
+        const key = [
+          line.skuCode,
+          assignment.line.batchNo ?? '',
+          inventoryById.get(assignment.stagingInventoryId)?.productionDate ?? '',
+        ].join('|')
+        verifiedByBatch.set(key, (verifiedByBatch.get(key) ?? 0) + line.effectiveQty)
+        if (db.skuMasters.find((sku) => sku.customerId === order.customerId && sku.code === line.skuCode)?.snEnabled) {
+          if (
+            line.serialNos.length !== line.effectiveQty ||
+            new Set(line.serialNos).size !== line.serialNos.length ||
+            line.serialNos.some((serial) => !assignment.activeSerialNos.includes(serial))
+          )
+            fbaContainerInvalid = true
+          serialsByAssignment.set(line.assignmentId, [
+            ...(serialsByAssignment.get(line.assignmentId) ?? []),
+            ...line.serialNos,
+          ])
+        }
+      })
+    })
+    const batchKeys = new Set([...pickedByBatch.keys(), ...verifiedByBatch.keys()])
+    batchKeys.forEach((key) => {
+      if ((pickedByBatch.get(key) ?? 0) !== (verifiedByBatch.get(key) ?? 0)) fbaContainerInvalid = true
+    })
+    assignmentRows.forEach((assignment) => {
+      if (
+        assignment.activeQty <= 0 ||
+        !db.skuMasters.find((sku) => sku.customerId === order.customerId && sku.code === assignment.line.skuCode)?.snEnabled
+      )
+        return
+      const serials = serialsByAssignment.get(assignment.id) ?? []
+      if (
+        serials.length !== assignment.activeQty ||
+        new Set(serials).size !== serials.length ||
+        assignment.activeSerialNos.some((serial) => !serials.includes(serial))
+      )
+        fbaContainerInvalid = true
+    })
+    order.items.forEach((item) => {
+      const prefix = item.skuCode + '|'
+      const total = [...verifiedByBatch.entries()]
+        .filter(([key]) => key.startsWith(prefix))
+        .reduce((count, [, qty]) => count + qty, 0)
+      if (total !== item.verifiedQty) fbaContainerInvalid = true
+    })
+  }
   const shipTotal = sum(lines, (l) => l.shipQty)
   const orderProblem: ShipProblem | undefined = hasOpenTask
     ? { key: 'openTask' }
     : packageMissing
       ? { key: 'package' }
+      : fbaContainerInvalid
+        ? { key: 'fbaContainer' }
       : undefined
   return {
     lines,

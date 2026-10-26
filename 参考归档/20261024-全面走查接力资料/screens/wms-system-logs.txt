@@ -1,0 +1,374 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - link "库存查询":
+      - /url: "#/wms/inventory/stock"
+      - generic: 库存查询
+    - link "库存流水":
+      - /url: "#/wms/inventory/logs"
+      - generic: 库存流水
+    - link "移库作业":
+      - /url: "#/wms/inventory/moves"
+      - generic: 移库作业
+    - link "盘点单":
+      - /url: "#/wms/inventory/counts"
+      - generic: 盘点单
+    - button "出库管理":
+      - generic: 出库管理
+    - link "出库单":
+      - /url: "#/wms/outbound/orders"
+      - generic: 出库单
+    - link "波次管理":
+      - /url: "#/wms/outbound/waves"
+      - generic: 波次管理
+    - link "拣货任务":
+      - /url: "#/wms/outbound/pick-tasks"
+      - generic: 拣货任务
+    - link "复核工作台":
+      - /url: "#/wms/outbound/verify-station"
+      - generic: 复核工作台
+    - link "返库上架单":
+      - /url: "#/wms/outbound/return-putaway"
+      - generic: 返库上架单
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - link "仓库管理":
+      - /url: "#/wms/master/warehouses"
+      - generic: 仓库管理
+    - link "库区管理":
+      - /url: "#/wms/master/zones"
+      - generic: 库区管理
+    - link "货位管理":
+      - /url: "#/wms/master/locations"
+      - generic: 货位管理
+    - link "容器管理":
+      - /url: "#/wms/master/containers"
+      - generic: 容器管理
+    - link "商品管理":
+      - /url: "#/wms/master/skus"
+      - generic: 商品管理
+    - link "货主管理":
+      - /url: "#/wms/master/customers"
+      - generic: 货主管理
+    - link "物流承运商管理":
+      - /url: "#/wms/master/carriers"
+      - generic: 物流承运商管理
+    - link "物流渠道管理":
+      - /url: "#/wms/master/channels"
+      - generic: 物流渠道管理
+    - button "系统设置":
+      - generic: 系统设置
+    - link "操作记录":
+      - /url: "#/wms/system/logs"
+      - generic: 操作记录
+    - link "系统参数":
+      - /url: "#/wms/system/params"
+      - generic: 系统参数
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 系统设置
+    - generic: /
+    - generic: 操作记录
+  - button "US-LA-01 美西仓 19:18":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:18
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭":
+    - text: 库存流水
+    - button "关闭":
+  - tab "移库作业 关闭":
+    - text: 移库作业
+    - button "关闭":
+  - tab "盘点单 关闭":
+    - text: 盘点单
+    - button "关闭":
+  - tab "波次管理 关闭":
+    - text: 波次管理
+    - button "关闭":
+  - tab "拣货任务 关闭":
+    - text: 拣货任务
+    - button "关闭":
+  - tab "复核工作台 关闭":
+    - text: 复核工作台
+    - button "关闭":
+  - tab "返库上架单 关闭":
+    - text: 返库上架单
+    - button "关闭":
+  - tab "仓库管理 关闭":
+    - text: 仓库管理
+    - button "关闭":
+  - tab "库区管理 关闭":
+    - text: 库区管理
+    - button "关闭":
+  - tab "货位管理 关闭":
+    - text: 货位管理
+    - button "关闭":
+  - tab "容器管理 关闭":
+    - text: 容器管理
+    - button "关闭":
+  - tab "商品管理 关闭":
+    - text: 商品管理
+    - button "关闭":
+  - tab "货主管理 关闭":
+    - text: 货主管理
+    - button "关闭":
+  - tab "物流承运商管理 关闭":
+    - text: 物流承运商管理
+    - button "关闭":
+  - tab "物流渠道管理 关闭":
+    - text: 物流渠道管理
+    - button "关闭":
+  - tab "操作记录 关闭" [selected]:
+    - text: 操作记录
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "操作记录" [level=1]
+  - button "导出":
+    - text: 导出
+  - generic: 入库单号
+  - textbox "入库单号":
+    - /placeholder: 请输入
+  - generic: 对象类型
+  - combobox "对象类型":
+    - generic: 全部
+  - combobox
+  - generic: 操作
+  - combobox "操作":
+    - generic: 全部
+  - combobox
+  - generic: 操作人
+  - combobox "操作人":
+    - generic: 全部
+  - combobox
+  - generic: 创建时间
+  - button "创建时间":
+    - generic: 选择日期范围
+  - button "查询":
+    - text: 查询
+  - button "重置":
+    - text: 重置
+  - button "列设置":
+  - table:
+    - rowgroup:
+      - row "创建时间 操作 对象类型 入库单号 操作人 说明":
+        - columnheader "创建时间":
+          - button "创建时间":
+            - text: 创建时间
+        - columnheader "操作"
+        - columnheader "对象类型"
+        - columnheader "入库单号"
+        - columnheader "操作人"
+        - columnheader "说明"
+    - rowgroup:
+      - row "2026-10-19 18:30 库内动作 盘点单 ST-20261020-0004 Lily Chen -":
+        - cell "2026-10-19 18:30"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261020-0004"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 18:20 库内动作 盘点单 ST-20261020-0003 Lily Chen -":
+        - cell "2026-10-19 18:20"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261020-0003"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 18:10 库内动作 盘点单 ST-20261020-0002 Lily Chen -":
+        - cell "2026-10-19 18:10"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261020-0002"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 18:00 库内动作 盘点单 ST-20261020-0001 Lily Chen -":
+        - cell "2026-10-19 18:00"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261020-0001"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 02:30 库内动作 盘点单 ST-20261019-0004 Lily Chen -":
+        - cell "2026-10-19 02:30"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0004"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 02:20 库内动作 盘点单 ST-20261019-0003 Lily Chen -":
+        - cell "2026-10-19 02:20"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0003"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 02:10 库内动作 盘点单 ST-20261019-0002 Lily Chen -":
+        - cell "2026-10-19 02:10"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0002"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 02:00 库内动作 盘点单 ST-20261019-0001 Lily Chen -":
+        - cell "2026-10-19 02:00"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0001"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-19 00:30 库内动作 盘点单 ST-20261019-0004 Mike Zhang -":
+        - cell "2026-10-19 00:30"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0004"
+        - cell "Mike Zhang"
+        - cell "-"
+      - row "2026-10-19 00:20 库内动作 盘点单 ST-20261019-0003 Mike Zhang -":
+        - cell "2026-10-19 00:20"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0003"
+        - cell "Mike Zhang"
+        - cell "-"
+      - row "2026-10-19 00:10 库内动作 盘点单 ST-20261019-0002 Mike Zhang -":
+        - cell "2026-10-19 00:10"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0002"
+        - cell "Mike Zhang"
+        - cell "-"
+      - row "2026-10-19 00:00 库内动作 盘点单 ST-20261019-0001 Mike Zhang -":
+        - cell "2026-10-19 00:00"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261019-0001"
+        - cell "Mike Zhang"
+        - cell "-"
+      - row "2026-10-18 23:30 库内动作 库存 HOMY-003 Mike Zhang B-04-01":
+        - cell "2026-10-18 23:30"
+        - cell "库内动作"
+        - cell "库存"
+        - cell "HOMY-003"
+        - cell "Mike Zhang"
+        - cell "B-04-01"
+      - row "2026-10-18 23:20 库内动作 库存 HOMY-003 Mike Zhang B-04-01":
+        - cell "2026-10-18 23:20"
+        - cell "库内动作"
+        - cell "库存"
+        - cell "HOMY-003"
+        - cell "Mike Zhang"
+        - cell "B-04-01"
+      - row "2026-10-18 23:10 库内动作 库存 HOMY-003 Mike Zhang B-04-01":
+        - cell "2026-10-18 23:10"
+        - cell "库内动作"
+        - cell "库存"
+        - cell "HOMY-003"
+        - cell "Mike Zhang"
+        - cell "B-04-01"
+      - row "2026-10-18 23:00 库内动作 库存 HOMY-003 Mike Zhang B-04-01":
+        - cell "2026-10-18 23:00"
+        - cell "库内动作"
+        - cell "库存"
+        - cell "HOMY-003"
+        - cell "Mike Zhang"
+        - cell "B-04-01"
+      - row "2026-10-18 18:30 库内动作 盘点单 ST-20261018-0004 Lily Chen -":
+        - cell "2026-10-18 18:30"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261018-0004"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-18 18:20 库内动作 盘点单 ST-20261018-0003 Lily Chen -":
+        - cell "2026-10-18 18:20"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261018-0003"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-18 18:10 库内动作 盘点单 ST-20261018-0002 Lily Chen -":
+        - cell "2026-10-18 18:10"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261018-0002"
+        - cell "Lily Chen"
+        - cell "-"
+      - row "2026-10-18 18:00 库内动作 盘点单 ST-20261018-0001 Lily Chen -":
+        - cell "2026-10-18 18:00"
+        - cell "库内动作"
+        - cell "盘点单"
+        - cell "ST-20261018-0001"
+        - cell "Lily Chen"
+        - cell "-"
+  - generic: 共 51 条
+  - combobox:
+    - generic: 20 条/页
+  - generic: 第 1 / 3 页
+  - button "上一页" [disabled]:
+  - button "下一页":
+- region "Notifications alt+T"
+- text: 解释

@@ -1,14 +1,16 @@
 import type { ContainerMaster, QualityType } from '@/types/wms'
 import type { SeedData } from '@/mock/seed'
+import { containerIdOf } from '@/lib/container-id'
 
 export interface ContainerContentLine {
   skuCode: string
   batchNo?: string
+  productionDate?: string
   qualityType: QualityType
   qty: number
   locationCode?: string
   serialNos?: string[]
-  source: 'RECEIPT' | 'PUTAWAY' | 'VERIFY'
+  source: 'INVENTORY' | 'RECEIPT' | 'PUTAWAY' | 'VERIFY'
 }
 
 const norm = (value?: string) => value?.trim().toUpperCase() ?? ''
@@ -16,20 +18,58 @@ const norm = (value?: string) => value?.trim().toUpperCase() ?? ''
 const sameContainer = (container: ContainerMaster, warehouseCode: string, containerNo?: string) =>
   container.warehouseCode === warehouseCode && norm(container.containerNo) === norm(containerNo)
 
-/** 容器内容：在库/已出库取上架或复核实际行，收货中/上架中取收货行；只读汇总，不改库存 */
+/** 在库和上架中内容取当前批次库存；出库内容取复核记录，释放后不再显示为当前内容。 */
 export function containerContents(container: ContainerMaster, state: SeedData): ContainerContentLine[] {
   const rows: ContainerContentLine[] = []
 
   if (container.source === 'OUTBOUND_PACK' || container.status === 'SHIPPED' || container.status === 'OUTBOUND') {
+    const stockByAssignment = new Map<string, { batchNo?: string; productionDate?: string }>()
+    state.outboundPickTasks.forEach((task) =>
+      task.assignments.forEach((assignment) =>
+        stockByAssignment.set(assignment.id, {
+          batchNo: task.lines.find((line) => line.id === assignment.lineId)?.batchNo,
+          productionDate: state.inventory.find((record) => record.id === assignment.stagingInventoryId)?.productionDate,
+        }),
+      ),
+    )
+    const childNos = new Set(
+      state.containers
+        .filter(
+          (child) =>
+            child.warehouseCode === container.warehouseCode &&
+            child.containerType === 'CARTON' &&
+            sameContainer(container, child.warehouseCode, child.parentContainerNo),
+        )
+        .map((child) => norm(child.containerNo)),
+    )
+    const childHasContent =
+      container.containerType === 'PALLET' &&
+      state.outboundVerifications.some(
+        (verification) =>
+          !verification.deleted &&
+          sameContainer(container, state.outboundOrders.find((o) => o.no === verification.orderNo)?.warehouseCode ?? '', verification.parentContainerNo) &&
+          childNos.has(norm(verification.containerNo)) &&
+          verification.lines.some((line) => line.effectiveQty > 0),
+      )
     state.outboundVerifications
-      .filter((v) => !v.deleted && sameContainer(container, state.outboundOrders.find((o) => o.no === v.orderNo)?.warehouseCode ?? '', v.containerNo))
-      .forEach((v) =>
-        v.lines.forEach((l) => {
+      .filter((verification) => {
+        const order = state.outboundOrders.find((o) => o.no === verification.orderNo)
+        if (verification.deleted || !order || order.warehouseCode !== container.warehouseCode) return false
+        const isDirect = sameContainer(container, order.warehouseCode, verification.containerNo)
+        const isChild = sameContainer(container, order.warehouseCode, verification.parentContainerNo) &&
+          childNos.has(norm(verification.containerNo))
+        if (childHasContent && isDirect) return false
+        return (isDirect || isChild) && verification.lines.some((line) => line.effectiveQty > 0)
+      })
+      .forEach((verification) =>
+        verification.lines.forEach((line) => {
+          if (line.effectiveQty <= 0) return
           rows.push({
-            skuCode: l.skuCode,
+            skuCode: line.skuCode,
+            ...stockByAssignment.get(line.assignmentId),
             qualityType: 'GOOD',
-            qty: l.effectiveQty,
-            serialNos: l.serialNos,
+            qty: line.effectiveQty,
+            serialNos: line.serialNos,
             source: 'VERIFY',
           })
         }),
@@ -37,64 +77,41 @@ export function containerContents(container: ContainerMaster, state: SeedData): 
     return mergeContent(rows)
   }
 
-  if (container.status === 'RECEIVING' || container.status === 'PUTAWAYING') {
-    state.receiptRecords
-      .filter((r) => r.warehouseCode === container.warehouseCode)
+  if (container.status === 'RELEASED') return []
+
+  if (container.status === 'IN_STOCK' || container.status === 'PUTAWAYING' || container.status === 'RECEIVING') {
+    const containerId = containerIdOf(container.warehouseCode, container.containerNo)
+    state.inventory
+      .filter((r) => r.containerId === containerId && r.onHandQty > 0)
       .forEach((r) =>
-        r.lines
-          .filter((l) => sameContainer(container, container.warehouseCode, l.containerNo))
-          .forEach((l) => {
-            if (l.goodQty > 0)
-              rows.push({
-                skuCode: l.skuCode,
-                batchNo: l.batchNo,
-                qualityType: 'GOOD',
-                qty: l.goodQty,
-                locationCode: r.stagingLocationCode,
-                serialNos: l.goodSerialNos,
-                source: 'RECEIPT',
-              })
-            if (l.defectQty > 0)
-              rows.push({
-                skuCode: l.skuCode,
-                batchNo: l.batchNo,
-                qualityType: 'DEFECTIVE',
-                qty: l.defectQty,
-                locationCode: r.stagingLocationCode,
-                serialNos: l.defectSerialNos,
-                source: 'RECEIPT',
-              })
-          }),
+        rows.push({
+          skuCode: r.skuCode,
+          batchNo: r.batchNo,
+          productionDate: r.productionDate,
+          qualityType: r.qualityType,
+          qty: r.onHandQty,
+          locationCode: r.locationCode,
+          serialNos: r.serialNos,
+          source: 'INVENTORY',
+        }),
       )
-    if (rows.length) return mergeContent(rows)
+    return mergeContent(rows)
   }
 
-  state.putawayOrders
-    .filter((p) => p.status === 'COMPLETED' && sameContainer(container, p.warehouseCode, p.containerNo))
-    .forEach((p) =>
-      p.actualLines
-        .filter((a) => a.submitted)
-        .forEach((a) => {
-          const plan = p.planLines.find((l) => l.lineNo === a.planLineNo)
-          rows.push({
-            skuCode: a.skuCode,
-            batchNo: plan?.batchNo,
-            qualityType: p.qualityType,
-            qty: a.qty,
-            locationCode: a.locationCode,
-            serialNos: a.serialNos,
-            source: 'PUTAWAY',
-          })
-        }),
-    )
-
-  return mergeContent(rows)
+  return []
 }
 
 function mergeContent(rows: ContainerContentLine[]): ContainerContentLine[] {
   const map = new Map<string, ContainerContentLine>()
   rows.forEach((row) => {
-    const key = [row.skuCode, row.batchNo ?? '', row.qualityType, row.locationCode ?? '', row.source].join('|')
+    const key = [
+      row.skuCode,
+      row.batchNo ?? '',
+      row.productionDate ?? '',
+      row.qualityType,
+      row.locationCode ?? '',
+      row.source,
+    ].join('|')
     const prev = map.get(key)
     if (prev) {
       prev.qty += row.qty
@@ -107,6 +124,7 @@ function mergeContent(rows: ContainerContentLine[]): ContainerContentLine[] {
     (a, b) =>
       a.skuCode.localeCompare(b.skuCode) ||
       (a.batchNo ?? '').localeCompare(b.batchNo ?? '') ||
+      (a.productionDate ?? '').localeCompare(b.productionDate ?? '') ||
       a.qualityType.localeCompare(b.qualityType),
   )
 }
@@ -115,7 +133,7 @@ export function containerSummary(contents: ContainerContentLine[]) {
   return {
     skus: new Set(contents.map((c) => c.skuCode)).size,
     qty: contents.reduce((n, c) => n + c.qty, 0),
-    batches: new Set(contents.map((c) => c.batchNo).filter(Boolean)).size,
+    batches: new Set(contents.map((c) => [c.batchNo ?? '', c.productionDate ?? ''].join('|')).filter((key) => key !== '|')).size,
     serials: contents.reduce((n, c) => n + (c.serialNos?.length ?? 0), 0),
   }
 }
@@ -147,9 +165,18 @@ export function containerRelatedDocs(container: ContainerMaster, state: SeedData
   })
   state.outboundVerifications.forEach((v) => {
     const order = state.outboundOrders.find((o) => o.no === v.orderNo)
-    if (order && sameContainer(container, order.warehouseCode, v.containerNo)) {
+    if (
+      order &&
+      (sameContainer(container, order.warehouseCode, v.containerNo) ||
+        sameContainer(container, order.warehouseCode, v.parentContainerNo))
+    ) {
       docs.push({ type: 'OUTBOUND', no: order.no, status: order.status, at: v.at })
     }
   })
-  return docs.sort((a, b) => b.at.localeCompare(a.at))
+  const unique = new Map<string, ContainerRelatedDoc>()
+  docs.forEach((doc) => {
+    const key = `${doc.type}:${doc.no}`
+    if (!unique.has(key) || unique.get(key)!.at < doc.at) unique.set(key, doc)
+  })
+  return [...unique.values()].sort((a, b) => b.at.localeCompare(a.at))
 }

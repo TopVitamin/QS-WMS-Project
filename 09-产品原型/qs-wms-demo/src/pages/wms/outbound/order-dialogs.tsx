@@ -198,6 +198,8 @@ function problemText(p: ShipProblem, t: Translate) {
       return t('outbound.ui.problemShort', { count: p.count })
     case 'package':
       return t('outbound.ui.problemPackage')
+    case 'fbaContainer':
+      return t('outbound.ui.problemFbaContainer')
   }
 }
 
@@ -208,8 +210,18 @@ export function ShipDialog({ order, onClose }: { order: OutboundOrder; onClose: 
   const tasks = useDb((s) => s.outboundPickTasks)
   const verifications = useDb((s) => s.outboundVerifications)
   const results = useDb((s) => s.outboundResults)
+  const containers = useDb((s) => s.containers)
+  const inventory = useDb((s) => s.inventory)
+  const skuMasters = useDb((s) => s.skuMasters)
   const run = useOutboundRun()
-  const check = shipCheck(order, { outboundPickTasks: tasks, outboundVerifications: verifications, outboundResults: results })
+  const check = shipCheck(order, {
+    outboundPickTasks: tasks,
+    outboundVerifications: verifications,
+    outboundResults: results,
+    containers,
+    inventory,
+    skuMasters,
+  })
   const [withHandover, setWithHandover] = useState(false)
   const [handover, setHandover] = useHandoverDraft(order)
   const [showErrors, setShowErrors] = useState(false)

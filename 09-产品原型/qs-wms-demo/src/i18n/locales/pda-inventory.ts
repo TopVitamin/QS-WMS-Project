@@ -128,6 +128,12 @@ const move = {
   ],
   targetLabel: ['目标库位', 'Target'],
   noTarget: ['还没扫目标库位', 'No target yet'],
+  asLoose: ['转为散件', 'Move as loose stock'],
+  looseHint: [
+    '本次移出的库存将不再关联容器；原容器内其余库存不变。',
+    'Moved stock will have no container reference. Remaining stock stays in the original container.',
+  ],
+  containerHint: ['当前按整容器移库；可改为移出部分散件。', 'Moving the whole container. You can switch to a partial loose-stock move.'],
   pendingHint: [
     '该商品待核对：移库前核对实物，账实不符请点「账实不符」',
     'This item is pending review. Check the goods; tap Mismatch if they differ.',
@@ -250,7 +256,7 @@ const stocktake = {
   okBump: ['{{sku}} +1，已数 {{count}}', '{{sku}} +1, {{count}} counted'],
   errOtherItem: ['正在盘 {{sku}}，先保存本行再盘其他商品', 'Counting {{sku}}. Save this line first.'],
   clearSerials: ['清空已扫', 'Clear scanned'],
-  hintBatch: ['新增批次先填批次号和有效期', 'Enter the batch and expiry first'],
+  hintBatch: ['新增批次先填批次号和效期日期', 'Enter the batch and expiry dates first'],
   hintNewLineQty: ['新增行至少数到 1', 'A new line needs at least 1'],
   hintCount: ['数完点下一步核对差异', 'Tap Next to check the difference'],
   next: ['下一步', 'Next'],

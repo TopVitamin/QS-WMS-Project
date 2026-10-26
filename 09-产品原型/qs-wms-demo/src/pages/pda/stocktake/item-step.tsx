@@ -86,7 +86,7 @@ function ItemWorkspace({ flow, count, location }: { flow: StocktakeFlow; count: 
         setMessage({ tone: 'info', text: t('pdaStocktake.infoSameLocation', { code: location }) })
         return true
       }
-      const check = flow.checkLocation(loc.code)
+      const check = flow.checkLocation(loc.code, live)
       if (!check.ok) return fail(check.text)
       setChoice(undefined)
       setMessage(undefined)

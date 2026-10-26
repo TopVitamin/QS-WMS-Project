@@ -1,0 +1,38 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "复核" [level=1]
+  - generic: US-LA-01
+- generic: 扫描出库单号
+- textbox "扫描出库单号" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "OB-20261015-0014"
+- button "OB-20261015-0016"
+- button "OB-20261015-0018"
+- generic: 待复核出库单（3）
+- button "OB-20261015-0014 待复核 B2C出库 已拣 3 待复核 3":
+  - generic: OB-20261015-0014
+  - generic: 待复核
+  - generic: B2C出库
+  - generic: 已拣 3
+  - generic: 待复核 3
+- button "OB-20261015-0016 待复核 FBA转运出库 已拣 8 待复核 5":
+  - generic: OB-20261015-0016
+  - generic: 待复核
+  - generic: FBA转运出库
+  - generic: 已拣 8
+  - generic: 待复核 5
+- button "OB-20261015-0018 待拣货 B2C出库 已拣 2 待复核 2":
+  - generic: OB-20261015-0018
+  - generic: 待拣货
+  - generic: B2C出库
+  - generic: 已拣 2
+  - generic: 待复核 2
+- region "Notifications alt+T"
+- text: 解释

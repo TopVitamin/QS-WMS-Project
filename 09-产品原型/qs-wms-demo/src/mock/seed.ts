@@ -34,7 +34,7 @@ import { createSkuMasters } from './sku-masters'
 import { createWarehouseMasters } from './warehouse-masters'
 import { createZoneMasters } from './zone-masters'
 import { createContainerSeed } from './container-seed'
-import { stagingLocationCode } from '@/lib/inbound-derive'
+import { containerIdOf } from '@/lib/container-id'
 import { zoneTypeToLocationType } from '@/lib/location-master'
 import type { InboundResult, NewSkuRecord, UnclaimedRecord } from '@/types/inbound'
 import type { ReturnData } from '@/types/return'
@@ -272,8 +272,17 @@ export function createSeedData(): SeedData {
   const inventoryLogs: InventoryLog[] = []
   const inboundBundle = createInboundDemoBundle()
   const inbounds: InboundOrder[] = [...inboundBundle.inbounds]
-  const receiptRecords = [...inboundBundle.receiptRecords]
-  const putawayOrders = [...inboundBundle.putawayOrders]
+  const receiptRecords = inboundBundle.receiptRecords.map((receipt) => ({
+    ...receipt,
+    lines: receipt.lines.map((line) => ({
+      ...line,
+      containerId: line.containerId ?? containerIdOf(receipt.warehouseCode, line.containerNo),
+    })),
+  }))
+  const putawayOrders = inboundBundle.putawayOrders.map((order) => ({
+    ...order,
+    containerId: order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo),
+  }))
   const inboundExceptions = [...inboundBundle.inboundExceptions]
   const inboundMessages: import('@/types/inbound').InboundMessage[] = []
   const inboundResults: InboundResult[] = inbounds
@@ -307,11 +316,15 @@ export function createSeedData(): SeedData {
     qty: number
     lockedQty: number
     at: string
+    containerId?: string
+    batchNo?: string
+    productionDate?: string
+    expiryDate?: string
     /** SN 商品随落位带上序列号，出库按件拣货时才对得上实物 */
     serialNos?: string[]
   }) => {
     if (row.qty <= 0) return
-    const key = `${row.warehouseCode}::${row.locationCode}::${row.customerId}::${row.skuCode}::${row.qualityType}`
+    const key = [row.warehouseCode, row.locationCode, row.customerId, row.skuCode, row.qualityType, row.containerId ?? '', row.batchNo ?? '', row.productionDate ?? '', row.expiryDate ?? ''].join('::')
     const idx = inventoryIndex.get(key)
     if (idx !== undefined) {
       const prev = inventory[idx]
@@ -328,9 +341,13 @@ export function createSeedData(): SeedData {
       id: `INV-SEED-${inventory.length + 1}`,
       warehouseCode: row.warehouseCode,
       locationCode: row.locationCode,
+      containerId: row.containerId,
       customerId: row.customerId,
       skuCode: row.skuCode,
       qualityType: row.qualityType,
+      batchNo: row.batchNo,
+      productionDate: row.productionDate,
+      expiryDate: row.expiryDate,
       onHandQty: row.qty,
       lockedQty: row.lockedQty,
       firstInboundAt: row.at,
@@ -347,9 +364,13 @@ export function createSeedData(): SeedData {
           addInventory({
             warehouseCode: p.warehouseCode,
             locationCode: a.locationCode,
+            containerId: p.containerId ?? containerIdOf(p.warehouseCode, p.containerNo),
             customerId: p.customerId,
             skuCode: a.skuCode,
             qualityType: p.qualityType,
+            batchNo: p.planLines.find((l) => l.lineNo === a.planLineNo)?.batchNo,
+            productionDate: p.planLines.find((l) => l.lineNo === a.planLineNo)?.productionDate,
+            expiryDate: p.planLines.find((l) => l.lineNo === a.planLineNo)?.expiryDate,
             qty: a.qty,
             lockedQty: p.qualityType === 'DEFECTIVE' ? a.qty : 0,
             at: p.submittedAt ?? p.createdAt,
@@ -358,47 +379,72 @@ export function createSeedData(): SeedData {
         })
     })
 
-  inbounds
-    .filter((o) => o.status !== 'CANCELLED')
-    .forEach((o) => {
-      const submittedByQuality = new Map<string, number>()
-      putawayOrders
-        .filter((p) => p.sourceType === 'INBOUND' && p.sourceNo === o.inboundNo && p.status === 'COMPLETED')
-        .forEach((p) => {
-          p.actualLines
-            .filter((a) => a.submitted)
-            .forEach((a) => {
-              const key = `${a.skuCode}::${p.qualityType}`
-              submittedByQuality.set(key, (submittedByQuality.get(key) ?? 0) + a.qty)
-            })
-        })
-      const stagingCode = stagingLocationCode(locations, o.warehouseCode)
-      const at = o.firstArrivalAt ?? o.updatedAt
-      o.items.forEach((item) => {
-        const goodLeft = item.goodQty - (submittedByQuality.get(`${item.skuCode}::GOOD`) ?? 0)
-        const defectLeft = item.defectQty - (submittedByQuality.get(`${item.skuCode}::DEFECTIVE`) ?? 0)
+  receiptRecords.forEach((receipt) => {
+    const stagingCode = receipt.stagingLocationCode
+    const receiptPutaways = putawayOrders.filter((p) => p.receiptNo === receipt.receiptNo)
+    receipt.lines.forEach((line) => {
+      const containerId = line.containerId ?? containerIdOf(receipt.warehouseCode, line.containerNo)
+      ;(['GOOD', 'DEFECTIVE'] as const).forEach((qualityType) => {
+        const qty = qualityType === 'GOOD' ? line.goodQty : line.defectQty
+        const done = receiptPutaways
+          .filter((p) => (p.containerId ?? containerIdOf(p.warehouseCode, p.containerNo)) === containerId && p.qualityType === qualityType)
+          .flatMap((p) =>
+            p.actualLines.filter((a) => {
+              const plan = p.planLines.find((candidate) => candidate.lineNo === a.planLineNo)
+              return (
+                a.submitted &&
+                a.skuCode === line.skuCode &&
+                plan?.batchNo === line.batchNo &&
+                plan?.productionDate === line.productionDate &&
+                plan?.expiryDate === line.expiryDate
+              )
+            }),
+          )
+          .reduce((n, a) => n + a.qty, 0)
+        const left = Math.max(0, qty - done)
         addInventory({
-          warehouseCode: o.warehouseCode,
+          warehouseCode: receipt.warehouseCode,
           locationCode: stagingCode,
-          customerId: o.customerId,
-          skuCode: item.skuCode,
-          qualityType: 'GOOD',
-          qty: goodLeft,
-          lockedQty: 0,
-          at,
-        })
-        addInventory({
-          warehouseCode: o.warehouseCode,
-          locationCode: stagingCode,
-          customerId: o.customerId,
-          skuCode: item.skuCode,
-          qualityType: 'DEFECTIVE',
-          qty: defectLeft,
-          lockedQty: defectLeft,
-          at,
+          customerId: receipt.customerId,
+          skuCode: line.skuCode,
+          qualityType,
+          qty: left,
+          lockedQty: qualityType === 'DEFECTIVE' ? left : 0,
+          at: receipt.receivedAt,
+          containerId,
+          batchNo: line.batchNo,
+          productionDate: line.productionDate,
+          expiryDate: line.expiryDate,
         })
       })
     })
+  })
+
+  const containerLocations = new Map<string, Set<string>>()
+  const completedContainerIds = new Set<string>()
+  putawayOrders.forEach((order) => {
+    const containerId = order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo)
+    if (!containerId) return
+    if (order.status !== 'COMPLETED') return
+    completedContainerIds.add(containerId)
+    const locationsForContainer = containerLocations.get(containerId) ?? new Set<string>()
+    order.actualLines.filter((line) => line.submitted).forEach((line) => locationsForContainer.add(line.locationCode))
+    containerLocations.set(containerId, locationsForContainer)
+  })
+  const splitContainerIds = new Set(
+    [...containerLocations]
+      .filter(([id, locationsForContainer]) =>
+        completedContainerIds.has(id) &&
+        putawayOrders.filter((order) => (order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo)) === id).every((order) => order.status === 'COMPLETED') &&
+        locationsForContainer.size > 1,
+      )
+      .map(([id]) => id),
+  )
+  if (splitContainerIds.size) {
+    inventory.forEach((row) => {
+      if (row.containerId && splitContainerIds.has(row.containerId)) row.containerId = undefined
+    })
+  }
 
   inbounds.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 

@@ -17,6 +17,7 @@ export function balanceLog(r: InventoryRecord, change: number, meta: LogMeta): I
     customerId: r.customerId,
     skuCode: r.skuCode,
     locationCode: r.locationCode,
+    containerId: r.containerId,
     inventoryId: r.id,
     batchNo: r.batchNo,
     expiryDate: r.expiryDate,

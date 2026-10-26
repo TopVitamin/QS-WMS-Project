@@ -201,8 +201,6 @@ export interface SkuMaster {
   inboundDays?: number
   nearExpiryDays?: number
   expiredDays?: number
-  qcRequired: boolean
-  qcFlowType?: string
   grossWeightKg?: number
   netWeightKg?: number
   lengthCm?: number
@@ -275,6 +273,8 @@ export interface InventoryRecord {
   id: string
   warehouseCode: string
   locationCode: string
+  /** 同仓容器自然键；散件或无容器库存为空。 */
+  containerId?: string
   customerId: string
   skuCode: string
   qualityType: QualityType
@@ -284,6 +284,8 @@ export interface InventoryRecord {
   reservedQty?: number
   /** 批次号 */
   batchNo?: string
+  /** 生产日期；效期商品批次属性。 */
+  productionDate?: string
   /** 效期（ISO 8601 日期） */
   expiryDate?: string
   firstInboundAt: string
@@ -312,6 +314,8 @@ export interface InventoryLog {
   skuCode: string
   customerId: string
   locationCode: string
+  /** 批次库存流水的容器维度；SKU层流水为空。 */
+  containerId?: string
   /** 实际数量变化量；订单占用类为 0 */
   qtyChange: number
   operator: string
@@ -357,6 +361,7 @@ export type AuditRefType =
 export type AuditAction =
   | 'OUTBOUND_ACTION'
   | 'INVENTORY_ACTION'
+  | 'SKU_MASTER_EDIT'
   | 'INBOUND_RECEIPT_CLOSE'
   | 'INBOUND_MOCK_PUSH'
   | 'INBOUND_MOCK_CHANGE'
@@ -367,6 +372,8 @@ export type AuditAction =
   | 'RETURN_MOCK_FORECAST'
   | 'RETURN_DELIVERY_FAILED_CREATE'
   | 'RETURN_RESULT_RETRY'
+  | 'RETURN_RESULT_SIMULATE_FAILURE'
+  | 'RETURN_RECEIPT_CLOSE'
   | 'RETURN_CANCEL'
   | 'MASTER_MOCK_PUSH'
   | 'CONTAINER_SAVE'

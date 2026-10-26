@@ -539,6 +539,7 @@ export function InboundOrderReceivePage() {
                   batchEnabled: master?.batchEnabled,
                   expiryEnabled: master?.expiryEnabled,
                   snEnabled: master?.snEnabled,
+                  shelfLifeDays: master?.shelfLifeDays,
                 }
               }}
               isNewSku={(code) => isNewSku(newSkuRecords, order?.customerId ?? '', code)}

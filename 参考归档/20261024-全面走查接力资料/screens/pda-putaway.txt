@@ -1,0 +1,68 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "上架" [level=1]
+  - generic: US-LA-01
+- generic: 请扫描上架单号、容器号或商品条码
+- textbox "请扫描上架单号、容器号或商品条码" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "PA-20261005-0001"
+- button "PA-20261004-0002"
+- button "C-B02"
+- generic: 待上架 (6)
+- button "PA-20261005-0001 良品 上架中 C-B02 · IB-20261002-0004 已录 300/800":
+  - generic: PA-20261005-0001
+  - generic: 良品
+  - generic: 上架中
+  - generic: C-B02
+  - generic: ·
+  - generic: IB-20261002-0004
+  - generic: 已录 300/800
+- button "PA-20261004-0002 不良品 待上架 C-A01 · IB-20261002-0003 已录 0/10":
+  - generic: PA-20261004-0002
+  - generic: 不良品
+  - generic: 待上架
+  - generic: C-A01
+  - generic: ·
+  - generic: IB-20261002-0003
+  - generic: 已录 0/10
+- button "PA-20261009-0001 良品 待上架 无容器收货 · IB-20261002-0008 已录 0/60":
+  - generic: PA-20261009-0001
+  - generic: 良品
+  - generic: 待上架
+  - generic: 无容器收货
+  - generic: ·
+  - generic: IB-20261002-0008
+  - generic: 已录 0/60
+- button "PA-20261009-0002 良品 待上架 无容器收货 · IB-20261002-0009 已录 0/28":
+  - generic: PA-20261009-0002
+  - generic: 良品
+  - generic: 待上架
+  - generic: 无容器收货
+  - generic: ·
+  - generic: IB-20261002-0009
+  - generic: 已录 0/28
+- button "PA-20261009-0003 不良品 待上架 无容器收货 · IB-20261002-0009 已录 0/2":
+  - generic: PA-20261009-0003
+  - generic: 不良品
+  - generic: 待上架
+  - generic: 无容器收货
+  - generic: ·
+  - generic: IB-20261002-0009
+  - generic: 已录 0/2
+- button "PA-20261011-0001 良品 待上架 C-M01 · IB-20261002-0011 已录 0/9":
+  - generic: PA-20261011-0001
+  - generic: 良品
+  - generic: 待上架
+  - generic: C-M01
+  - generic: ·
+  - generic: IB-20261002-0011
+  - generic: 已录 0/9
+- region "Notifications alt+T"
+- text: 解释

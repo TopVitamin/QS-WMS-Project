@@ -172,15 +172,6 @@ export function SkuDetailPage() {
         </Descriptions>
       </Section>
 
-      <Section title={t('masterSku.sectionQc')}>
-        <Descriptions columns={4}>
-          <DescriptionItem label={t('masterSku.qcRequired')}>{yesNo(master.qcRequired)}</DescriptionItem>
-          <DescriptionItem label={t('masterSku.qcFlowType')}>
-            {master.qcFlowType ? t(`masterSku.qcFlow.${master.qcFlowType}`) : <Empty />}
-          </DescriptionItem>
-        </Descriptions>
-      </Section>
-
       <Section title={t('masterSku.sectionDims')}>
         <Descriptions columns={4}>
           <DescriptionItem label={t('masterSku.grossWeightKg')}>{master.grossWeightKg ?? <Empty />}</DescriptionItem>

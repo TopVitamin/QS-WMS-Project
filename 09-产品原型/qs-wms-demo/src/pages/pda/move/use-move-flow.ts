@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import { pdaToast as toast } from '@/lib/pda-toast'
+import { containerIdOf } from '@/lib/container-id'
 import { useConfirm } from '@/hooks/use-confirm'
 import { useInventoryState } from '@/hooks/use-inventory-state'
 import { usePdaStep } from '@/hooks/use-pda-step'
@@ -39,6 +40,7 @@ export function useMoveFlow() {
    * 跳转完成（路由变化）后复位。
    */
   const leaving = useRef(false)
+  const handledContainerId = useRef<string | undefined>(undefined)
   useEffect(() => {
     leaving.current = false
   }, [location.key])
@@ -65,6 +67,7 @@ export function useMoveFlow() {
     (inventoryId: string, d = liveDraft()) => {
       const r = useDb.getState().inventory.find((x) => x.id === inventoryId)
       if (!r) return 0
+      if (r.containerId && (d?.lines ?? []).some((l) => l.containerId === r.containerId)) return 0
       const inList = (d?.lines ?? []).filter((l) => l.inventoryId === inventoryId).reduce((n, l) => n + l.qty, 0)
       return r.onHandQty - (r.allocatedQty ?? 0) - inList
     },
@@ -133,6 +136,37 @@ export function useMoveFlow() {
     [confirm, t],
   )
 
+  useEffect(() => {
+    const containerId = new URLSearchParams(location.search).get('containerId') ?? undefined
+    if (!containerId) {
+      handledContainerId.current = undefined
+      return
+    }
+    if (handledContainerId.current === containerId) return
+    handledContainerId.current = containerId
+    const s = useDb.getState()
+    const container = s.containers.find((c) => containerIdOf(c.warehouseCode, c.containerNo) === containerId)
+    const rows = s.inventory.filter((r) => r.containerId === containerId && r.onHandQty > 0)
+    const first = rows[0]
+    if (!container || container.status !== 'IN_STOCK' || !first || liveDraft()?.lines.length) {
+      void notice(t('pdaMove.blockTitle'), t('inventory.error.containerMoveWhole'))
+      return
+    }
+    if (
+      rows.some(
+        (r) => r.locationCode !== first.locationCode || Boolean(r.allocatedQty) || frozen(r) || pending(r),
+      )
+    ) {
+      void notice(t('pdaMove.blockTitle'), t('inventory.error.containerMoveWhole'))
+      return
+    }
+    edit((draft) => ({
+      ...draft,
+      current: { inventoryId: first.id, containerId, qty: first.onHandQty, serialNos: first.serialNos ?? [] },
+    }))
+    nav.go('target', { src: first.locationCode, inv: first.id })
+  }, [edit, frozen, liveDraft, location.search, nav, notice, pending, t])
+
   /**
    * 选定源库存明细，进入数量与目标：盘点中阻断；清单已有其他货主时阻断；没有可移数量时提示。
    * 返回 undefined 表示已进入下一步；返回文字表示扫码错误；返回 null 表示已弹阻断。
@@ -164,7 +198,12 @@ export function useMoveFlow() {
       const sn = isSn(row)
       edit((x) => ({
         ...x,
-        current: { inventoryId: row.id, qty: sn ? (serialNo ? 1 : 0) : 1, serialNos: serialNo ? [serialNo] : [] },
+        current: {
+          inventoryId: row.id,
+          qty: sn ? (serialNo ? 1 : 0) : 1,
+          serialNos: serialNo ? [serialNo] : [],
+          ...(row.containerId ? { asLoose: true } : {}),
+        },
       }))
       nav.go('target', { src: row.locationCode, inv: row.id })
       return undefined
@@ -267,8 +306,39 @@ export function useMoveFlow() {
     const d = liveDraft()
     const cur = d?.current
     if (!d || !cur?.targetLocation) return
-    const qty = isSn(row) ? cur.serialNos.length : cur.qty
-    const max = movable(row.id, d)
+      const qty = isSn(row) ? cur.serialNos.length : cur.qty
+      const max = movable(row.id, d)
+      if (cur.containerId && !cur.asLoose) {
+        const group = useDb.getState().inventory.filter((r) => r.containerId === cur.containerId && r.onHandQty > 0)
+        const lines = group.map((r) => {
+          const issue = moveTargetIssue(useDb.getState(), r, cur.targetLocation!)
+          if (issue) return undefined
+          if (r.allocatedQty || frozen(r) || pending(r) || r.locationCode !== row.locationCode) return undefined
+          return {
+            id: `${Date.now().toString(36)}-${d.lines.length + group.indexOf(r)}`,
+            inventoryId: r.id,
+            customerId: r.customerId,
+            skuCode: r.skuCode,
+            sourceLocation: r.locationCode,
+            targetLocation: cur.targetLocation!,
+            batchNo: r.batchNo,
+            containerId: cur.containerId,
+            qualityType: r.qualityType,
+            qty: r.onHandQty,
+            serialNos: r.serialNos ?? [],
+          } satisfies PdaMoveLine
+        })
+        if (!group.length || lines.some((line) => !line)) {
+          void notice(t('pdaMove.blockTitle'), t('inventory.error.containerMoveWhole'))
+          return
+        }
+        leaving.current = true
+        edit((x) => ({ ...x, current: undefined, failure: undefined, lines: [...x.lines, ...(lines as PdaMoveLine[])] }))
+        beep(true)
+        toast.success(t('pdaMove.lineAdded', { sku: row.skuCode, qty: group.reduce((n, r) => n + r.onHandQty, 0), target: cur.targetLocation }))
+        nav.replace('lines')
+        return
+      }
     if (qty <= 0 || qty > max) {
       void notice(t('pdaMove.blockTitle'), t('pdaMove.errQty', { max }))
       return
@@ -286,6 +356,7 @@ export function useMoveFlow() {
       sourceLocation: row.locationCode,
       targetLocation: cur.targetLocation,
       batchNo: row.batchNo,
+      containerId: cur.asLoose ? undefined : row.containerId,
       qualityType: row.qualityType,
       qty,
       serialNos: isSn(row) ? cur.serialNos : [],
@@ -336,6 +407,7 @@ export function useMoveFlow() {
         lines: d.lines.map((l) => ({
           inventoryId: l.inventoryId,
           targetLocation: l.targetLocation,
+          targetContainerId: l.containerId,
           qty: l.qty,
           serialNos: l.serialNos,
         })),

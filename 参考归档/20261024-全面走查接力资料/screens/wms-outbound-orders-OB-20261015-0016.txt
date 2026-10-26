@@ -1,0 +1,288 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - button "出库管理":
+      - generic: 出库管理
+    - link "出库单":
+      - /url: "#/wms/outbound/orders"
+      - generic: 出库单
+    - link "波次管理":
+      - /url: "#/wms/outbound/waves"
+      - generic: 波次管理
+    - link "拣货任务":
+      - /url: "#/wms/outbound/pick-tasks"
+      - generic: 拣货任务
+    - link "复核工作台":
+      - /url: "#/wms/outbound/verify-station"
+      - generic: 复核工作台
+    - link "返库上架单":
+      - /url: "#/wms/outbound/return-putaway"
+      - generic: 返库上架单
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 出库管理
+    - generic: /
+    - generic: 出库单
+  - button "US-LA-01 美西仓 19:19":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:19
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭":
+    - text: 库存流水
+    - button "关闭":
+  - tab "移库作业 关闭":
+    - text: 移库作业
+    - button "关闭":
+  - tab "盘点单 关闭":
+    - text: 盘点单
+    - button "关闭":
+  - tab "波次管理 关闭":
+    - text: 波次管理
+    - button "关闭":
+  - tab "拣货任务 关闭":
+    - text: 拣货任务
+    - button "关闭":
+  - tab "复核工作台 关闭":
+    - text: 复核工作台
+    - button "关闭":
+  - tab "返库上架单 关闭":
+    - text: 返库上架单
+    - button "关闭":
+  - tab "仓库管理 关闭":
+    - text: 仓库管理
+    - button "关闭":
+  - tab "库区管理 关闭":
+    - text: 库区管理
+    - button "关闭":
+  - tab "货位管理 关闭":
+    - text: 货位管理
+    - button "关闭":
+  - tab "容器管理 关闭":
+    - text: 容器管理
+    - button "关闭":
+  - tab "商品管理 关闭":
+    - text: 商品管理
+    - button "关闭":
+  - tab "货主管理 关闭":
+    - text: 货主管理
+    - button "关闭":
+  - tab "物流承运商管理 关闭":
+    - text: 物流承运商管理
+    - button "关闭":
+  - tab "物流渠道管理 关闭":
+    - text: 物流渠道管理
+    - button "关闭":
+  - tab "操作记录 关闭":
+    - text: 操作记录
+    - button "关闭":
+  - tab "费用流水 关闭":
+    - text: 费用流水
+    - button "关闭":
+  - tab "计费方案 关闭":
+    - text: 计费方案
+    - button "关闭":
+  - tab "系统参数 关闭":
+    - text: 系统参数
+    - button "关闭":
+  - tab "入库单详情 关闭":
+    - text: 入库单详情
+    - button "关闭":
+  - tab "上架单详情 关闭":
+    - text: 上架单详情
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "出库单 关闭" [selected]:
+    - text: 出库单
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "出库单 · OB-20261015-0016 待复核" [level=1]:
+    - generic: 出库单
+    - generic: ·
+    - generic: OB-20261015-0016
+    - generic: 待复核
+  - link "返回列表":
+    - /url: "#/wms/outbound/orders"
+  - button "去复核":
+    - text: 去复核
+  - button "重新分配"
+  - button "更多"
+  - heading "基本信息" [level=2]
+  - generic: 业务类型
+  - generic: FBA转运出库
+  - generic: 货主
+  - generic "Shenzhen Anker Trading":
+    - generic: ANKR
+    - generic: Shenzhen Anker Trading
+  - generic: 仓库
+  - generic "美西仓":
+    - generic: US-LA-01
+    - generic: 美西仓
+  - generic: 订单来源
+  - generic: OMS Mock
+  - generic: 上游指令号
+  - generic: OMS-OUT-OB-20261015-0016
+  - generic: 上游消息标识
+  - generic: MSG-SEED-OB-20261015-0016
+  - generic: 物流渠道
+  - generic "UPS Express":
+    - generic: CH-UPS-EX
+    - generic: UPS Express
+  - generic: 物流承运商
+  - generic: UPS Ground & Air（演示）
+  - generic: 创建时间
+  - generic: 2026-10-15 08:30
+  - generic: 收货人
+  - generic: Amazon FBA platform warehouse
+  - generic: 收货联系电话
+  - generic: +1-323-555-1016
+  - generic: 收货地址
+  - generic: FBA inbound dock, Los Angeles, CA
+  - generic: 出库单备注
+  - generic: "-"
+  - heading "数量进度" [level=2]
+  - generic: 拣货进度
+  - generic: 80%
+  - progressbar
+  - generic: 8 / 10
+  - term: 需求
+  - definition: "10"
+  - term: 本单预占
+  - definition: "8"
+  - term: 缺货
+  - definition: "2"
+  - term: 已拣
+  - definition: "8"
+  - term: 已复核
+  - definition: "3"
+  - term: 实发
+  - definition: "-"
+  - tablist:
+    - tab "商品明细 1" [selected]:
+      - text: 商品明细
+      - generic: "1"
+    - tab "拣货任务 1":
+      - text: 拣货任务
+      - generic: "1"
+    - tab "复核记录 1":
+      - text: 复核记录
+      - generic: "1"
+    - tab "交接记录 0":
+      - text: 交接记录
+      - generic: "0"
+    - tab "返库上架单 0":
+      - text: 返库上架单
+      - generic: "0"
+    - tab "出库结果 0":
+      - text: 出库结果
+      - generic: "0"
+    - tab "操作日志 0":
+      - text: 操作日志
+      - generic: "0"
+  - button "列设置":
+  - tabpanel "商品明细 1":
+    - table:
+      - rowgroup:
+        - row "行号 商品 需求 本单预占 缺货 已拣 待拣 已复核 实发 未发":
+          - columnheader "行号"
+          - columnheader "商品"
+          - columnheader "需求"
+          - columnheader "本单预占"
+          - columnheader "缺货"
+          - columnheader "已拣"
+          - columnheader "待拣"
+          - columnheader "已复核"
+          - columnheader "实发"
+          - columnheader "未发"
+      - rowgroup:
+        - row "1 LOT-DEMO-01 批次效期演示商品 10 8 2 8 0 3 - -":
+          - cell "1"
+          - cell "LOT-DEMO-01 批次效期演示商品":
+            - generic "批次效期演示商品":
+              - generic: LOT-DEMO-01
+              - generic: 批次效期演示商品
+          - cell "10"
+          - cell "8"
+          - cell "2"
+          - cell "8"
+          - cell "0"
+          - cell "3"
+          - cell "-"
+          - cell "-"
+    - generic: 共 1 条
+    - combobox:
+      - generic: 20 条/页
+    - generic: 第 1 / 1 页
+    - button "上一页" [disabled]:
+    - button "下一页" [disabled]:
+- region "Notifications alt+T"
+- text: 解释

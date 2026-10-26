@@ -3,6 +3,7 @@ import { Navigate, useParams, useSearchParams } from 'react-router'
 import { PageContainer } from '@/components/biz/page-container'
 import { Button } from '@/components/ui/button'
 import { useMasterForm } from '@/hooks/use-master-form'
+import { useLocationWorkReferences } from '@/hooks/use-location-work-references'
 import {
   createEmptyLocationForm,
   isLocationOccupied,
@@ -26,8 +27,9 @@ export function LocationEditPage() {
       : undefined,
   )
   const inventory = useDb((s) => s.inventory)
+  const work = useLocationWorkReferences()
   const updateLocationMaster = useDb((s) => s.updateLocationMaster)
-  const occupied = location ? isLocationOccupied(location, inventory) : false
+  const occupied = location ? isLocationOccupied(location, inventory, work) : false
 
   const { form, setForm, errors, fieldError, onSave, onCancel } = useMasterForm<
     LocationMaster,

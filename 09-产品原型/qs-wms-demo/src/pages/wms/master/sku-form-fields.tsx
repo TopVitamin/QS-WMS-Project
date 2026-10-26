@@ -8,8 +8,6 @@ import { PRODUCT_FORM_I18N, PRODUCT_FORM_OPTIONS, type SkuMasterFormErrors } fro
 import { codeNameText, EMPTY_TEXT } from '@/lib/typography'
 import type { ProductFormFactor, SkuMaster } from '@/types/wms'
 
-const QC_FLOW_OPTIONS = ['STANDARD', 'SPOT'] as const
-
 type NumberKey =
   | 'shelfLifeDays'
   | 'inboundDays'
@@ -157,23 +155,6 @@ export function SkuFormFields({ form, setForm, fieldError, ownerName }: SkuFormF
                 <div className="col-span-full">{fieldError('expiryInequality')}</div>
               ) : null}
             </>
-          ) : null}
-        </FormGrid>
-      </Section>
-
-      <Section title={t('masterSku.sectionQc')}>
-        <FormGrid>
-          <FormField label={t('masterSku.qcRequired')} required>
-            <YesNoSelect value={form.qcRequired} onChange={(v) => setForm({ ...form, qcRequired: v })} />
-          </FormField>
-          {form.qcRequired ? (
-            <FormField label={t('masterSku.qcFlowType')} required error={fieldError('qcFlowType')}>
-              <OptionSelect
-                value={form.qcFlowType ?? ''}
-                onValueChange={(v) => setForm({ ...form, qcFlowType: v })}
-                options={QC_FLOW_OPTIONS.map((q) => ({ value: q, label: t(`masterSku.qcFlow.${q}`) }))}
-              />
-            </FormField>
           ) : null}
         </FormGrid>
       </Section>

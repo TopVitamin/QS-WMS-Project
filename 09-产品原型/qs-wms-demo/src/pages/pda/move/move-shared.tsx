@@ -55,6 +55,9 @@ export function MoveRowCard({
           tags={
             <>
               <TagLabel meta={qualityMeta[row.qualityType]} />
+              {row.containerId && (
+                <span className="font-mono text-xs text-muted-foreground">{row.containerId.split('::').at(-1)}</span>
+              )}
               {flow.isSn(row) && <TagLabel meta={inventoryFeatureMeta.sn} />}
               {counting && <TagLabel meta={inventoryTagMeta.counting} />}
               {flow.pending(row) && <TagLabel meta={inventoryTagMeta.pending} />}

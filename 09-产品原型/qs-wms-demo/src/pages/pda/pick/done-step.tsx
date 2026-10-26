@@ -15,7 +15,7 @@ import type { PickFlow } from './use-pick-flow'
 export function PickDoneStep({ flow }: { flow: PickFlow }) {
   const { t, nav } = flow
   const task = flow.findTask(nav.param('no'))
-  const hasOpenLines = task ? pickStops(task).length > 0 : false
+  const hasOpenLines = task ? pickStops(task, flow.locationMasters).length > 0 : false
   /** 本页刚提交成功、正在回到列表时，不再按「已结束」纠正与提示 */
   const doneRef = useRef(false)
 

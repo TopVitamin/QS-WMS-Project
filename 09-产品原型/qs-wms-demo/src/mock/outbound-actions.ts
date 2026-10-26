@@ -1,9 +1,11 @@
 import { negativeInventoryIssue } from '@/lib/inventory-constraints'
 import { serialsInWarehouse, updateSerialStocks } from '@/lib/serial-stock'
 import { nextDocNo } from '@/lib/doc-no'
-import { countingStocktake, isLiveOutbound, stockKey } from '@/lib/inventory-derive'
+import { countingStocktake, expiryLevel, isLiveOutbound, stockKey, warehouseLocalDate } from '@/lib/inventory-derive'
 import { balanceLog, pairLogs, reservedLog } from '@/lib/inventory-ledger'
 import { deriveOutboundOrderStatus } from '@/lib/outbound-derive'
+import { effectiveFbaParentNo, fbaContainerIssue, fbaPalletHasActiveChildContent, type FbaContainerIssue } from '@/lib/outbound-container'
+import { bindOutboundContainers } from './container-actions'
 import type { SeedData } from './seed'
 import type { AuditRefType, InventoryLog, InventoryRecord } from '@/types/wms'
 import type {
@@ -98,7 +100,7 @@ export function verificationRemaining(s: Pick<SeedData, 'outboundVerifications'>
   }
 }
 
-type Patch = OutboundData & Pick<SeedData, 'inventory' | 'inventoryLogs' | 'serialStocks'>
+type Patch = OutboundData & Pick<SeedData, 'inventory' | 'inventoryLogs' | 'serialStocks' | 'containers'>
 export type OutboundActionResult =
   | { ok: true; no?: string; patch: Patch }
   | { ok: false; errorKey: string; params?: Record<string, string | number>; patch?: Patch }
@@ -124,7 +126,12 @@ export function applyOutboundAction(
   at = new Date().toISOString(),
 ): OutboundActionResult {
   const data = Object.fromEntries(outboundDataKeys.map((k) => [k, state[k]])) as unknown as OutboundData
-  const patch: Patch = structuredClone({ ...data, inventory: state.inventory, inventoryLogs: state.inventoryLogs })
+  const patch: Patch = structuredClone({
+    ...data,
+    inventory: state.inventory,
+    inventoryLogs: state.inventoryLogs,
+    containers: state.containers,
+  })
   const s = { ...state, ...patch }
   const finish = (no?: string): OutboundActionResult => {
     const issue = negativeInventoryIssue(s)
@@ -136,6 +143,48 @@ export function applyOutboundAction(
   const task = (no: string) => s.outboundPickTasks.find((t) => t.no === no) ?? reject('notFound')
   const inventory = (id: string) => s.inventory.find((r) => r.id === id) ?? reject('notFound')
   const skuMaster = (owner: string, sku: string) => s.skuMasters.find((m) => m.customerId === owner && m.code === sku)
+  const fbaContainerReject = (issue: FbaContainerIssue): never => {
+    const keys: Record<FbaContainerIssue, string> = {
+      missing: 'fbaContainerMissing',
+      warehouse: 'fbaContainerWarehouse',
+      owner: 'fbaContainerOwner',
+      type: 'fbaContainerType',
+      busy: 'fbaContainerBusy',
+      parentMissing: 'fbaParentMissing',
+      parentOwner: 'fbaParentOwner',
+      parentType: 'fbaParentType',
+      parentBusy: 'fbaParentBusy',
+      mixedContent: 'fbaMixedContent',
+    }
+    return reject(keys[issue])
+  }
+  const hasActiveFbaContainerReference = (orderNo: string, containerNo: string) =>
+    s.outboundVerifications.some(
+      (verification) =>
+        !verification.deleted &&
+        verification.orderNo === orderNo &&
+        verification.lines.some((line) => line.effectiveQty > 0) &&
+        [verification.containerNo, verification.parentContainerNo].some(
+          (value) => value?.trim().toUpperCase() === containerNo.trim().toUpperCase(),
+        ),
+    )
+  const releaseUnusedFbaContainers = (verification: OutboundData['outboundVerifications'][number]) => {
+    const affected = [verification.containerNo, verification.parentContainerNo].filter(Boolean) as string[]
+    affected.forEach((containerNo) => {
+      if (hasActiveFbaContainerReference(verification.orderNo, containerNo)) return
+      const container = s.containers.find(
+        (row) =>
+          row.warehouseCode === order(verification.orderNo).warehouseCode &&
+          row.containerNo.trim().toUpperCase() === containerNo.trim().toUpperCase(),
+      )
+      if (!container || container.status !== 'OUTBOUND') return
+      container.status = container.currentLocationCode ? 'IN_STOCK' : 'IDLE'
+      container.lastScannedAt = at
+      container.lastScannedBy = operator
+      container.updatedAt = at
+      container.updatedBy = operator
+    })
+  }
   const ensureLive = (o: OutboundOrder) => {
     if (o.status === 'SHIPPED' || o.status === 'CANCELLED') reject('terminal')
   }
@@ -192,13 +241,16 @@ export function applyOutboundAction(
     )
       reject('stockChanged')
     const q = quality ?? from.qualityType
+    const targetContainerId = meta.type === 'PICK' ? undefined : from.containerId
     let to = s.inventory.find(
       (r) =>
         r.id !== from.id &&
         sameSku(r, from.warehouseCode, from.customerId, from.skuCode) &&
         r.locationCode === target &&
+        (r.containerId ?? '') === (targetContainerId ?? '') &&
         r.qualityType === q &&
         r.batchNo === from.batchNo &&
+        r.productionDate === from.productionDate &&
         r.expiryDate === from.expiryDate,
     )
     if (!to) {
@@ -206,6 +258,7 @@ export function applyOutboundAction(
         ...from,
         id: `INV-OB-${at}-${s.inventory.length}`,
         locationCode: target,
+        containerId: targetContainerId,
         qualityType: q,
         onHandQty: 0,
         lockedQty: 0,
@@ -242,17 +295,20 @@ export function applyOutboundAction(
       o.updatedAt = at
     })
   }
-  const candidates = (warehouse: string, owner: string, sku: string, exclude?: string) =>
+  const localDate = (warehouse: string) =>
+    warehouseLocalDate(s.warehouses.find((w) => w.code === warehouse)?.timezone ?? 'UTC', new Date(at))
+  const candidates = (warehouse: string, owner: string, sku: string, exclude?: string, containerId?: string) =>
     s.inventory
       .filter(
         (r) =>
           sameSku(r, warehouse, owner, sku) &&
+          (!containerId || r.containerId === containerId) &&
           r.id !== exclude &&
           r.qualityType === 'GOOD' &&
           r.onHandQty - (r.allocatedQty ?? 0) > 0 &&
           ['PICK', 'STORAGE'].includes(loc(warehouse, r.locationCode)?.type ?? '') &&
           loc(warehouse, r.locationCode)?.enabled &&
-          (!r.expiryDate || r.expiryDate.slice(0, 10) >= at.slice(0, 10)),
+          expiryLevel(r.expiryDate, skuMaster(owner, sku), localDate(warehouse)) !== 'EXPIRED',
       )
       .sort(
         (a, b) =>
@@ -268,6 +324,7 @@ export function applyOutboundAction(
         locationCode: r.locationCode,
         skuCode: r.skuCode,
         batchNo: r.batchNo,
+        containerId: r.containerId,
         expiryDate: r.expiryDate,
         qualityType: r.qualityType,
         plannedQty: 0,
@@ -283,7 +340,7 @@ export function applyOutboundAction(
     else l.shares.push({ ...share })
     if (incrementAllocation) r.allocatedQty = (r.allocatedQty ?? 0) + share.qty
   }
-  const allocate = (orders: OutboundOrder[], waveNo?: string) => {
+  const allocate = (orders: OutboundOrder[], waveNo?: string, containerId?: string) => {
     const first = orders[0]
     const existing = s.outboundPickTasks.find((t) => openTask(t) && orders.some((o) => taskOrderNos(t).includes(o.no)))
     if (existing) return existing
@@ -335,7 +392,7 @@ export function applyOutboundAction(
           Math.max(0, outboundAvailable(s, o.warehouseCode, o.customerId, i.skuCode)),
         )
         let waiting = i.reservedQty - i.pickedQty
-        candidates(o.warehouseCode, o.customerId, i.skuCode).forEach((r) => {
+        candidates(o.warehouseCode, o.customerId, i.skuCode, undefined, containerId).forEach((r) => {
           const qty = Math.min(waiting, r.onHandQty - (r.allocatedQty ?? 0))
           if (qty > 0) {
             addLine(t, r, { orderNo: o.no, itemNo: i.lineNo, qty })
@@ -382,10 +439,11 @@ export function applyOutboundAction(
           v.lines
             .filter((vl) => vl.assignmentId === a.id)
             .forEach((vl) => {
-              const remove = enabled
-                ? vl.serialNos.filter((sn) => serialNos.includes(sn)).length
-                : Math.min(toInvalidate, vl.effectiveQty)
+              const matchedSerials = enabled ? vl.serialNos.filter((sn) => serialNos.includes(sn)) : []
+              const remove = enabled ? matchedSerials.length : Math.min(toInvalidate, vl.effectiveQty)
               vl.effectiveQty = Math.max(0, vl.effectiveQty - remove)
+              if (enabled && matchedSerials.length)
+                vl.serialNos = vl.serialNos.filter((sn) => !serialNos.includes(sn))
               toInvalidate -= remove
             }),
         )
@@ -650,11 +708,14 @@ export function applyOutboundAction(
         break
       }
       case 'ALLOCATE': {
-        resultNo = allocate([order(c.no)]).no
+        resultNo = allocate([order(c.no)], undefined, c.containerId).no
         break
       }
       case 'WAVE': {
-        const orders = [...new Set(c.orderNos)].map(order)
+        // 成员顺序决定原单份额及后续实拣归属，不能依赖列表行或用户勾选顺序。
+        const orders = [...new Set(c.orderNos)]
+          .map(order)
+          .sort((a, b) => a.no.localeCompare(b.no))
         if (
           orders.length < 2 ||
           orders.some(
@@ -693,6 +754,7 @@ export function applyOutboundAction(
         const r = inventory(l.inventoryId)
         if (frozen(t.warehouseCode, t.customerId, l.skuCode)) reject('pending', { sku: l.skuCode })
         const master = skuMaster(t.customerId, l.skuCode)
+        if (expiryLevel(r.expiryDate, master, localDate(t.warehouseCode)) === 'EXPIRED') reject('expiredStock')
         const barcode = s.skuBarcodes.some(
           (b) =>
             b.ownerCode === master?.ownerCode &&
@@ -833,6 +895,14 @@ export function applyOutboundAction(
         )
           reject('verification')
         if (
+          o.type === 'FBA' &&
+          (c.method !== 'PACK' || !['BOX', 'PALLET'].includes(c.containerType) || !c.containerNo.trim())
+        )
+          reject('fbaContainerType')
+        if (o.type === 'FBA' && c.weightKg !== undefined) reject('fbaWeight')
+        if (o.type === 'WHOLESALE' && !['NONE', 'BOX', 'PALLET'].includes(c.containerType))
+          reject('verification')
+        if (
           c.method === 'SORT' &&
           s.outboundVerifications.some((v) => v.orderNo === o.no && v.method === 'SORT' && !v.deleted)
         )
@@ -861,6 +931,43 @@ export function applyOutboundAction(
             serialNos: l.serialNos,
           }
         })
+        let parentContainerNo: string | undefined
+        if (o.type === 'FBA') {
+          const containerType = c.containerType as 'BOX' | 'PALLET'
+          const records = s.outboundVerifications
+          const issue = fbaContainerIssue(s.containers, {
+            warehouseCode: o.warehouseCode,
+            customerId: o.customerId,
+            orderNo: o.no,
+            containerType,
+            containerNo: c.containerNo,
+            parentContainerNo: c.parentContainerNo,
+            records,
+          })
+          if (issue) fbaContainerReject(issue)
+          parentContainerNo = effectiveFbaParentNo(
+            s.containers.find(
+              (container) =>
+                container.warehouseCode === o.warehouseCode &&
+                container.containerNo.trim().toUpperCase() === c.containerNo.trim().toUpperCase(),
+            ),
+            c.parentContainerNo,
+          )
+          if (
+            containerType === 'PALLET' &&
+            fbaPalletHasActiveChildContent(records, o.no, c.containerNo)
+          )
+            reject('fbaMixedContent')
+          s.containers = bindOutboundContainers(s.containers, {
+            warehouseCode: o.warehouseCode,
+            customerId: o.customerId,
+            containerNo: c.containerNo.trim(),
+            containerType: containerType === 'BOX' ? 'CARTON' : 'PALLET',
+            parentContainerNo,
+            operator,
+            at,
+          })
+        }
         const no = nextDocNo(
           'VR',
           s.outboundVerifications.map((v) => v.no),
@@ -871,8 +978,9 @@ export function applyOutboundAction(
           orderNo: o.no,
           method: c.method,
           containerType: c.containerType,
-          containerNo: c.containerNo,
-          weightKg: c.weightKg,
+          containerNo: c.containerNo.trim(),
+          parentContainerNo,
+          weightKg: o.type === 'FBA' ? undefined : c.weightKg,
           remark: c.remark,
           trackingNo: c.containerType === 'PACKAGE' ? `MOCK-${no}` : undefined,
           lines,
@@ -890,6 +998,11 @@ export function applyOutboundAction(
         v.lines.forEach((l) => {
           l.effectiveQty = 0
         })
+        if (
+          order(v.orderNo).type === 'FBA' &&
+          (v.containerType === 'BOX' || v.containerType === 'PALLET')
+        )
+          releaseUnusedFbaContainers(v)
         resultNo = v.orderNo
         break
       }
@@ -916,6 +1029,11 @@ export function applyOutboundAction(
           [{ a: t.assignments.find((a) => a.id === c.assignmentId)!, t, qty: c.qty, serialNos: c.serialNos }],
           c.reason,
         )
+        if (o.type === 'FBA') {
+          s.outboundVerifications
+            .filter((verification) => verification.orderNo === o.no)
+            .forEach(releaseUnusedFbaContainers)
+        }
         break
       }
       case 'CANCEL': {
@@ -960,6 +1078,11 @@ export function applyOutboundAction(
             .map((a) => ({ a, t, qty: a.activeQty, serialNos: [...a.activeSerialNos] })),
         )
         if (all.length) unpick(o, all, 'CANCEL')
+        if (o.type === 'FBA') {
+          s.outboundVerifications
+            .filter((verification) => verification.orderNo === o.no)
+            .forEach(releaseUnusedFbaContainers)
+        }
         o.items.forEach((i) => {
           i.reservedQty = 0
         })
@@ -994,6 +1117,101 @@ export function applyOutboundAction(
             .some((v) => v.containerType !== 'PACKAGE' || !v.containerNo || !v.trackingNo || !v.weightKg)
         )
           reject('verification')
+        if (o.type === 'FBA') {
+          const verifications = s.outboundVerifications.filter(
+            (verification) =>
+              verification.orderNo === o.no &&
+              !verification.deleted &&
+              verification.lines.some((line) => line.effectiveQty > 0),
+          )
+          if (!verifications.length) reject('fbaContainerContent')
+          const orderAssignmentRows = orderAssignments(s, o.no)
+          const assignments = new Map(orderAssignmentRows.map((assignment) => [assignment.id, assignment]))
+          const totals = new Map<string, number>()
+          const pickedTotals = new Map<string, number>()
+          const serialsByAssignment = new Map<string, string[]>()
+          orderAssignmentRows.forEach((assignment) => {
+            if (assignment.activeQty <= 0) return
+            const key = [
+              assignment.line.skuCode,
+              assignment.line.batchNo ?? '',
+              inventory(assignment.stagingInventoryId).productionDate ?? '',
+            ].join('|')
+            pickedTotals.set(key, (pickedTotals.get(key) ?? 0) + assignment.activeQty)
+          })
+          verifications.forEach((verification) => {
+            if (
+              verification.method !== 'PACK' ||
+              !['BOX', 'PALLET'].includes(verification.containerType) ||
+              !verification.containerNo.trim() ||
+              !verification.lines.some((line) => line.effectiveQty > 0)
+            )
+              reject('fbaContainerContent')
+            const issue = fbaContainerIssue(s.containers, {
+              warehouseCode: o.warehouseCode,
+              customerId: o.customerId,
+              orderNo: o.no,
+              containerType: verification.containerType as 'BOX' | 'PALLET',
+              containerNo: verification.containerNo,
+              parentContainerNo: verification.parentContainerNo,
+              records: verifications,
+            })
+            if (issue) fbaContainerReject(issue)
+            if (
+              verification.containerType === 'PALLET' &&
+              fbaPalletHasActiveChildContent(verifications, o.no, verification.containerNo)
+            )
+              reject('fbaMixedContent')
+            verification.lines.forEach((line) => {
+              if (line.effectiveQty <= 0) return
+              const assignment = assignments.get(line.assignmentId) ?? reject('fbaContainerContent')
+              if (
+                assignment.itemNo !== line.itemNo ||
+                assignment.line.skuCode !== line.skuCode
+              )
+                reject('fbaContainerContent')
+              const key = [
+                line.skuCode,
+                assignment.line.batchNo ?? '',
+                inventory(assignment.stagingInventoryId).productionDate ?? '',
+              ].join('|')
+              totals.set(key, (totals.get(key) ?? 0) + line.effectiveQty)
+              if (skuMaster(o.customerId, line.skuCode)?.snEnabled) {
+                if (
+                  line.serialNos.length !== line.effectiveQty ||
+                  new Set(line.serialNos).size !== line.serialNos.length ||
+                  line.serialNos.some((sn) => !assignment.activeSerialNos.includes(sn))
+                )
+                  reject('fbaContainerContent')
+                serialsByAssignment.set(line.assignmentId, [
+                  ...(serialsByAssignment.get(line.assignmentId) ?? []),
+                  ...line.serialNos,
+                ])
+              }
+            })
+          })
+          const batchKeys = new Set([...totals.keys(), ...pickedTotals.keys()])
+          batchKeys.forEach((key) => {
+            if ((totals.get(key) ?? 0) !== (pickedTotals.get(key) ?? 0)) reject('fbaContainerContent')
+          })
+          orderAssignmentRows.forEach((assignment) => {
+            if (assignment.activeQty <= 0 || !skuMaster(o.customerId, assignment.line.skuCode)?.snEnabled) return
+            const serials = serialsByAssignment.get(assignment.id) ?? []
+            if (
+              serials.length !== assignment.activeQty ||
+              new Set(serials).size !== serials.length ||
+              assignment.activeSerialNos.some((sn) => !serials.includes(sn))
+            )
+              reject('fbaContainerContent')
+          })
+          o.items.forEach((item) => {
+            const prefix = item.skuCode + '|'
+            const total = [...totals.entries()]
+              .filter(([key]) => key.startsWith(prefix))
+              .reduce((count, [, qty]) => count + qty, 0)
+            if (total !== item.verifiedQty) reject('fbaContainerContent')
+          })
+        }
         orderAssignments(s, o.no)
           .filter((a) => a.activeQty > 0)
           .forEach((a) => {
@@ -1022,6 +1240,32 @@ export function applyOutboundAction(
         o.status = 'SHIPPED'
         o.shippedAt = at
         o.shippedBy = operator
+        if (o.type === 'FBA') {
+          const containerNos = new Set(
+            s.outboundVerifications
+              .filter(
+                (verification) =>
+                  verification.orderNo === o.no &&
+                  !verification.deleted &&
+                  verification.lines.some((line) => line.effectiveQty > 0),
+              )
+              .flatMap((verification) => [verification.containerNo, verification.parentContainerNo].filter(Boolean) as string[]),
+          )
+          s.containers.forEach((container) => {
+            if (
+              container.warehouseCode === o.warehouseCode &&
+              [...containerNos].some((no) => no.trim().toUpperCase() === container.containerNo.trim().toUpperCase()) &&
+              container.status === 'OUTBOUND'
+            ) {
+              container.status = 'SHIPPED'
+              container.currentLocationCode = undefined
+              container.lastScannedAt = at
+              container.lastScannedBy = operator
+              container.updatedAt = at
+              container.updatedBy = operator
+            }
+          })
+        }
         if (c.handover) addHandover(o, c.handover)
         if (o.upstreamNo)
           s.outboundResults.push({
@@ -1185,7 +1429,12 @@ export function applyOutboundAction(
     if (!(e instanceof BusinessError)) throw e
     if (!message) return { ok: false, errorKey: e.key, params: e.params }
     // 拒收只留消息事实，业务状态使用原快照。
-    const original = structuredClone({ ...data, inventory: state.inventory, inventoryLogs: state.inventoryLogs })
+    const original = structuredClone({
+      ...data,
+      inventory: state.inventory,
+      inventoryLogs: state.inventoryLogs,
+      containers: state.containers,
+    })
     original.outboundMessages.push({
       ...message,
       fingerprint,
@@ -1207,7 +1456,12 @@ export function outboundAuditRef(
   const base = { command: c.type }
   switch (c.type) {
     case 'WAVE':
-      return { ...base, refType: 'WAVE', refNo: resultNo ?? '-', detail: c.orderNos.join(', ') }
+      return {
+        ...base,
+        refType: 'WAVE',
+        refNo: resultNo ?? '-',
+        detail: [...new Set(c.orderNos)].sort((a, b) => a.localeCompare(b)).join(', '),
+      }
     case 'PICK':
       return { ...base, refType: 'PICK_TASK', refNo: c.no, detail: `${c.sku} × ${c.qty}` }
     case 'SHORTAGE':

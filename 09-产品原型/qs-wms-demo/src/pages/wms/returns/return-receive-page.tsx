@@ -12,9 +12,11 @@ import { WorkbenchCurrent, WorkbenchPrompt, type WorkbenchPromptState } from '@/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { OptionSelect } from '@/components/biz/option-select'
 import { useConfirm } from '@/hooks/use-confirm'
 import { resolveInboundSkuScan } from '@/lib/inbound-receive'
-import { isWorkContainerUsedOnReturn } from '@/mock/return-actions'
+import { updateExpiryDatePair } from '@/lib/expiry-date'
+import { isReturnSerialMismatch, isWorkContainerUsedOnReturn } from '@/mock/return-actions'
 import {
   emptyReturnReceiveDraft,
   num,
@@ -35,7 +37,13 @@ import {
   type ReturnReceiveSession,
 } from '@/stores/return-receive-session'
 import { useSettings } from '@/stores/settings'
-import type { ReturnReceiptContainerInput } from '@/types/return'
+import {
+  isOperatorSelectableReturnRejectReason,
+  RETURN_OPERATOR_REJECT_REASONS,
+  RETURN_REJECT_REASON_LABEL_KEYS,
+  RETURN_REJECT_REASON,
+  type ReturnReceiptContainerInput,
+} from '@/types/return'
 
 const activeDrafts = (box: ReturnReceiveBox) =>
   Object.entries(box.drafts).filter(([, d]) => returnDraftActivity(d) > 0)
@@ -61,7 +69,24 @@ export function ReturnReceivePage() {
   const bindContainer = useDb((s) => s.bindContainer)
   const returnReceipts = useDb((s) => s.returnReceipts)
   const skuBarcodes = useDb((s) => s.skuBarcodes)
+  const outboundOrders = useDb((s) => s.outboundOrders)
+  const outboundVerifications = useDb((s) => s.outboundVerifications)
+  const outboundPickTasks = useDb((s) => s.outboundPickTasks)
   const { sku, customerCode, customerName } = useLookups()
+
+  const hasSnMismatch = (lineNo: number, draft: ReturnReceiveDraft) => {
+    const line = order?.items.find((item) => item.lineNo === lineNo)
+    return Boolean(
+      line &&
+        order &&
+        isReturnSerialMismatch(
+          { outboundOrders, outboundVerifications, outboundPickTasks },
+          order,
+          line.skuCode,
+          parseReturnSerialNos(draft.rejectedSerialNos),
+        ),
+    )
+  }
 
   const sessionKey = returnSessionKey('web', warehouseCode, returnNo ?? '')
   const session = useReturnReceiveSession((s) => s.sessions[sessionKey] ?? EMPTY_RETURN_RECEIVE_SESSION)
@@ -254,8 +279,16 @@ export function ReturnReceivePage() {
       scanResult(false, { tone: 'error', title: t('return.receive.skuNotInOrder') })
       return
     }
-    const line = openLines.find((l) => l.skuCode === hit)
-    if (!line) return
+    const matchingLines = openLines.filter((candidate) => candidate.skuCode === hit)
+    const line = activeLine
+      ? matchingLines.find((candidate) => candidate.lineNo === activeLine)
+      : matchingLines.length === 1
+        ? matchingLines[0]
+        : undefined
+    if (!line) {
+      scanResult(false, { tone: 'error', title: t('return.receive.selectPackageLine') })
+      return
+    }
     const limit = limits[line.lineNo] ?? 0
     if (limit <= 0) {
       scanResult(false, { tone: 'error', title: t('return.receive.overRemain') })
@@ -276,7 +309,12 @@ export function ReturnReceivePage() {
     for (const box of session.boxes) {
       const drafts = activeDrafts(box)
       if (!drafts.length) continue
-      const missingReason = drafts.find(([, d]) => num(d.rejectedQty) > 0 && !d.rejectReason.trim())
+      const missingReason = drafts.find(
+        ([lineNo, d]) =>
+          num(d.rejectedQty) > 0 &&
+          !isOperatorSelectableReturnRejectReason(d.rejectReason) &&
+          !hasSnMismatch(Number(lineNo), d),
+      )
       if (missingReason) {
         update((s) => ({ ...s, activeKey: box.key }))
         setActiveLine(missingReason[0] ? Number(missingReason[0]) : undefined)
@@ -289,12 +327,18 @@ export function ReturnReceivePage() {
         lines: drafts.map(([lineNo, d]) => {
           const line = order.items.find((item) => item.lineNo === Number(lineNo))!
           return {
+            returnLineNo: line.lineNo,
             skuCode: line.skuCode,
             goodQty: num(d.goodQty),
             defectQty: num(d.defectQty),
             rejectedQty: num(d.rejectedQty),
-            rejectReason: d.rejectReason || undefined,
+            rejectReason: hasSnMismatch(line.lineNo, d)
+              ? RETURN_REJECT_REASON.SN_MISMATCH
+              : isOperatorSelectableReturnRejectReason(d.rejectReason)
+                ? d.rejectReason
+                : undefined,
             batchNo: d.batchNo.trim() || undefined,
+            productionDate: d.productionDate || undefined,
             expiryDate: d.expiryDate || undefined,
             goodSerialNos: parseReturnSerialNos(d.goodSerialNos),
             defectSerialNos: parseReturnSerialNos(d.defectSerialNos),
@@ -425,7 +469,7 @@ export function ReturnReceivePage() {
               return (
                 <Section
                   key={line.lineNo}
-                  title={`${line.skuCode} · ${skuLabel(line.skuCode)}`}
+                  title={`${line.originalPackageNo ? `${t('return.receive.originalPackage')} ${line.originalPackageNo} · ` : ''}${line.skuCode} · ${skuLabel(line.skuCode)}`}
                   extra={
                     dirty ? (
                       <Button variant="ghost" size="sm" onClick={() => cleanDraft(line.lineNo)}>
@@ -479,30 +523,66 @@ export function ReturnReceivePage() {
                         onChange={(e) => setDraft(line.lineNo, { rejectedQty: e.target.value })}
                       />
                     </FormField>
-                    <FormField label={t('return.receive.rejectReason')}>
-                      <Input
-                        value={draft.rejectReason}
-                        placeholder={t('common.inputPlaceholder')}
-                        onChange={(e) => setDraft(line.lineNo, { rejectReason: e.target.value })}
-                      />
-                    </FormField>
+                    {num(draft.rejectedQty) > 0 && (
+                      <FormField label={t('return.receive.rejectReason')} required>
+                        {hasSnMismatch(line.lineNo, draft) ? (
+                          <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">
+                            {t(RETURN_REJECT_REASON_LABEL_KEYS[RETURN_REJECT_REASON.SN_MISMATCH])}
+                          </div>
+                        ) : (
+                          <OptionSelect
+                            value={
+                              isOperatorSelectableReturnRejectReason(draft.rejectReason)
+                                ? draft.rejectReason
+                                : undefined
+                            }
+                            onValueChange={(value) => setDraft(line.lineNo, { rejectReason: value })}
+                            options={RETURN_OPERATOR_REJECT_REASONS.map((reason) => ({
+                              value: reason,
+                              label: t(RETURN_REJECT_REASON_LABEL_KEYS[reason]),
+                            }))}
+                            invalid={!isOperatorSelectableReturnRejectReason(draft.rejectReason)}
+                          />
+                        )}
+                      </FormField>
+                    )}
                     {master?.batchEnabled && (
-                      <FormField label={t('inbound.batchNo')}>
+                      <FormField label={t('inbound.batchNo')} required>
                         <Input
                           value={draft.batchNo}
                           placeholder={t('common.inputPlaceholder')}
+                          required
                           onChange={(e) => setDraft(line.lineNo, { batchNo: e.target.value })}
                         />
                       </FormField>
                     )}
                     {master?.expiryEnabled && (
-                      <FormField label={t('inbound.expiryDate')}>
-                        <Input
-                          type="date"
-                          value={draft.expiryDate}
-                          onChange={(e) => setDraft(line.lineNo, { expiryDate: e.target.value })}
-                        />
-                      </FormField>
+                      <>
+                        <FormField label={t('inbound.productionDate')} required>
+                          <Input
+                            type="date"
+                            required
+                            value={draft.productionDate}
+                            onChange={(e) =>
+                              setDraft(
+                                line.lineNo,
+                                updateExpiryDatePair(draft, 'productionDate', e.target.value, master.shelfLifeDays),
+                              )
+                            }
+                          />
+                        </FormField>
+                        <FormField label={t('inbound.expiryDate')} required>
+                          <Input
+                            type="date"
+                            required
+                            value={draft.expiryDate}
+                            onChange={(e) =>
+                              setDraft(line.lineNo, updateExpiryDatePair(draft, 'expiryDate', e.target.value, master.shelfLifeDays))
+                            }
+                          />
+                        </FormField>
+                        <p className="col-span-2 text-xs text-muted-foreground">{t('inventory.expiryDateCalculationHint')}</p>
+                      </>
                     )}
                     {master?.snEnabled && (
                       <>

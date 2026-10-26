@@ -95,9 +95,9 @@ function BalanceCard({ flow, row, showSku }: { flow: QueryFlow; row: BalanceRow;
             <PdaLocation code={r.locationCode} usage={row.usage && t(`inventory.usage.${row.usage}`)} />
           )}
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {r.batchNo && (
+            {(r.batchNo || r.productionDate || r.expiryDate) && (
               <span className="font-mono text-sm text-muted-foreground">
-                {[r.batchNo, r.expiryDate].filter(Boolean).join(' · ')}
+                {[r.batchNo, r.productionDate, r.expiryDate].filter(Boolean).join(' · ')}
               </span>
             )}
             {tags}

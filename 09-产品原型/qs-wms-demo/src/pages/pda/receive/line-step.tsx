@@ -6,6 +6,7 @@ import { QtyStepper } from '@/components/pda/qty-stepper'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { beep } from '@/lib/scan-beep'
+import { completeExpiryDatePair, updateExpiryDatePair } from '@/lib/expiry-date'
 import { usePdaScanListener } from '@/hooks/use-pda-scan-listener'
 import {
   applyReceiveDraftChange,
@@ -109,6 +110,8 @@ function LineEditor({
     total <= 0 ? t('pdaReceive.needQty') : hasReject && !draft.rejectReason ? t('pdaReceive.needReason') : undefined
 
   const save = () => {
+    const dates = master?.expiryEnabled ? completeExpiryDatePair(draft, master.shelfLifeDays) : undefined
+    const savedDraft = master?.expiryEnabled && dates ? { ...draft, ...dates } : draft
     const err = validateInboundReceiveDraft({ ...draft, receivedQty: draft.goodQty + draft.defectQty }, limit)
     if (err) {
       flow.failScan(t(err))
@@ -118,17 +121,26 @@ function LineEditor({
       flow.failScan(t('inbound.receive.batchRequired'))
       return
     }
-    if (master?.expiryEnabled && !draft.expiryDate?.trim()) {
-      flow.failScan(t('inbound.receive.expiryRequired'))
+    if (master?.expiryEnabled && !dates) {
+      flow.failScan(t('inbound.receive.expiryDateOrProductionRequired'))
+      return
+    }
+    if (
+      master?.expiryEnabled &&
+      savedDraft.productionDate &&
+      savedDraft.expiryDate &&
+      savedDraft.productionDate > savedDraft.expiryDate
+    ) {
+      flow.failScan(t('inbound.receive.dateOrderInvalid'))
       return
     }
     if (master?.snEnabled) {
-      if ((draft.goodSerialNos ?? []).length !== draft.goodQty || (draft.defectSerialNos ?? []).length !== draft.defectQty) {
+      if ((savedDraft.goodSerialNos ?? []).length !== savedDraft.goodQty || (savedDraft.defectSerialNos ?? []).length !== savedDraft.defectQty) {
         flow.failScan(t('inbound.receive.serialCount'))
         return
       }
     }
-    session.upsertLine(box.key, { ...draft, receivedQty: draft.goodQty + draft.defectQty, skuCode: item.skuCode })
+    session.upsertLine(box.key, { ...savedDraft, receivedQty: savedDraft.goodQty + savedDraft.defectQty, skuCode: item.skuCode })
     beep(true)
     nav.returnTo('box', { box: box.key })
   }
@@ -199,6 +211,7 @@ function LineEditor({
                   className="h-12 text-base"
                   value={draft.batchNo ?? ''}
                   placeholder={t('common.inputPlaceholder')}
+                  required
                   onChange={(e) => setDraft({ ...draft, batchNo: e.target.value })}
                 />
               </label>
@@ -211,7 +224,10 @@ function LineEditor({
                     className="h-12 text-base"
                     type="date"
                     value={draft.productionDate ?? ''}
-                    onChange={(e) => setDraft({ ...draft, productionDate: e.target.value })}
+                    required
+                    onChange={(e) =>
+                      setDraft({ ...draft, ...updateExpiryDatePair(draft, 'productionDate', e.target.value, master.shelfLifeDays) })
+                    }
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -220,9 +236,13 @@ function LineEditor({
                     className="h-12 text-base"
                     type="date"
                     value={draft.expiryDate ?? ''}
-                    onChange={(e) => setDraft({ ...draft, expiryDate: e.target.value })}
+                    required
+                    onChange={(e) =>
+                      setDraft({ ...draft, ...updateExpiryDatePair(draft, 'expiryDate', e.target.value, master.shelfLifeDays) })
+                    }
                   />
                 </label>
+                <p className="col-span-2 text-xs text-muted-foreground">{t('inventory.expiryDateCalculationHint')}</p>
               </div>
             )}
             {master?.snEnabled && draft.goodQty > 0 && (

@@ -12,14 +12,28 @@ import { StatusBadge, TagLabel } from '@/components/biz/status-badge'
 import { SummaryCard, SummaryMetrics, SummaryProgress } from '@/components/biz/summary-card'
 import { Button } from '@/components/ui/button'
 import { returnOrderStatusMeta, returnSourceMeta } from '@/config/status'
-import { canReceiveReturn, returnPutawayProgress, returnReceiptProgress, sumReturnLines } from '@/lib/return-derive'
+import {
+  canConfirmReturnReceiptClose,
+  canReceiveReturn,
+  finalShortQty,
+  returnPutawayProgress,
+  returnReceiptProgress,
+  sumReturnLines,
+} from '@/lib/return-derive'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { PutawayOrder } from '@/types/inbound'
-import type { ReturnException, ReturnOrder, ReturnOrderLine, ReturnReceiptRecord } from '@/types/return'
+import {
+  isReturnRejectReason,
+  RETURN_REJECT_REASON_LABEL_KEYS,
+  type ReturnException,
+  type ReturnOrder,
+  type ReturnOrderLine,
+  type ReturnReceiptRecord,
+} from '@/types/return'
 import type { AuditLog } from '@/types/wms'
 import { auditLogColumns } from '../inbound/audit-log-columns'
-import { ReturnCancelDialog } from './return-dialogs'
+import { ReturnCancelDialog, ReturnReceiptCloseDialog } from './return-dialogs'
 
 export function ReturnDetailPage() {
   const { t } = useTranslation()
@@ -35,12 +49,14 @@ export function ReturnDetailPage() {
   )
   const auditLogs = useDb((s) => s.auditLogs)
   const result = useDb((s) => s.returnResults.find((r) => r.returnNo === returnNo))
-  const retryResult = useDb((s) => s.retryReturnResult)
+  const closeReceipt = useDb((s) => s.closeReturnReceipt)
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const { customerCode, customerName, sku } = useLookups()
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
   const backTo = listSearch ? `/wms/returns/orders?${listSearch}` : '/wms/returns/orders'
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [closeReceiptOpen, setCloseReceiptOpen] = useState(false)
+  const operator = useSettings((s) => s.operator)
 
   if (!order || order.warehouseCode !== warehouseCode) {
     return (
@@ -64,11 +80,7 @@ export function ReturnDetailPage() {
         putaways={putaways}
         auditLogs={auditLogs}
         result={result}
-        onRetryResult={() => {
-          const retry = retryResult(order.returnNo)
-          if (!retry.ok) toast.error(t(retry.errorKey, retry.params))
-          else toast.success(t('return.detail.resultRetried'))
-        }}
+        onCloseReceipt={() => setCloseReceiptOpen(true)}
         backTo={backTo}
         onCancel={() => setCancelOpen(true)}
         warehouseName={warehouseMasters.find((w) => w.code === order.warehouseCode)?.name}
@@ -79,6 +91,18 @@ export function ReturnDetailPage() {
         t={t}
       />
       {cancelOpen && <ReturnCancelDialog order={order} onClose={() => setCancelOpen(false)} />}
+      {closeReceiptOpen && (
+        <ReturnReceiptCloseDialog
+          order={order}
+          onClose={() => setCloseReceiptOpen(false)}
+          onConfirm={() => {
+            const result = closeReceipt({ returnNo: order.returnNo, operator })
+            if (!result.ok) toast.error(t(result.errorKey, result.params))
+            else toast.success(t('return.detail.receiptCloseSuccess'))
+            setCloseReceiptOpen(false)
+          }}
+        />
+      )}
     </>
   )
 }
@@ -90,7 +114,7 @@ function ReturnDetail({
   putaways,
   auditLogs,
   result,
-  onRetryResult,
+  onCloseReceipt,
   backTo,
   onCancel,
   warehouseName,
@@ -106,7 +130,7 @@ function ReturnDetail({
   putaways: PutawayOrder[]
   auditLogs: AuditLog[]
   result?: { status: 'SENT' | 'FAILED'; attempts: number }
-  onRetryResult: () => void
+  onCloseReceipt: () => void
   backTo: string
   onCancel: () => void
   warehouseName?: string
@@ -125,6 +149,14 @@ function ReturnDetail({
     const col = createDataColumns<ReturnOrderLine>()
     return col.columns([
       col.accessor('lineNo', { header: t('inbound.lineNo'), meta: { align: 'right' } }),
+      ...(order.sourceType === 'DELIVERY_FAILED'
+        ? [
+            col.accessor('originalPackageNo', {
+              header: t('return.originalPackageNo'),
+              cell: ({ getValue }) => (getValue() ? <BizCode>{getValue()}</BizCode> : <Empty />),
+            }),
+          ]
+        : []),
       col.accessor('skuCode', { header: t('common.sku'), cell: ({ getValue }) => <BizCode>{getValue()}</BizCode> }),
       col.accessor('skuCode', {
         id: 'skuName',
@@ -136,7 +168,7 @@ function ReturnDetail({
       col.accessor('rejectedQty', { header: t('return.columns.rejectedQty'), meta: { align: 'right' }, cell: ({ getValue }) => <Num value={getValue()} /> }),
       col.accessor('putawayQty', { header: t('return.columns.putawayQty'), meta: { align: 'right' }, cell: ({ getValue }) => <Num value={getValue()} /> }),
     ])
-  }, [skuName, t])
+  }, [order.sourceType, skuName, t])
 
   const receiptColumns = useMemo(() => {
     const col = createDataColumns<ReturnReceiptRecord>()
@@ -185,7 +217,14 @@ function ReturnDetail({
       col.accessor('exceptionNo', { header: t('return.columns.exceptionNo'), cell: ({ getValue }) => <BizCode>{getValue()}</BizCode> }),
       col.accessor('skuCode', { header: t('common.sku'), cell: ({ getValue }) => <CodeName code={getValue()} name={skuName(getValue())} /> }),
       col.accessor('qty', { header: t('return.columns.rejectedQty'), meta: { align: 'right' }, cell: ({ getValue }) => <Num value={getValue()} /> }),
-      col.accessor('reason', { header: t('return.columns.reason'), cell: ({ getValue }) => getValue() || <Empty /> }),
+      col.accessor('reason', {
+        header: t('return.columns.reason'),
+        cell: ({ getValue }) => {
+          const reason = getValue()
+          if (!reason) return <Empty />
+          return isReturnRejectReason(reason) ? t(RETURN_REJECT_REASON_LABEL_KEYS[reason]) : reason
+        },
+      }),
       col.accessor('receiptNo', { header: t('return.columns.receiptNo'), cell: ({ getValue }) => <BizCode>{getValue()}</BizCode> }),
     ])
   }, [skuName, t])
@@ -194,6 +233,7 @@ function ReturnDetail({
   const totalReceived = sumReturnLines(order, (l) => l.receivedQty)
   const totalRejected = sumReturnLines(order, (l) => l.rejectedQty)
   const totalPutaway = sumReturnLines(order, (l) => l.putawayQty)
+  const totalFinalShort = finalShortQty(order)
 
   return (
     <PageContainer
@@ -213,9 +253,16 @@ function ReturnDetail({
               {t('return.receive.openPda')}
             </Button>
           )}
+          {canConfirmReturnReceiptClose(order) && (
+            <Button variant="outline" onClick={onCloseReceipt}>
+              {t('return.detail.receiptClose')}
+            </Button>
+          )}
           {result?.status === 'FAILED' && (
-            <Button variant="outline" onClick={onRetryResult}>
-              {t('inbound.upstream.retry')}
+            <Button variant="outline" asChild>
+              <Link to={`/wms/system/instructions-results?returnNo=${encodeURIComponent(order.returnNo)}`}>
+                {t('inbound.upstream.retry')}
+              </Link>
             </Button>
           )}
           {totalReceived === 0 && order.status !== 'CANCELLED' && order.status !== 'COMPLETED' && (
@@ -237,6 +284,9 @@ function ReturnDetail({
                 { label: t('return.columns.receivedQty'), value: totalReceived, tone: 'blue' },
                 { label: t('return.columns.rejectedQty'), value: totalRejected, tone: 'red', hidden: totalRejected === 0 },
                 { label: t('return.columns.putawayQty'), value: totalPutaway, tone: 'green' },
+                ...(totalFinalShort !== undefined
+                  ? [{ label: t('return.detail.finalShortQty'), value: totalFinalShort, tone: 'orange' as const }]
+                  : []),
               ]}
             />
           </SummaryCard>
@@ -259,8 +309,23 @@ function ReturnDetail({
             <DescriptionItem label={t('return.originalOutboundNo')}>
               {order.originalOutboundNo ? <BizCode>{order.originalOutboundNo}</BizCode> : <Empty />}
             </DescriptionItem>
+            <DescriptionItem label={t('return.forecast.originalSalesNo')}>
+              {order.originalSalesNo ? <BizCode>{order.originalSalesNo}</BizCode> : <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('return.forecast.platformReturnNo')}>
+              {order.platformReturnNo ? <BizCode>{order.platformReturnNo}</BizCode> : <Empty />}
+            </DescriptionItem>
             <DescriptionItem label={t('return.trackingNo')}>
               {order.trackingNo ? <BizCode>{order.trackingNo}</BizCode> : <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('return.forecast.originalTrackingNo')}>
+              {order.originalTrackingNo ? <BizCode>{order.originalTrackingNo}</BizCode> : <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('return.detail.receiptClosedBy')}>
+              {order.receiveClosedBy || <Empty />}
+            </DescriptionItem>
+            <DescriptionItem label={t('return.detail.receiptClosedAt')}>
+              <DateTime value={order.receiveClosedAt} />
             </DescriptionItem>
             <DescriptionItem label={t('return.detail.createdAt')}>
               <DateTime value={order.createdAt} />

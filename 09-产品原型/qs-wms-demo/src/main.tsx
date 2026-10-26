@@ -9,6 +9,7 @@ import './index.css'
 import { router } from './app/router'
 import { useDb } from './mock/db'
 import { useSettings } from './stores/settings'
+import { ExpiryProcessor } from './components/biz/expiry-processor'
 
 // WMS 和 PDA 常在两个浏览器标签页里同时演示，这里让两边的数据实时同步
 window.addEventListener('storage', (e) => {
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <TooltipProvider delayDuration={300}>
       <ConfirmProvider>
+        <ExpiryProcessor />
         <RouterProvider router={router} />
         <Toaster position="bottom-center" richColors closeButton />
       </ConfirmProvider>

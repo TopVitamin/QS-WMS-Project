@@ -1,0 +1,460 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - button "出库管理":
+      - generic: 出库管理
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 入库管理
+    - generic: /
+    - generic: 入库单
+  - button "US-LA-01 美西仓 19:17":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:17
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭" [selected]:
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "入库单" [level=1]
+  - button "导出":
+    - text: 导出
+  - button "模拟推送入库指令（Demo）":
+    - text: 模拟推送入库指令（Demo）
+  - generic: 入库单号
+  - textbox "入库单号":
+    - /placeholder: 入库单号，多个用空格分隔
+  - generic: 货主
+  - combobox "货主":
+    - generic: 全部
+  - combobox
+  - generic: 业务类型
+  - combobox "业务类型":
+    - generic: 全部
+  - combobox
+  - generic: 上游单号
+  - textbox "上游单号"
+  - generic: 创建时间
+  - button "创建时间":
+    - generic: 创建时间范围
+  - button "查询":
+    - text: 查询
+  - button "重置":
+    - text: 重置
+  - button "展开":
+    - text: 展开
+  - tablist "状态筛选":
+    - tab "全部 13" [selected]:
+      - text: 全部
+      - generic: "13"
+    - tab "待收货 3":
+      - text: 待收货
+      - generic: "3"
+    - tab "收货中 2":
+      - text: 收货中
+      - generic: "2"
+    - tab "上架中 3":
+      - text: 上架中
+      - generic: "3"
+    - tab "已完成 4":
+      - text: 已完成
+      - generic: "4"
+    - tab "已取消 1":
+      - text: 已取消
+      - generic: "1"
+  - button "列设置":
+  - table:
+    - rowgroup:
+      - row "入库单号 状态 货主 业务类型 SKU 种类 预计数量 实收数量 已上架 收货进度 上架进度 创建时间 操作":
+        - columnheader "入库单号":
+          - button "入库单号":
+            - text: 入库单号
+        - columnheader "状态"
+        - columnheader "货主"
+        - columnheader "业务类型"
+        - columnheader "SKU 种类"
+        - columnheader "预计数量"
+        - columnheader "实收数量"
+        - columnheader "已上架"
+        - columnheader "收货进度"
+        - columnheader "上架进度"
+        - columnheader "创建时间":
+          - button "创建时间":
+            - text: 创建时间
+        - columnheader "操作"
+    - rowgroup:
+      - row "IB-20261002-0001 待收货 ANKR Shenzhen Anker Trading 正常入库 1 500 0 0 0/500 - 2026-10-02 03:00 Web 端收货 PDA 收货":
+        - cell "IB-20261002-0001":
+          - button "IB-20261002-0001"
+        - cell "待收货":
+          - generic: 待收货
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "500"
+        - cell "0"
+        - cell "0"
+        - cell "0/500":
+          - progressbar
+          - generic: 0/500
+        - cell "-"
+        - cell "2026-10-02 03:00"
+        - cell "Web 端收货 PDA 收货":
+          - button "Web 端收货"
+          - button "PDA 收货"
+      - row "IB-20261002-0002 已取消 ANKR Shenzhen Anker Trading 正常入库 1 200 0 0 0/200 - 2026-10-02 03:00":
+        - cell "IB-20261002-0002":
+          - button "IB-20261002-0002"
+        - cell "已取消":
+          - generic: 已取消
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "200"
+        - cell "0"
+        - cell "0"
+        - cell "0/200":
+          - progressbar
+          - generic: 0/200
+        - cell "-"
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0003 收货中 ANKR Shenzhen Anker Trading 正常入库 2 1,100 600 590 600/1100 590/600 2026-10-02 03:00 Web 端收货 确认收货完结 更多":
+        - cell "IB-20261002-0003":
+          - button "IB-20261002-0003"
+        - cell "收货中":
+          - generic: 收货中
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "2"
+        - cell "1,100"
+        - cell "600"
+        - cell "590"
+        - cell "600/1100":
+          - progressbar
+          - generic: 600/1100
+        - cell "590/600":
+          - progressbar
+          - generic: 590/600
+        - cell "2026-10-02 03:00"
+        - cell "Web 端收货 确认收货完结 更多":
+          - button "Web 端收货"
+          - button "确认收货完结"
+          - button "更多":
+            - text: 更多
+      - row "IB-20261002-0004 上架中 ANKR Shenzhen Anker Trading 正常入库 1 800 800 0 800/800 0/800 2026-10-02 03:00":
+        - cell "IB-20261002-0004":
+          - button "IB-20261002-0004"
+        - cell "上架中":
+          - generic: 上架中
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "800"
+        - cell "800"
+        - cell "0"
+        - cell "800/800":
+          - progressbar
+          - generic: 800/800
+        - cell "0/800":
+          - progressbar
+          - generic: 0/800
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0005 已完成 ANKR Shenzhen Anker Trading 正常入库 1 100 94 94 94/100 94/94 2026-10-02 03:00":
+        - cell "IB-20261002-0005":
+          - button "IB-20261002-0005"
+        - cell "已完成":
+          - generic: 已完成
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "100"
+        - cell "94"
+        - cell "94"
+        - cell "94/100":
+          - progressbar
+          - generic: 94/100
+        - cell "94/94":
+          - progressbar
+          - generic: 94/94
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0006 已完成 ANKR Shenzhen Anker Trading 正常入库 1 120 120 120 120/120 120/120 2026-10-02 03:00":
+        - cell "IB-20261002-0006":
+          - button "IB-20261002-0006"
+        - cell "已完成":
+          - generic: 已完成
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "120"
+        - cell "120"
+        - cell "120"
+        - cell "120/120":
+          - progressbar
+          - generic: 120/120
+        - cell "120/120":
+          - progressbar
+          - generic: 120/120
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0007 已完成 ANKR Shenzhen Anker Trading 正常入库 2 80 20 20 20/80 20/20 2026-10-02 03:00":
+        - cell "IB-20261002-0007":
+          - button "IB-20261002-0007"
+        - cell "已完成":
+          - generic: 已完成
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "2"
+        - cell "80"
+        - cell "20"
+        - cell "20"
+        - cell "20/80":
+          - progressbar
+          - generic: 20/80
+        - cell "20/20":
+          - progressbar
+          - generic: 20/20
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0008 上架中 ANKR Shenzhen Anker Trading 正常入库 1 60 60 0 60/60 0/60 2026-10-02 03:00":
+        - cell "IB-20261002-0008":
+          - button "IB-20261002-0008"
+        - cell "上架中":
+          - generic: 上架中
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "60"
+        - cell "60"
+        - cell "0"
+        - cell "60/60":
+          - progressbar
+          - generic: 60/60
+        - cell "0/60":
+          - progressbar
+          - generic: 0/60
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0009 收货中 ANKR Shenzhen Anker Trading 调拨入库 2 100 30 0 30/100 0/30 2026-10-02 03:00 Web 端收货 确认收货完结 更多":
+        - cell "IB-20261002-0009":
+          - button "IB-20261002-0009"
+        - cell "收货中":
+          - generic: 收货中
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "调拨入库":
+          - generic: 调拨入库
+        - cell "2"
+        - cell "100"
+        - cell "30"
+        - cell "0"
+        - cell "30/100":
+          - progressbar
+          - generic: 30/100
+        - cell "0/30":
+          - progressbar
+          - generic: 0/30
+        - cell "2026-10-02 03:00"
+        - cell "Web 端收货 确认收货完结 更多":
+          - button "Web 端收货"
+          - button "确认收货完结"
+          - button "更多":
+            - text: 更多
+      - row "IB-20261002-0010 已完成 ANKR Shenzhen Anker Trading 正常入库 1 2 2 2 2/2 2/2 2026-10-02 03:00":
+        - cell "IB-20261002-0010":
+          - button "IB-20261002-0010"
+        - cell "已完成":
+          - generic: 已完成
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "2"
+        - cell "2"
+        - cell "2"
+        - cell "2/2":
+          - progressbar
+          - generic: 2/2
+        - cell "2/2":
+          - progressbar
+          - generic: 2/2
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-0011 上架中 ANKR Shenzhen Anker Trading 正常入库 3 9 9 0 9/9 0/9 2026-10-02 03:00":
+        - cell "IB-20261002-0011":
+          - button "IB-20261002-0011"
+        - cell "上架中":
+          - generic: 上架中
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "3"
+        - cell "9"
+        - cell "9"
+        - cell "0"
+        - cell "9/9":
+          - progressbar
+          - generic: 9/9
+        - cell "0/9":
+          - progressbar
+          - generic: 0/9
+        - cell "2026-10-02 03:00"
+        - cell
+      - row "IB-20261002-9001 待收货 OWNER-SELF QS 自营 正常入库 1 20 0 0 0/20 - 2026-10-02 03:00 Web 端收货 PDA 收货":
+        - cell "IB-20261002-9001":
+          - button "IB-20261002-9001"
+        - cell "待收货":
+          - generic: 待收货
+        - cell "OWNER-SELF QS 自营":
+          - generic "QS 自营":
+            - generic: OWNER-SELF
+            - generic: QS 自营
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "1"
+        - cell "20"
+        - cell "0"
+        - cell "0"
+        - cell "0/20":
+          - progressbar
+          - generic: 0/20
+        - cell "-"
+        - cell "2026-10-02 03:00"
+        - cell "Web 端收货 PDA 收货":
+          - button "Web 端收货"
+          - button "PDA 收货"
+      - row "IB-20261002-9002 待收货 ANKR Shenzhen Anker Trading 正常入库 3 30 0 0 0/30 - 2026-10-02 03:00 Web 端收货 PDA 收货":
+        - cell "IB-20261002-9002":
+          - button "IB-20261002-9002"
+        - cell "待收货":
+          - generic: 待收货
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "正常入库":
+          - generic: 正常入库
+        - cell "3"
+        - cell "30"
+        - cell "0"
+        - cell "0"
+        - cell "0/30":
+          - progressbar
+          - generic: 0/30
+        - cell "-"
+        - cell "2026-10-02 03:00"
+        - cell "Web 端收货 PDA 收货":
+          - button "Web 端收货"
+          - button "PDA 收货"
+  - generic: 共 13 条
+  - combobox:
+    - generic: 20 条/页
+  - generic: 第 1 / 1 页
+  - button "上一页" [disabled]:
+  - button "下一页" [disabled]:
+- region "Notifications alt+T"
+- text: 解释

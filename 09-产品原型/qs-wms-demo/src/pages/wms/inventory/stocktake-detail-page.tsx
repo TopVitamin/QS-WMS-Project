@@ -85,6 +85,24 @@ export function StocktakeDetailPage() {
           </span>
         ),
       }),
+      col.accessor((line) => line.containerId ?? count?.containerId ?? '', {
+        id: 'container',
+        header: t('inventory.containerNo'),
+        cell: ({ row }) => {
+          const containerId = row.original.containerId ?? count?.containerId
+          const containerNo = containerId?.split('::').at(-1)
+          return containerNo && count ? (
+            <Link
+              className="text-primary underline-offset-4 hover:underline"
+              to={`/wms/master/containers/${encodeURIComponent(containerNo)}?wh=${encodeURIComponent(count.warehouseCode)}`}
+            >
+              <BizCode>{containerNo}</BizCode>
+            </Link>
+          ) : (
+            <Empty />
+          )
+        },
+      }),
       col.accessor('customerId', {
         header: t('inventory.owner'),
         cell: ({ getValue }) => <BizCode>{customerCode(getValue())}</BizCode>,
@@ -96,6 +114,16 @@ export function StocktakeDetailPage() {
       col.accessor((l) => l.batchNo ?? '', {
         id: 'batch',
         header: t('inventory.batch'),
+        cell: ({ getValue }) => getValue() || <Empty />,
+      }),
+      col.accessor((l) => l.productionDate ?? '', {
+        id: 'productionDate',
+        header: t('inbound.productionDate'),
+        cell: ({ getValue }) => getValue() || <Empty />,
+      }),
+      col.accessor((l) => l.expiryDate ?? '', {
+        id: 'expiryDate',
+        header: t('inbound.expiryDate'),
         cell: ({ getValue }) => getValue() || <Empty />,
       }),
       col.accessor('qualityType', {
@@ -149,7 +177,7 @@ export function StocktakeDetailPage() {
           getValue() ? <DocNo onClick={() => openLog(getValue())}>{numbers.get(getValue()) ?? ''}</DocNo> : <Empty />,
       }),
     ])
-  }, [customerCode, numbers, openLog, sku, t, usageOf])
+  }, [count, customerCode, numbers, openLog, sku, t, usageOf])
 
   const serialColumns = useMemo(() => {
     const col = createDataColumns<SerialRow>()

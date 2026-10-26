@@ -1,11 +1,11 @@
 import { Download } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { createDataColumns, DataTable } from '@/components/biz/data-table'
 import { DateRangePickerField } from '@/components/biz/date-range-picker-field'
-import { CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
+import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
 import { FilterBar, FilterItem } from '@/components/biz/filter-bar'
 import { OptionSelect } from '@/components/biz/option-select'
 import { PageContainer, Panel } from '@/components/biz/page-container'
@@ -35,6 +35,7 @@ import {
   type StockView,
 } from '@/lib/inventory-list-match'
 import { codeNameText } from '@/lib/typography'
+import { containerIdOf } from '@/lib/container-id'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import { AvailableQty, InventoryBasisHelp, LocationCode, StockFlags } from './inventory-shared'
@@ -109,6 +110,7 @@ export function StockPage() {
   const { t } = useTranslation()
   const warehouseCode = useSettings((s) => s.warehouseCode)
   const customers = useDb((s) => s.customers)
+  const containers = useDb((s) => s.containers)
   const { sku } = useLookups()
   const [params, setParams] = useSearchParams()
   const rawView = params.get('view') as StockView | null
@@ -255,6 +257,25 @@ export function StockPage() {
         header: t('inventory.location'),
         cell: ({ row }) => <LocationCode code={row.original.record.locationCode} usage={row.original.usage} />,
       }),
+      col.accessor((b) => b.record.containerId ?? '', {
+        id: 'container',
+        header: t('inventory.containerNo'),
+        cell: ({ row }) => {
+          const container = containers.find(
+            (c) => containerIdOf(c.warehouseCode, c.containerNo) === row.original.record.containerId,
+          )
+          return container ? (
+            <Link
+              className="text-primary underline-offset-4 hover:underline"
+              to={`/wms/master/containers/${encodeURIComponent(container.containerNo)}?wh=${encodeURIComponent(container.warehouseCode)}`}
+            >
+              <BizCode>{container.containerNo}</BizCode>
+            </Link>
+          ) : (
+            <Empty />
+          )
+        },
+      }),
       col.accessor((b) => b.record.batchNo ?? '', {
         id: 'batch',
         header: t('inventory.batch'),
@@ -302,7 +323,7 @@ export function StockPage() {
         cell: ({ getValue }) => <DateTime value={getValue()} />,
       }),
     ])
-  }, [openSheet, skuName, t])
+  }, [containers, openSheet, skuName, t])
 
   const serialColumns = useMemo(() => {
     const col = createDataColumns<SerialRow>()
@@ -394,6 +415,15 @@ export function StockPage() {
       />
     </FilterItem>
   )
+  const containerField = (
+    <FilterItem label={t('inventory.containerNo')}>
+      <Input
+        value={draft.container}
+        placeholder={t('inventory.stock.containerPlaceholder')}
+        onChange={(e) => setDraft({ ...draft, container: e.target.value })}
+      />
+    </FilterItem>
+  )
 
   const filterBar =
     view === 'sku' ? (
@@ -425,6 +455,7 @@ export function StockPage() {
         advanced={
           <>
             {batchField}
+            {containerField}
             <FilterItem label={t('inventory.stock.allocatableCondition')}>
               <OptionSelect
                 allOption

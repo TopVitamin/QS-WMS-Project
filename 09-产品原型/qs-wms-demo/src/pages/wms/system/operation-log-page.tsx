@@ -39,9 +39,12 @@ const ACTIONS: AuditAction[] = [
   'RETURN_RECEIVE',
   'RETURN_MOCK_FORECAST',
   'RETURN_DELIVERY_FAILED_CREATE',
+  'RETURN_RECEIPT_CLOSE',
   'RETURN_RESULT_RETRY',
+  'RETURN_RESULT_SIMULATE_FAILURE',
   'RETURN_CANCEL',
   'MASTER_MOCK_PUSH',
+  'SKU_MASTER_EDIT',
   'PUTAWAY_SAVE',
   'PUTAWAY_REMOVE',
   'PUTAWAY',
@@ -111,10 +114,17 @@ export function OperationLogPage() {
         header: t('inbound.inboundNo'),
         cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
       }),
-      col.accessor('operator', { header: t('common.operator') }),
+      col.accessor('operator', {
+        header: t('common.operator'),
+        cell: ({ getValue }) =>
+          getValue() === 'SYSTEM' ? t('inventory.terminal.SYSTEM') : getValue(),
+      }),
       col.accessor('detail', {
         header: t('inbound.tabs.logDetail'),
-        cell: ({ getValue }) => getValue() || <Empty />,
+        cell: ({ getValue }) => {
+          const value = getValue()
+          return value === 'EXPIRED' ? t('inventory.reason.EXPIRED') : value || <Empty />
+        },
       }),
     ])
   }, [t])

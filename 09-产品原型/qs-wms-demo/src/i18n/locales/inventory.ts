@@ -14,9 +14,14 @@ const labels = {
   usageLabel: ['库位用途', 'Location usage'],
   batchNo: ['批次号', 'Batch no.'],
   batch: ['批次', 'Batch'],
+  containerNo: ['容器号', 'Container no.'],
   expiry: ['效期等级', 'Expiry level'],
   productionDate: ['生产日期', 'Production date'],
   expiryDate: ['有效期至', 'Expiry date'],
+  expiryDateCalculationHint: [
+    '录入生产日期或失效日期，系统按保质期天数计算另一日期；计算后仍可手动修改。',
+    'Enter either date. The other is calculated from shelf life and can be edited afterward.',
+  ],
   good: ['正常品实际', 'Good on hand'],
   goodShort: ['正常', 'Good'],
   defective: ['不良品实际', 'Defective on hand'],
@@ -97,6 +102,7 @@ const stock = {
   skuKeywordPlaceholder: ['SKU编码或名称，空格分隔多个', 'SKU code or name; separate with spaces'],
   locationPlaceholder: ['库位编码或名称', 'Location code or name'],
   batchPlaceholder: ['批次号', 'Batch no.'],
+  containerPlaceholder: ['容器号，模糊匹配', 'Container no., partial match'],
   serialPlaceholder: ['完整 SN', 'Full serial no.'],
   updatedRangePlaceholder: ['最后变动日期', 'Last changed date'],
   qtyCondition: ['数量条件', 'Quantity condition'],
@@ -510,6 +516,7 @@ const actions = {
   CANCEL_STOCKTAKE: ['取消盘点', 'Cancel stocktake'],
 } as const
 const errors = {
+  systemOnly: ['该系统动作仅可由系统调度执行', 'This system action is restricted to the scheduler'],
   negativeInventory: [
     '操作将导致负库存：{{sku}}良品{{actual}}、订单预占／分配{{reserved}}。请先处理占用后重试',
     'Blocked: negative inventory for {{sku}} (good {{actual}}, reserved/allocated {{reserved}}). Resolve reservations first.',
@@ -551,6 +558,11 @@ const errors = {
     '第 {{line}} 行数量须大于 0 且不超过 {{max}}',
     'Line {{line}}: quantity must be above 0 and at most {{max}}',
   ],
+  containerMoveWhole: [
+    '容器移库须覆盖容器内全部库存行、数量和目标库位保持一致，且不能包含已分配库存',
+    'A container move must include every stock row at full quantity, use one target location, and contain no allocated stock',
+  ],
+  containerCountScope: ['盘点行容器与盘点单范围不一致', 'The count line container does not match the stocktake scope'],
   sku: ['商品 {{sku}} 不存在', 'Item {{sku}} not found'],
   skuEmpty: ['请选择要盘点的 SKU，且不能重复', 'Select the SKUs to count, without duplicates'],
   stocktakeClosed: ['盘点单已不是盘点中，请刷新', 'The stocktake is no longer counting; refresh'],
@@ -569,6 +581,11 @@ const errors = {
     '该商品启用了批次或效期，批次号和有效期必填',
     'This item uses batches or expiry; batch and expiry date are required',
   ],
+  expiryDateOrProductionRequired: [
+    '效期商品请填写生产日期或失效日期',
+    'Enter a production date or an expiry date for this expiry-tracked item',
+  ],
+  dateOrderInvalid: ['生产日期不能晚于失效日期', 'Production date must be on or before expiry date'],
   location: ['库位 {{location}} 不存在、停用或不可盘点', 'Location {{location}} is missing, disabled or not countable'],
   countOccupied: [
     '库位 {{location}} 有其他货主的库存，不能新增盘点行',

@@ -2,8 +2,8 @@ import type { DbState } from './db'
 import { currentOperator } from './current-operator'
 import { carrierHasEnabledChannels } from '@/lib/carrier-master'
 import { channelHasOpenReferences } from '@/lib/channel-master'
-import { customerHasInventory } from '@/lib/customer-master'
-import { isLocationOccupied, zoneTypeToLocationType } from '@/lib/location-master'
+import { customerHasInventory, customerHasOpenWork } from '@/lib/customer-master'
+import { isLocationOccupied, zoneTypeToLocationType, type LocationWorkReferences } from '@/lib/location-master'
 import { cannotDisableTrace, findSkuMaster, hasOpenSkuWork, hasSkuStock } from '@/lib/sku-master'
 import { blockingLocationCodes } from '@/lib/zone-master'
 import type {
@@ -11,6 +11,7 @@ import type {
   ChannelMaster,
   CustomerMaster,
   LocationMaster,
+  ProductFormFactor,
   SkuMaster,
   WarehouseMaster,
   ZoneMaster,
@@ -43,6 +44,51 @@ type MasterActions = Pick<
 
 const nowIso = () => new Date().toISOString()
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+
+const SKU_AUDIT_FIELDS = [
+  ['name', '商品名称'],
+  ['nameEn', '英文名称'],
+  ['spec', '规格型号'],
+  ['unit', '计量单位'],
+  ['productForm', '商品形态'],
+  ['isBattery', '是否带电'],
+  ['snEnabled', 'SN管理'],
+  ['snFormat', 'SN格式'],
+  ['batchEnabled', '批次管理'],
+  ['expiryEnabled', '效期管理'],
+  ['shelfLifeDays', '保质期（天）'],
+  ['inboundDays', '收货剩余效期（天）'],
+  ['nearExpiryDays', '临期阈值（天）'],
+  ['expiredDays', '过期阈值（天）'],
+  ['grossWeightKg', '毛重（kg）'],
+  ['netWeightKg', '净重（kg）'],
+  ['lengthCm', '长度（cm）'],
+  ['widthCm', '宽度（cm）'],
+  ['heightCm', '高度（cm）'],
+] as const satisfies readonly (readonly [keyof SkuMaster, string])[]
+
+function skuAuditValue(key: keyof SkuMaster, value: unknown): string {
+  if (value == null || value === '') return '—'
+  if (key === 'productForm') {
+    const forms: Record<ProductFormFactor, string> = { SMALL: '轻小件', LARGE: '大件', IRREGULAR: '异形' }
+    return forms[value as ProductFormFactor] ?? String(value)
+  }
+  if (['isBattery', 'snEnabled', 'batchEnabled', 'expiryEnabled'].includes(key)) return value ? '是' : '否'
+  return String(value)
+}
+
+function locationWorkReferences(state: DbState): LocationWorkReferences {
+  return {
+    inbounds: state.inbounds,
+    receiptRecords: state.receiptRecords,
+    returnOrders: state.returnOrders,
+    returnReceipts: state.returnReceipts,
+    putawayOrders: state.putawayOrders,
+    outboundPickTasks: state.outboundPickTasks,
+    outboundPutbacks: state.outboundPutbacks,
+    inventoryCounts: state.inventoryCounts,
+  }
+}
 
 /**
  * 基础资料写入（仓库、库区、货位、货主、商品、承运商、渠道）。
@@ -134,7 +180,8 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       const idx = get().locationMasters.findIndex((l) => l.warehouseCode === warehouseCode && l.code === code)
       if (idx < 0) return { ok: false, errorKey: 'masterLocation.notFound' }
       const prev = get().locationMasters[idx]
-      const occupied = isLocationOccupied(prev, get().inventory)
+      const state = get()
+      const occupied = isLocationOccupied(prev, state.inventory, locationWorkReferences(state))
       let nextZoneCode = prev.zoneCode
       let nextZoneType = prev.zoneType
       if (patch.zoneCode && patch.zoneCode !== prev.zoneCode) {
@@ -177,7 +224,8 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       if (idx < 0) return { ok: false, errorKey: 'masterLocation.notFound' }
       const prev = get().locationMasters[idx]
       if (prev.status === status) return { ok: true }
-      if (status === 'DISABLED' && isLocationOccupied(prev, get().inventory)) {
+      const state = get()
+      if (status === 'DISABLED' && isLocationOccupied(prev, state.inventory, locationWorkReferences(state))) {
         return { ok: false, errorKey: 'masterLocation.error.disableOccupied' }
       }
       const next: LocationMaster = {
@@ -227,9 +275,11 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       const idx = get().zoneMasters.findIndex((z) => z.warehouseCode === warehouseCode && z.code === code)
       if (idx < 0) return { ok: false, errorKey: 'masterZone.notFound' }
       const prev = get().zoneMasters[idx]
-      const inventory = get().inventory
-      const locations = get().locationMasters
-      const blocked = blockingLocationCodes(prev, locations, inventory).length > 0
+      const state = get()
+      const inventory = state.inventory
+      const locations = state.locationMasters
+      const work = locationWorkReferences(state)
+      const blocked = blockingLocationCodes(prev, locations, inventory, work).length > 0
 
       if (patch.warehouseCode && patch.warehouseCode !== prev.warehouseCode) {
         if (blocked) return { ok: false, errorKey: 'masterZone.error.occupiedChangeWarehouse' }
@@ -284,7 +334,13 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       const prev = get().zoneMasters[idx]
       if (prev.status === status) return { ok: true }
       if (status === 'DISABLED') {
-        const codes = blockingLocationCodes(prev, get().locationMasters, get().inventory)
+        const state = get()
+        const codes = blockingLocationCodes(
+          prev,
+          state.locationMasters,
+          state.inventory,
+          locationWorkReferences(state),
+        )
         if (codes.length > 0) return { ok: false, errorKey: 'masterZone.error.disableOccupied' }
       }
       const next: ZoneMaster = {
@@ -327,8 +383,22 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       if (prev.ownerType === 'SELF' && status === 'DISABLED') {
         return { ok: false, errorKey: 'masterCustomer.error.disableSelf' }
       }
-      if (status === 'DISABLED' && customerHasInventory(prev, get().inventory)) {
-        return { ok: false, errorKey: 'masterCustomer.error.disableOccupied' }
+      if (status === 'DISABLED') {
+        const state = get()
+        if (
+          customerHasInventory(prev, state.inventory) ||
+          customerHasOpenWork(prev, {
+            inbounds: state.inbounds,
+            putawayOrders: state.putawayOrders,
+            returnOrders: state.returnOrders,
+            outboundOrders: state.outboundOrders,
+            outboundPickTasks: state.outboundPickTasks,
+            outboundPutbacks: state.outboundPutbacks,
+            inventoryCounts: state.inventoryCounts,
+          })
+        ) {
+          return { ok: false, errorKey: 'masterCustomer.error.disableOccupied' }
+        }
       }
       const next: CustomerMaster = {
         ...prev,
@@ -346,6 +416,7 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
       const idx = get().skuMasters.findIndex((m) => m.ownerCode === ownerCode && m.code === code)
       if (idx < 0) return { ok: false, errorKey: 'masterSku.notFound' }
       const prev = get().skuMasters[idx]
+      const operator = currentOperator()
       const state = get()
       if (cannotDisableTrace(prev, patch, prev.customerId, state.inventory)) {
         return { ok: false, errorKey: 'masterSku.error.traceLocked' }
@@ -363,10 +434,14 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
         unit: patch.unit !== undefined ? patch.unit.trim() : prev.unit,
         remark: patch.remark !== undefined ? patch.remark?.trim() || undefined : prev.remark,
         snFormat: patch.snFormat !== undefined ? patch.snFormat?.trim() || undefined : prev.snFormat,
-        qcFlowType: patch.qcFlowType !== undefined ? patch.qcFlowType?.trim() || undefined : prev.qcFlowType,
         updatedAt: nowIso(),
-        updatedBy: currentOperator(),
+        updatedBy: operator,
       }
+      const changedFields = SKU_AUDIT_FIELDS.flatMap(([key, label]) =>
+        Object.is(prev[key], next[key])
+          ? []
+          : [`${label}：${skuAuditValue(key, prev[key])} → ${skuAuditValue(key, next[key])}`],
+      )
       const list = [...get().skuMasters]
       list[idx] = next
       /** 作业侧仍用旧 Sku 投影；商品资料保存后同步名称、条码与仓内尺重，避免“改了商品作业不生效” */
@@ -383,7 +458,21 @@ export function createMasterActions(get: () => DbState, set: (patch: Partial<DbS
             }
           : s,
       )
-      set({ skuMasters: list, skus })
+      const auditLogs = changedFields.length
+        ? [
+            ...state.auditLogs,
+            {
+              id: uid('AUD'),
+              refType: 'MASTER' as const,
+              refNo: `${ownerCode}/${code}`,
+              action: 'SKU_MASTER_EDIT' as const,
+              operator,
+              detail: changedFields.join('；'),
+              createdAt: next.updatedAt,
+            },
+          ]
+        : state.auditLogs
+      set({ skuMasters: list, skus, auditLogs })
       return { ok: true }
     },
 

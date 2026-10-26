@@ -79,7 +79,7 @@ describe('退货收货', () => {
       containers: [
         {
           containerNo: 'RT-BOX-01',
-          lines: [{ skuCode: order.items[0].skuCode, goodQty: 3, defectQty: 0, rejectedQty: 1, rejectReason: 'DAMAGED' }],
+          lines: [{ skuCode: order.items[0].skuCode, goodQty: 3, defectQty: 0, rejectedQty: 1, rejectReason: '外包装严重破损' }],
         },
       ],
       operator: 'tester',
@@ -265,7 +265,7 @@ describe('退货收货补齐（多容器、派送失败、SN 核对）', () => {
               goodQty: 0,
               defectQty: 0,
               rejectedQty: 1,
-              rejectReason: 'SN_MISMATCH',
+              rejectReason: 'SN核对不一致',
               rejectedSerialNos: ['SN99999999'],
             },
           ],
@@ -321,11 +321,23 @@ describe('退货结果重试', () => {
     useDb.setState({
       returnResults: [
         {
+          sequence: 1,
           returnNo: order.returnNo,
           upstreamNo: order.upstreamNo,
+          sourceType: order.sourceType,
+          sourceAssociationNo: order.originalOutboundNo ?? order.platformReturnNo ?? order.upstreamNo,
           status: 'FAILED',
           attempts: 1,
-          items: [{ skuCode: order.items[0].skuCode, receivedQty: 0, rejectedQty: 0, putawayQty: 0 }],
+          items: [{
+            skuCode: order.items[0].skuCode,
+            plannedQty: 0,
+            receivedQty: 0,
+            goodQty: 0,
+            defectQty: 0,
+            rejectedQty: 0,
+            shortQty: 0,
+            putawayQty: 0,
+          }],
           at: new Date().toISOString(),
         },
         ...state.returnResults,

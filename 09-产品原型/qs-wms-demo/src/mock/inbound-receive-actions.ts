@@ -5,11 +5,15 @@ import { countingStocktake } from '@/lib/inventory-derive'
 import { balanceLog } from '@/lib/inventory-ledger'
 import { isNewSku } from '@/lib/new-sku'
 import { nextDocNo } from '@/lib/doc-no'
+import { containerIdOf } from '@/lib/container-id'
+import { completeExpiryDatePair } from '@/lib/expiry-date'
+import { snapshotPutawayRecommendation, type PutawayLocationContext } from '@/lib/putaway'
 import { receiptContainerIssue, upsertReceivingContainers } from './container-actions'
 import type {
   ContainerReceiptLineInput,
   InboundException,
   PutawayOrder,
+  PutawayPlanLine,
   ReceiptContainerInput,
   ReceiptRecord,
   ReceiptRecordLine,
@@ -35,6 +39,7 @@ function appendPutawayPlan(
     receiptNo: string
     stagingLocationCode: string
     containerNo?: string
+    containerId?: string
     qualityType: 'GOOD' | 'DEFECTIVE'
     skuCode: string
     qty: number
@@ -42,6 +47,8 @@ function appendPutawayPlan(
     batchNo?: string
     productionDate?: string
     expiryDate?: string
+    putawayRecommendTiming?: import('@/types/wms').PutawayRecommendTiming
+    recommendationContext: Omit<PutawayLocationContext, 'putawayOrders'>
     ts: string
   },
 ): PutawayOrder[] {
@@ -56,7 +63,7 @@ function appendPutawayPlan(
       p.receiptNo === input.receiptNo &&
       p.status !== 'COMPLETED',
   )
-  const planLine = {
+  const planLine: Omit<PutawayPlanLine, 'lineNo'> = {
     skuCode: input.skuCode,
     planQty: input.qty,
     receiptLineNo: input.receiptLineNo,
@@ -66,23 +73,33 @@ function appendPutawayPlan(
   }
   if (idx >= 0) {
     const po = orders[idx]
+    const timing = po.putawayRecommendTiming ?? input.putawayRecommendTiming
+    const baseOrder = { ...po, putawayRecommendTiming: timing }
     const planLines = [...po.planLines]
     /** 同SKU不同批次各占一行，不能按商品合并 */
     const lineIdx = planLines.findIndex(
-      (l) => l.skuCode === input.skuCode && (l.batchNo ?? '') === (input.batchNo ?? ''),
+      (l) =>
+        l.skuCode === input.skuCode &&
+        (l.batchNo ?? '') === (input.batchNo ?? '') &&
+        (l.productionDate ?? '') === (input.productionDate ?? '') &&
+        (l.expiryDate ?? '') === (input.expiryDate ?? ''),
     )
     if (lineIdx >= 0) {
       planLines[lineIdx] = { ...planLines[lineIdx], planQty: planLines[lineIdx].planQty + input.qty }
     } else {
-      planLines.push({ lineNo: planLines.length + 1, ...planLine })
+      const nextLine: PutawayPlanLine = { ...planLine, lineNo: planLines.length + 1 }
+      planLines.push(
+        snapshotPutawayRecommendation(baseOrder, nextLine, {
+          ...input.recommendationContext,
+          putawayOrders: orders,
+        }),
+      )
     }
     const next = [...orders]
-    next[idx] = { ...po, planLines, receiptNo: input.receiptNo }
+    next[idx] = { ...baseOrder, planLines, receiptNo: input.receiptNo }
     return next
   }
-  return [
-    ...orders,
-    {
+  const created: PutawayOrder = {
       putawayNo: nextDocNo(
         'PA',
         orders.map((o) => o.putawayNo),
@@ -94,14 +111,22 @@ function appendPutawayPlan(
       customerId: input.customerId,
       receiptNo: input.receiptNo,
       stagingLocationCode: input.stagingLocationCode,
+      putawayRecommendTiming: input.putawayRecommendTiming,
       containerNo: input.containerNo,
+      containerId: input.containerId,
       qualityType: input.qualityType,
       status: 'PENDING',
-      planLines: [{ lineNo: 1, ...planLine }],
+      planLines: [{ ...planLine, lineNo: 1 }],
       actualLines: [],
       createdAt: input.ts,
-    },
-  ]
+    }
+  created.planLines = created.planLines.map((line) =>
+    snapshotPutawayRecommendation(created, line, {
+      ...input.recommendationContext,
+      putawayOrders: orders,
+    }),
+  )
+  return [...orders, created]
 }
 
 /**
@@ -123,7 +148,7 @@ export function applyReceipt(
     .map((c) => ({
       containerNo: c.bulkPiece ? undefined : c.containerNo?.trim() || undefined,
       bulkPiece: Boolean(c.bulkPiece),
-      lines: c.lines,
+      lines: c.lines.map((line) => ({ ...line })),
     }))
     .filter((c) => c.lines.length > 0)
   if (containers.length === 0) return { ok: false, errorKey: 'inbound.receive.emptySubmit' }
@@ -169,8 +194,12 @@ export function applyReceipt(
 
       const master = state.skuMasters.find((m) => m.customerId === order.customerId && m.code === line.skuCode)
       if (master?.batchEnabled && !line.batchNo?.trim()) return { ok: false, errorKey: 'inbound.receive.batchRequired' }
-      if (master?.expiryEnabled && !line.expiryDate?.trim()) {
-        return { ok: false, errorKey: 'inbound.receive.expiryRequired' }
+      if (master?.expiryEnabled) {
+        const dates = completeExpiryDatePair(line, master.shelfLifeDays)
+        if (!dates) return { ok: false, errorKey: 'inbound.receive.expiryDateOrProductionRequired' }
+        if (dates.productionDate! > dates.expiryDate!) return { ok: false, errorKey: 'inbound.receive.dateOrderInvalid' }
+        line.productionDate = dates.productionDate
+        line.expiryDate = dates.expiryDate
       }
       const goodSerials = (line.goodSerialNos ?? []).map((sn) => sn.trim().toUpperCase()).filter(Boolean)
       const defectSerials = (line.defectSerialNos ?? []).map((sn) => sn.trim().toUpperCase()).filter(Boolean)
@@ -212,6 +241,7 @@ export function applyReceipt(
         lineNo: i + 1,
         skuCode: line.skuCode,
         containerNo,
+        containerId: containerIdOf(order.warehouseCode, containerNo),
         receivedQty: line.goodQty + line.defectQty,
         rejectedQty,
         goodQty: line.goodQty,
@@ -286,8 +316,10 @@ export function applyReceipt(
     qualityType: 'GOOD' | 'DEFECTIVE',
     qty: number,
     batchNo?: string,
+    productionDate?: string,
     expiryDate?: string,
     serialNos?: string[],
+    containerId?: string,
   ): InventoryRecord | undefined => {
     if (qty <= 0) return undefined
     const locked = qualityType === 'DEFECTIVE' ? qty : 0
@@ -297,8 +329,10 @@ export function applyReceipt(
         r.locationCode === stagingCode &&
         r.skuCode === skuCode &&
         r.customerId === order.customerId &&
+        (r.containerId ?? '') === (containerId ?? '') &&
         r.qualityType === qualityType &&
         r.batchNo === batchNo &&
+        r.productionDate === productionDate &&
         r.expiryDate === expiryDate,
     )
     if (idx >= 0) {
@@ -315,9 +349,11 @@ export function applyReceipt(
       warehouseCode: order.warehouseCode,
       locationCode: stagingCode,
       customerId: order.customerId,
+      containerId,
       skuCode,
       qualityType,
       batchNo,
+      productionDate,
       expiryDate,
       serialNos: serialNos?.length ? serialNos : undefined,
       onHandQty: qty,
@@ -346,7 +382,16 @@ export function applyReceipt(
       )
     }
     receiveLog(
-      upsertStagingStock(line.skuCode, 'GOOD', line.goodQty, line.batchNo, line.expiryDate, line.goodSerialNos),
+      upsertStagingStock(
+        line.skuCode,
+        'GOOD',
+        line.goodQty,
+        line.batchNo,
+        line.productionDate,
+        line.expiryDate,
+        line.goodSerialNos,
+        line.containerId,
+      ),
       line.goodQty,
     )
     receiveLog(
@@ -355,8 +400,10 @@ export function applyReceipt(
         'DEFECTIVE',
         line.defectQty,
         line.batchNo,
+        line.productionDate,
         line.expiryDate,
         line.defectSerialNos,
+        line.containerId,
       ),
       line.defectQty,
     )
@@ -368,11 +415,19 @@ export function applyReceipt(
       receiptNo,
       stagingLocationCode: stagingCode,
       containerNo: line.containerNo,
+      containerId: line.containerId,
       skuCode: line.skuCode,
       receiptLineNo: line.lineNo ?? 0,
       batchNo: line.batchNo,
       productionDate: line.productionDate,
       expiryDate: line.expiryDate,
+      putawayRecommendTiming: state.customerMasters.find((m) => m.id === order.customerId)?.putawayRecommendTiming,
+      recommendationContext: {
+        locations: state.locations,
+        inventory,
+        locationMasters: state.locationMasters,
+        skuMasters: state.skuMasters,
+      },
       ts,
     }
     putawayOrders = appendPutawayPlan(putawayOrders, { ...plan, qualityType: 'GOOD', qty: line.goodQty })

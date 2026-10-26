@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { DescriptionItem, Descriptions } from '@/components/biz/descriptions'
 import { DetailSheet } from '@/components/biz/detail-sheet'
 import { BizCode, CodeName, DateTime, DocNo, Empty, Num } from '@/components/biz/display'
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { expiryLevelMeta, inventoryTagMeta, qualityMeta } from '@/config/status'
 import type { BalanceRow, SkuStockRow } from '@/lib/inventory-derive'
 import { ledgerNumbers } from '@/lib/inventory-ledger'
+import { containerIdOf } from '@/lib/container-id'
 import { useDb, useLookups } from '@/mock/db'
 import { DocLink, LocationCode, SignedNum } from './inventory-shared'
 import { QualityConvertDialog } from './quality-convert-dialog'
@@ -33,6 +34,7 @@ export function StockBalanceSheet({
   const navigate = useNavigate()
   const { sku, customerCode, customerName } = useLookups()
   const logs = useDb((s) => s.inventoryLogs)
+  const containers = useDb((s) => s.containers)
   const warehouses = useDb((s) => s.warehouseMasters)
   const [converting, setConverting] = useState(false)
   const [convertedAction, setConvertedAction] = useState<string>()
@@ -48,6 +50,7 @@ export function StockBalanceSheet({
     )
 
   const r = row.record
+  const container = containers.find((c) => containerIdOf(c.warehouseCode, c.containerNo) === r.containerId)
   const expiryConversion =
     r.qualityType === 'DEFECTIVE' && row.expiry === 'EXPIRED'
       ? t('inventory.stock.autoConverted')
@@ -119,6 +122,15 @@ export function StockBalanceSheet({
           <DescriptionItem label={t('inventory.location')}>
             <LocationCode code={r.locationCode} usage={row.usage} />
           </DescriptionItem>
+          <DescriptionItem label={t('inventory.containerNo')}>
+            {container ? (
+              <Link className="text-primary underline-offset-4 hover:underline" to={`/wms/master/containers/${encodeURIComponent(container.containerNo)}?wh=${encodeURIComponent(container.warehouseCode)}`}>
+                <BizCode>{container.containerNo}</BizCode>
+              </Link>
+            ) : (
+              <Empty />
+            )}
+          </DescriptionItem>
           <DescriptionItem label={t('inventory.quality')}>
             <TagLabel meta={qualityMeta[r.qualityType]} />
           </DescriptionItem>
@@ -127,6 +139,7 @@ export function StockBalanceSheet({
       <Section title={t('inventory.stock.batchExpiry')}>
         <Descriptions columns={3}>
           <DescriptionItem label={t('inventory.batchNo')}>{r.batchNo || <Empty />}</DescriptionItem>
+          <DescriptionItem label={t('inventory.productionDate')}>{r.productionDate || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('inventory.expiryDate')}>{r.expiryDate || <Empty />}</DescriptionItem>
           <DescriptionItem label={t('inventory.expiry')}>
             {row.expiry ? <TagLabel meta={expiryLevelMeta[row.expiry]} /> : <Empty />}

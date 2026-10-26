@@ -1,5 +1,9 @@
 import { formatFullAddress } from '@/lib/warehouse-master'
 import type { CustomerMaster, InventoryRecord, PutawayRecommendTiming } from '@/types/wms'
+import type { InventoryCount } from '@/types/inventory'
+import type { InboundOrder, PutawayOrder } from '@/types/inbound'
+import type { OutboundOrder, OutboundPickTask, OutboundPutback } from '@/types/outbound'
+import type { ReturnOrder } from '@/types/return'
 
 export const PUTAWAY_RECOMMEND_I18N: Record<PutawayRecommendTiming, string> = {
   NONE: 'masterCustomer.putaway.NONE',
@@ -43,4 +47,37 @@ export function formatCustomerFullAddress(c: CustomerMaster, countryLabel?: stri
 
 export function customerHasInventory(customer: CustomerMaster, inventory: InventoryRecord[]): boolean {
   return inventory.some((r) => r.customerId === customer.id && r.onHandQty + (r.lockedQty ?? 0) > 0)
+}
+
+export interface CustomerOpenWorkReferences {
+  inbounds?: InboundOrder[]
+  putawayOrders?: PutawayOrder[]
+  returnOrders?: ReturnOrder[]
+  outboundOrders?: OutboundOrder[]
+  outboundPickTasks?: OutboundPickTask[]
+  outboundPutbacks?: OutboundPutback[]
+  inventoryCounts?: InventoryCount[]
+}
+
+/** 有未完结单据/作业引用时保留货主身份，避免后续步骤失去业务归属。 */
+export function customerHasOpenWork(customer: CustomerMaster, refs: CustomerOpenWorkReferences): boolean {
+  return (
+    (refs.inbounds ?? []).some(
+      (o) => o.customerId === customer.id && o.status !== 'COMPLETED' && o.status !== 'CANCELLED',
+    ) ||
+    (refs.putawayOrders ?? []).some((p) => p.customerId === customer.id && p.status !== 'COMPLETED') ||
+    (refs.returnOrders ?? []).some(
+      (r) => r.customerId === customer.id && r.status !== 'COMPLETED' && r.status !== 'CANCELLED',
+    ) ||
+    (refs.outboundOrders ?? []).some(
+      (o) => o.customerId === customer.id && o.status !== 'SHIPPED' && o.status !== 'CANCELLED',
+    ) ||
+    (refs.outboundPickTasks ?? []).some(
+      (t) => t.customerId === customer.id && (t.status === 'PENDING_PICK' || t.status === 'PICKING'),
+    ) ||
+    (refs.outboundPutbacks ?? []).some((p) => p.customerId === customer.id && p.status !== 'COMPLETED') ||
+    (refs.inventoryCounts ?? []).some(
+      (c) => c.status === 'COUNTING' && c.skus.some((sku) => sku.customerId === customer.id),
+    )
+  )
 }

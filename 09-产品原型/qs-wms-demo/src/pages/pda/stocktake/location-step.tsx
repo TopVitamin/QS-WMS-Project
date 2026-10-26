@@ -45,7 +45,9 @@ function LocationWorkspace({ flow, count }: { flow: StocktakeFlow; count: Invent
     const open = locations.filter((l) => l.counted < l.total).map((l) => ({ value: l.code }))
     const inCount = new Set(locations.map((l) => l.code))
     const owner = count.skus[0]?.customerId
-    const empty = [...new Set(state.locations.filter((l) => l.warehouseCode === warehouse.code).map((l) => l.code))]
+    const empty = count.containerId
+      ? undefined
+      : [...new Set(state.locations.filter((l) => l.warehouseCode === warehouse.code).map((l) => l.code))]
       .sort(compareLocation)
       .find(
         (code) =>
@@ -61,7 +63,7 @@ function LocationWorkspace({ flow, count }: { flow: StocktakeFlow; count: Invent
   })()
 
   const onScan = (code: string) => {
-    const check = flow.checkLocation(code)
+    const check = flow.checkLocation(code, count)
     if (!check.ok) {
       setMessage({ tone: 'error', text: check.text })
       return false

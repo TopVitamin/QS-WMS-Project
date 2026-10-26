@@ -65,6 +65,7 @@ export interface PickLine {
   locationCode: string
   skuCode: string
   batchNo?: string
+  containerId?: string
   expiryDate?: string
   qualityType: QualityType
   plannedQty: number
@@ -129,6 +130,8 @@ export interface OutboundVerification {
   method: 'SORT' | 'PACK'
   containerType: 'NONE' | 'PACKAGE' | 'BOX' | 'PALLET'
   containerNo: string
+  /** FBA箱的父托；托直接装货时为空 */
+  parentContainerNo?: string
   trackingNo?: string
   weightKg?: number
   remark?: string
@@ -249,7 +252,7 @@ export type OutboundCommand =
   | { type: 'CREATE'; input: OutboundCreateInput }
   | { type: 'CHANGE'; no: string; messageId: string; version: number; items: { skuCode: string; qty: number }[] }
   | { type: 'CANCEL'; no: string; messageId?: string; version?: number; reason?: string }
-  | { type: 'ALLOCATE'; no: string }
+  | { type: 'ALLOCATE'; no: string; containerId?: string }
   | { type: 'WAVE'; orderNos: string[] }
   | {
       type: 'PICK'
@@ -270,6 +273,7 @@ export type OutboundCommand =
       method: OutboundVerification['method']
       containerType: OutboundVerification['containerType']
       containerNo: string
+      parentContainerNo?: string
       weightKg?: number
       remark?: string
       lines: { assignmentId: string; qty: number; serialNos: string[] }[]

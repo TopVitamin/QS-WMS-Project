@@ -1,5 +1,5 @@
 import type { LocationMaster, ZoneMaster, ZoneType } from '@/types/wms'
-import { isLocationOccupied } from '@/lib/location-master'
+import { isLocationOccupied, type LocationWorkReferences } from '@/lib/location-master'
 
 export const ZONE_TYPE_I18N: Record<ZoneType, string> = {
   STORAGE: 'masterZone.zoneTypes.STORAGE',
@@ -50,18 +50,20 @@ export function zoneHasBlockingOccupancy(
   zone: ZoneMaster,
   locations: LocationMaster[],
   inventory: import('@/types/wms').InventoryRecord[],
+  work?: LocationWorkReferences,
 ): boolean {
-  return blockingLocationCodes(zone, locations, inventory).length > 0
+  return blockingLocationCodes(zone, locations, inventory, work).length > 0
 }
 
 export function blockingLocationCodes(
   zone: ZoneMaster,
   locations: LocationMaster[],
   inventory: import('@/types/wms').InventoryRecord[],
+  work?: LocationWorkReferences,
 ): string[] {
   return locations
     .filter((l) => l.warehouseCode === zone.warehouseCode && l.zoneCode === zone.code)
-    .filter((l) => isLocationOccupied(l, inventory))
+    .filter((l) => isLocationOccupied(l, inventory, work))
     .map((l) => l.code)
 }
 

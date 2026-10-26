@@ -1,0 +1,83 @@
+Browser tab: 2006622856, Title: "QS-WMS 海外仓管理系统 Demo", URL: "http://127.0.0.1:5173/#/wms/dashboard".
+0 AXWebArea QS-WMS 海外仓管理系统 Demo, URL: 127.0.0.1:5173/#/wms/dashboard
+	1 container root
+		2 container
+			3 text QS-WMS QS 海外仓管理系统
+			4 link Description: 工作台, Value: 127.0.0.1:5173/#/wms/dashboard
+			5 button 入库管理
+			6 link Description: 退货管理, Value: 127.0.0.1:5173/#/wms/returns/orders
+			7 button 库存管理
+			8 button 出库管理
+			9 button 计费结算
+			10 button 基础资料
+			11 button 系统设置
+		12 container
+			13 button 展开或收起侧边栏
+			14 text 工作台
+			15 pop up button (collapsed) US-LA-01 美西仓 19:16, ID: radix-_r_0_, Secondary Actions: Expand
+				16 text US-LA-01
+				17 text 美西仓
+				18 text 19:16
+			19 button 搜索菜单、功能或快捷操作...
+			20 link Description: 打开 PDA, Value: 127.0.0.1:5173/#/pda
+			21 pop up button (collapsed) Description: 语言, ID: radix-_r_4_, Secondary Actions: Expand
+			22 button 消息
+			23 pop up button (collapsed) LC Lily Chen, ID: radix-_r_8_, Secondary Actions: Expand
+		24 container
+			25 heading 搜索菜单、功能或快捷操作..., Value: 2, ID: radix-_r_b_
+				26 text 搜索菜单、功能或快捷操作...
+			27 text 输入菜单名称或功能快捷直达...
+		28 tab group 页签
+			29 tab (selected, settable, boolean) 工作台, Value: 1
+			30 tab (selectable, settable, boolean) 出库单 关闭, Description: 关闭, Value: 0
+出库单
+			31 tab (selectable, settable, boolean) 出库单 关闭, Description: 关闭, Value: 0
+出库单
+			32 tab (selectable, settable, boolean) 库存查询 关闭, Description: 关闭, Value: 0
+库存查询
+		33 pop up button (collapsed) Description: 页签操作, ID: radix-_r_d_, Secondary Actions: Expand
+		34 container
+			35 heading Lily Chen，你好, Value: 1
+				36 text Lily Chen，你好
+			37 text US-LA-01 美西仓 · 仓库当地时间 2026-10-23 19:15
+			38 link Description: 待收货入库单 3, Value: 127.0.0.1:5173/#/wms/inbound/orders?status=PENDING_RECEIVE
+			39 link Description: 待上架件数 909, Value: 127.0.0.1:5173/#/wms/inbound/putaway?status=PENDING
+			40 link Description: 待处理出库单 10, Value: 127.0.0.1:5173/#/wms/outbound/orders?status=PENDING_HANDLE
+			41 link Description: 今日已出库 0, Value: 127.0.0.1:5173/#/wms/outbound/orders?status=SHIPPED
+			42 link Description: 待复核出库单 2, Value: 127.0.0.1:5173/#/wms/outbound/orders?status=PENDING_VERIFY
+			43 heading 近 7 天入库单量, Value: 2
+				44 text 近 7 天入库单量
+			45 text 0 10-17 0 10-18 0 10-19 0 10-20 0 10-21 0 10-22 0 10-23
+			46 heading 出库单状态分布, Value: 2
+				47 text 出库单状态分布
+			48 text 出库单总数 :  21 待处理 10 待拣货 5 待复核 2 待出库 1 已出库 1 已取消 2
+			49 heading 最新入库单, Value: 2
+				50 text 最新入库单
+			51 link Description: 查看全部, Value: 127.0.0.1:5173/#/wms/inbound/orders
+			52 button IB-20261002-0001
+			53 text Shenzhen Anker Trading 1  SKU ·  500 待收货 2026-10-02 03:00
+			54 button IB-20261002-0002
+			55 text Shenzhen Anker Trading 1  SKU ·  200 已取消 2026-10-02 03:00
+			56 button IB-20261002-0003
+			57 text Shenzhen Anker Trading 2  SKU ·  1,100 收货中 2026-10-02 03:00
+			58 button IB-20261002-0004
+			59 text Shenzhen Anker Trading 1  SKU ·  800 上架中 2026-10-02 03:00
+			60 button IB-20261002-0005
+			61 text Shenzhen Anker Trading 1  SKU ·  100 已完成 2026-10-02 03:00
+			62 button IB-20261002-0006
+			63 text Shenzhen Anker Trading 1  SKU ·  120 已完成 2026-10-02 03:00
+			64 heading 演示闭环, Value: 2
+				65 text 演示闭环
+			66 text 在 PDA 上完成收货和上架后，回到这里查看入库单状态和库存变化。
+			67 link Description: PDA · 收货, Value: 127.0.0.1:5173/#/pda/receive
+			68 link Description: PDA · 上架, Value: 127.0.0.1:5173/#/pda/putaway
+			69 button 入库单
+			70 button 库存查询
+			71 link Description: 查看全部, Value: 127.0.0.1:5173/#/wms/inbound/orders
+		72 container Notifications alt+T
+	73 container
+		74 container
+			75 image
+			76 text 解释
+
+The focused UI element is 0 AXWebArea QS-WMS 海外仓管理系统 Demo, URL: 127.0.0.1:5173/#/wms/dashboard

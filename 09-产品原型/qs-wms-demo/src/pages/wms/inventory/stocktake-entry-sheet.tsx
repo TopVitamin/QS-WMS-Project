@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { inventoryFeatureMeta, qualityMeta } from '@/config/status'
 import { useConfirm } from '@/hooks/use-confirm'
+import { updateExpiryDatePair } from '@/lib/expiry-date'
 import { useDb, useLookups } from '@/mock/db'
 import type { InventoryCount, StocktakeLine } from '@/types/inventory'
 import type { QualityType } from '@/types/wms'
@@ -38,6 +39,7 @@ const emptyAdd = {
   skuKey: '',
   quality: 'GOOD' as QualityType,
   batchNo: '',
+  productionDate: '',
   expiryDate: '',
   qty: '',
   serials: '',
@@ -112,6 +114,7 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
         customerId: addSku.customerId,
         skuCode: addSku.skuCode,
         batchNo: add.batchNo || undefined,
+        productionDate: add.productionDate || undefined,
         expiryDate: add.expiryDate || undefined,
         qualityType: add.quality,
         qty: Number(add.qty),
@@ -237,7 +240,18 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
           <FormField label={t('inventory.sku')} required>
             <OptionSelect
               value={add.skuKey || undefined}
-              onValueChange={(v) => setAdd({ ...add, skuKey: v })}
+              onValueChange={(v) =>
+                setAdd({
+                  ...add,
+                  skuKey: v,
+                  batchNo: '',
+                  productionDate: '',
+                  expiryDate: '',
+                  qty: '',
+                  serials: '',
+                  note: '',
+                })
+              }
               options={count.skus.map((k) => ({
                 value: `${k.customerId}::${k.skuCode}`,
                 label: `${k.skuCode} · ${customerCode(k.customerId)}`,
@@ -283,11 +297,33 @@ export function StocktakeEntrySheet({ count, onClose }: { count: InventoryCount;
             </FormField>
           )}
           {addMaster?.expiryEnabled && (
-            <FormField label={t('inventory.expiryDate')} required>
+            <FormField
+              label={t('inventory.productionDate')}
+              hint={t('inventory.expiryDateCalculationHint')}
+            >
+              <Input
+                type="date"
+                value={add.productionDate}
+                onChange={(e) =>
+                  setAdd({
+                    ...add,
+                    ...updateExpiryDatePair(add, 'productionDate', e.target.value, addMaster.shelfLifeDays),
+                  })
+                }
+              />
+            </FormField>
+          )}
+          {addMaster?.expiryEnabled && (
+            <FormField label={t('inventory.expiryDate')}>
               <Input
                 type="date"
                 value={add.expiryDate}
-                onChange={(e) => setAdd({ ...add, expiryDate: e.target.value })}
+                onChange={(e) =>
+                  setAdd({
+                    ...add,
+                    ...updateExpiryDatePair(add, 'expiryDate', e.target.value, addMaster.shelfLifeDays),
+                  })
+                }
               />
             </FormField>
           )}

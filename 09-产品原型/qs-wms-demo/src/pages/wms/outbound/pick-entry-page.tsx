@@ -60,13 +60,14 @@ function EntryWorkspace({ task }: { task: OutboundPickTask }) {
   const operator = useSettings((s) => s.operator)
   const warehouseMasters = useDb((s) => s.warehouseMasters)
   const skuMasters = useDb((s) => s.skuMasters)
+  const locationMasters = useDb((s) => s.locationMasters)
   const { customerCode, customerName } = useLookups()
   const { confirm } = useConfirm()
   const pickedRef = useRef<HTMLInputElement>(null)
 
   /** 行号按任务内顺序（与详情页一致）；录入顺序按拣货路径 */
   const lineNoOf = useMemo(() => new Map(task.lines.map((l, i) => [l.id, i + 1])), [task.lines])
-  const routeLines = pickLinesInRouteOrder(task)
+  const routeLines = pickLinesInRouteOrder(task, locationMasters)
   const openLines = routeLines.filter((l) => pickLineRemaining(l) > 0)
   const draftFor = (line?: PickLine): EntryDraft => ({
     lineId: line?.id,
@@ -147,7 +148,7 @@ function EntryWorkspace({ task }: { task: OutboundPickTask }) {
         return setError(t(res.errorKey, res.params))
       }
       const after = useDb.getState().outboundPickTasks.find((x) => x.no === task.no)?.lines ?? []
-      const moved = replacementStops(before, after)
+      const moved = replacementStops(before, after, locationMasters, task.warehouseCode)
       toast.success(
         moved.length
           ? t('outbound.pdaPick.doneShortReplaced', {
@@ -162,7 +163,7 @@ function EntryWorkspace({ task }: { task: OutboundPickTask }) {
     /** 本行处理完跳到路径上下一条还有剩余的应拣行；没处理完就留在本行继续录剩余 */
     const next = useDb.getState().outboundPickTasks.find((x) => x.no === task.no) ?? task
     const stay = next.lines.find((l) => l.id === line.id && pickLineRemaining(l) > 0)
-    const target = stay ?? pickLinesInRouteOrder(next).find((l) => pickLineRemaining(l) > 0)
+    const target = stay ?? pickLinesInRouteOrder(next, locationMasters).find((l) => pickLineRemaining(l) > 0)
     setDraft(draftFor(target))
     requestAnimationFrame(() => pickedRef.current?.select())
   }
@@ -382,6 +383,11 @@ function EntryTabs({
       col.accessor('skuCode', {
         header: t('outbound.ui.sku'),
         cell: ({ getValue }) => <CodeName code={getValue()} name={sku(getValue())?.name} className="max-w-64" />,
+      }),
+      col.accessor((line) => line.containerId ?? '', {
+        id: 'container',
+        header: t('inventory.containerNo'),
+        cell: ({ getValue }) => getValue().split('::').at(-1) || <Empty />,
       }),
       col.accessor('batchNo', { header: t('outbound.ui.batch'), cell: ({ getValue }) => getValue() || <Empty /> }),
       num('plannedQty', t('outbound.ui.planned')),

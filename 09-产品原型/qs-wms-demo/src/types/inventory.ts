@@ -31,9 +31,11 @@ export interface StocktakeLine {
   /** 快照对应的库存明细；实盘新增行为空，差异确认时生成 */
   inventoryId?: string
   locationCode: string
+  containerId?: string
   customerId: string
   skuCode: string
   batchNo?: string
+  productionDate?: string
   expiryDate?: string
   qualityType: QualityType
   bookQty: number
@@ -52,6 +54,8 @@ export interface StocktakeLine {
 export interface InventoryCount {
   no: string
   warehouseCode: string
+  /** 可选容器范围；为空表示按 SKU 范围盘点。 */
+  containerId?: string
   skus: StocktakeSku[]
   source: StocktakeSource
   discoveries: StocktakeDiscovery[]
@@ -73,6 +77,7 @@ export interface StockMoveLine {
   skuCode: string
   sourceLocation: string
   targetLocation: string
+  containerId?: string
   batchNo?: string
   expiryDate?: string
   qualityType: QualityType
@@ -99,6 +104,7 @@ export interface StockMove {
 export type OwnerNotice = 'NOTIFIED' | 'PENDING' | 'NOT_REQUIRED'
 
 export type InventoryCommand =
+  | { type: 'PROCESS_EXPIRED_CONVERSIONS' }
   | {
       type: 'CONVERT_QUALITY'
       /** 确认请求号：重复确认只返回原结果，不生成第二组转换流水 */
@@ -114,7 +120,7 @@ export type InventoryCommand =
       type: 'SUBMIT_MOVE'
       requestId: string
       warehouseCode: string
-      lines: { inventoryId: string; targetLocation: string; qty: number; serialNos: string[] }[]
+      lines: { inventoryId: string; targetLocation: string; targetContainerId?: string; qty: number; serialNos: string[] }[]
     }
   | {
       type: 'REPORT_DISCREPANCY'
@@ -125,7 +131,7 @@ export type InventoryCommand =
       locationCode: string
       sourceNo?: string
     }
-  | { type: 'CREATE_STOCKTAKE'; warehouseCode: string; skus: StocktakeSku[]; remark?: string }
+  | { type: 'CREATE_STOCKTAKE'; warehouseCode: string; skus: StocktakeSku[]; containerId?: string; remark?: string }
   | {
       type: 'CREATE_STOCKTAKE_FROM_DISCREPANCY'
       warehouseCode: string
@@ -145,6 +151,8 @@ export type InventoryCommand =
       customerId: string
       skuCode: string
       batchNo?: string
+      productionDate?: string
+      containerId?: string
       expiryDate?: string
       qualityType: QualityType
       qty: number

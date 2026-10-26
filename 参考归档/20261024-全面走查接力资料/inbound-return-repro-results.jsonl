@@ -1,0 +1,2 @@
+{"test":"multiContainerOverReceipt","ok":true,"expected":5,"received":8,"inventoryIncrease":8}
+{"test":"foreignSkuSerialAccepted","ok":true,"returnedSku":"CABLE-01","suppliedSN":"AUDIT-Y-001","originalSNSku":"OTHER-SKU","storedSN":["AUDIT-Y-001"]}

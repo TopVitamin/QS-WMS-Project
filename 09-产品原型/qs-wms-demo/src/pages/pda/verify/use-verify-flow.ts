@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useConfirm } from '@/hooks/use-confirm'
 import { usePdaStep } from '@/hooks/use-pda-step'
 import { resolveInboundSkuScan } from '@/lib/inbound-receive'
-import { defaultVerifySession, toVerifyQty, verifyRows } from '@/lib/outbound-verify'
+import { defaultVerifySession, normalizeVerifySession, toVerifyQty, verifyRows } from '@/lib/outbound-verify'
 import { beep } from '@/lib/scan-beep'
 import { useDb, useLookups } from '@/mock/db'
 import { pdaSessionKey, usePdaOutboundSession } from '@/stores/pda-outbound-session'
@@ -27,6 +27,7 @@ export function useVerifyFlow() {
   const orders = useDb((s) => s.outboundOrders)
   const outboundPickTasks = useDb((s) => s.outboundPickTasks)
   const outboundVerifications = useDb((s) => s.outboundVerifications)
+  const containers = useDb((s) => s.containers)
   const skuMasters = useDb((s) => s.skuMasters)
   const skuBarcodes = useDb((s) => s.skuBarcodes)
   const { customerCode, sku } = useLookups()
@@ -53,7 +54,11 @@ export function useVerifyFlow() {
   )
   const sessionOf = useCallback(
     (order: OutboundOrder): WebVerifySession =>
-      sessions[pdaSessionKey(warehouseCode, order.no)] ?? defaultVerifySession(order, records(order)),
+      normalizeVerifySession(
+        order,
+        records(order),
+        sessions[pdaSessionKey(warehouseCode, order.no)] ?? defaultVerifySession(order, records(order)),
+      ),
     [records, sessions, warehouseCode],
   )
   const saveSession = useCallback(
@@ -70,10 +75,10 @@ export function useVerifyFlow() {
     (order: OutboundOrder) => {
       const db = useDb.getState()
       const session =
-        usePdaOutboundSession.getState().verify[pdaSessionKey(warehouseCode, order.no)] ??
-        defaultVerifySession(
+        normalizeVerifySession(
           order,
           db.outboundVerifications.filter((v) => v.orderNo === order.no && !v.deleted),
+          usePdaOutboundSession.getState().verify[pdaSessionKey(warehouseCode, order.no)],
         )
       return { session, rows: verifyRows(db, order, session.lines) }
     },
@@ -115,6 +120,7 @@ export function useVerifyFlow() {
     t,
     nav,
     warehouseCode,
+    containers,
     orders,
     openOrders,
     verifiable,

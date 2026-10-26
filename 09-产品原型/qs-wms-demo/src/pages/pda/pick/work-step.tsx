@@ -20,7 +20,7 @@ import type { PickFlow } from './use-pick-flow'
 export function PickWorkStep({ flow }: { flow: PickFlow }) {
   const { t, nav } = flow
   const task = flow.findTask(nav.param('no'))
-  const stops = task ? pickStops(task) : []
+  const stops = task ? pickStops(task, flow.locationMasters) : []
 
   useEffect(() => {
     if (!task) nav.replace('list')
@@ -97,7 +97,7 @@ function StopWorkspace({ flow, task, stops }: { flow: PickFlow; task: OutboundPi
   /** 按最新数据取现场（动作刚写入 store、路由刚切换时组件可能还没重渲染） */
   const snapshot = (): Snapshot => {
     const live = flow.latestTask(task.no) ?? task
-    const liveStops = pickStops(live)
+    const liveStops = pickStops(live, flow.locationMasters)
     const stop = currentAndNextStop(liveStops, atRef.current)
     const liveCount = flow.liveCountOf(task.no)
     const onStop = liveCount && stop.current?.lines.some((l) => l.id === liveCount.lineId)
@@ -137,7 +137,7 @@ function StopWorkspace({ flow, task, stops }: { flow: PickFlow; task: OutboundPi
     setSelectedId(undefined)
     const picked = t('outbound.pdaPick.okLinePicked', { sku: line.skuCode, count: qty })
     const after = flow.latestTask(task.no)
-    const afterStops = after ? pickStops(after) : []
+    const afterStops = after ? pickStops(after, flow.locationMasters) : []
     if (afterStops.length === 0) {
       leavingRef.current = true
       toast.success(picked)

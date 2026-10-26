@@ -1,0 +1,256 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - button "出库管理":
+      - generic: 出库管理
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 入库管理
+    - generic: /
+    - generic: 上架单
+  - button "US-LA-01 美西仓 19:19":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:19
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭":
+    - text: 库存流水
+    - button "关闭":
+  - tab "移库作业 关闭":
+    - text: 移库作业
+    - button "关闭":
+  - tab "盘点单 关闭":
+    - text: 盘点单
+    - button "关闭":
+  - tab "波次管理 关闭":
+    - text: 波次管理
+    - button "关闭":
+  - tab "拣货任务 关闭":
+    - text: 拣货任务
+    - button "关闭":
+  - tab "复核工作台 关闭":
+    - text: 复核工作台
+    - button "关闭":
+  - tab "返库上架单 关闭":
+    - text: 返库上架单
+    - button "关闭":
+  - tab "仓库管理 关闭":
+    - text: 仓库管理
+    - button "关闭":
+  - tab "库区管理 关闭":
+    - text: 库区管理
+    - button "关闭":
+  - tab "货位管理 关闭":
+    - text: 货位管理
+    - button "关闭":
+  - tab "容器管理 关闭":
+    - text: 容器管理
+    - button "关闭":
+  - tab "商品管理 关闭":
+    - text: 商品管理
+    - button "关闭":
+  - tab "货主管理 关闭":
+    - text: 货主管理
+    - button "关闭":
+  - tab "物流承运商管理 关闭":
+    - text: 物流承运商管理
+    - button "关闭":
+  - tab "物流渠道管理 关闭":
+    - text: 物流渠道管理
+    - button "关闭":
+  - tab "操作记录 关闭":
+    - text: 操作记录
+    - button "关闭":
+  - tab "费用流水 关闭":
+    - text: 费用流水
+    - button "关闭":
+  - tab "计费方案 关闭":
+    - text: 计费方案
+    - button "关闭":
+  - tab "系统参数 关闭":
+    - text: 系统参数
+    - button "关闭":
+  - tab "入库单详情 关闭":
+    - text: 入库单详情
+    - button "关闭":
+  - tab "上架单详情 关闭" [selected]:
+    - text: 上架单详情
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "上架单 · PA-20261011-0001 待上架" [level=1]:
+    - generic: 上架单
+    - generic: ·
+    - generic: PA-20261011-0001
+    - generic: 待上架
+  - link "返回列表":
+    - /url: "#/wms/inbound/putaway"
+  - link "Web 端上架":
+    - /url: "#/wms/inbound/putaway/PA-20261011-0001/entry"
+  - button "PDA上架"
+  - heading "基本信息" [level=2]
+  - generic: 品质
+  - generic: 良品
+  - generic: 来源业务
+  - generic: 入库
+  - generic: 来源单号
+  - button "IB-20261002-0011"
+  - generic: 货主
+  - generic "Shenzhen Anker Trading":
+    - generic: ANKR
+    - generic: Shenzhen Anker Trading
+  - generic: 仓库
+  - generic "美西仓":
+    - generic: US-LA-01
+    - generic: 美西仓
+  - generic: 来源收货记录号
+  - generic: RC-20261011-0001
+  - generic: 作业容器
+  - generic: C-M01
+  - generic: 来源暂存库位
+  - generic: STAGE-IN-01
+  - generic: 创建时间
+  - generic: 2026-10-11 02:00
+  - generic: 提交人
+  - generic: "-"
+  - generic: 提交时间
+  - generic: "-"
+  - generic: 备注
+  - generic: "-"
+  - heading "上架进度" [level=2]
+  - paragraph: 整单提交后才计入已上架；落位可在 Web 端或 PDA 录入
+  - generic: 上架进度
+  - generic: 0%
+  - progressbar
+  - generic: 0 / 9
+  - term: SKU 种类
+  - definition: "3"
+  - term: 应上架
+  - definition: "9"
+  - term: 已上架
+  - definition: "0"
+  - term: 待上架
+  - definition: "9"
+  - tablist:
+    - tab "应上架明细 3" [selected]:
+      - text: 应上架明细
+      - generic: "3"
+    - tab "实际上架明细 0":
+      - text: 实际上架明细
+      - generic: "0"
+    - tab "操作日志 0":
+      - text: 操作日志
+      - generic: "0"
+  - button "列设置":
+  - tabpanel "应上架明细 3":
+    - table:
+      - rowgroup:
+        - row "行号 收货明细行号 SKU 条码 商品名称 批次号 生产日期 失效日期 应上架":
+          - columnheader "行号"
+          - columnheader "收货明细行号"
+          - columnheader "SKU"
+          - columnheader "条码"
+          - columnheader "商品名称"
+          - columnheader "批次号"
+          - columnheader "生产日期"
+          - columnheader "失效日期"
+          - columnheader "应上架"
+      - rowgroup:
+        - row "1 1 CABLE-01 - CABLE-01 - - - 2":
+          - cell "1"
+          - cell "1"
+          - cell "CABLE-01"
+          - cell "-"
+          - cell "CABLE-01"
+          - cell "-"
+          - cell "-"
+          - cell "-"
+          - cell "2"
+        - row "2 2 ANKR-001 6964453799675 USB-C Charger 65W - - - 1":
+          - cell "2"
+          - cell "2"
+          - cell "ANKR-001"
+          - cell "6964453799675"
+          - cell "USB-C Charger 65W"
+          - cell "-"
+          - cell "-"
+          - cell "-"
+          - cell "1"
+        - row "3 3 ANKR-002 6977422850781 Magnetic Power Bank 10000mAh - - - 6":
+          - cell "3"
+          - cell "3"
+          - cell "ANKR-002"
+          - cell "6977422850781"
+          - cell "Magnetic Power Bank 10000mAh"
+          - cell "-"
+          - cell "-"
+          - cell "-"
+          - cell "6"
+- region "Notifications alt+T"
+- text: 解释

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useConfirm } from '@/hooks/use-confirm'
 import { resolveInboundSkuScan } from '@/lib/inbound-receive'
+import { updateExpiryDatePair } from '@/lib/expiry-date'
 import { pdaToast as toast } from '@/lib/pda-toast'
 import {
   emptyReturnReceiveDraft,
@@ -21,7 +22,14 @@ import {
   type ReturnReceiveDraft,
 } from '@/lib/return-receive'
 import { canReceiveReturn } from '@/lib/return-derive'
-import { isWorkContainerUsedOnReturn } from '@/mock/return-actions'
+import { isReturnSerialMismatch, isWorkContainerUsedOnReturn } from '@/mock/return-actions'
+import {
+  isOperatorSelectableReturnRejectReason,
+  RETURN_OPERATOR_REJECT_REASONS,
+  RETURN_REJECT_REASON_LABEL_KEYS,
+  RETURN_REJECT_REASON,
+  type ReturnReceiptContainerInput,
+} from '@/types/return'
 import { useDb, useLookups } from '@/mock/db'
 import {
   returnBoxKey,
@@ -32,7 +40,6 @@ import {
   type ReturnReceiveSession,
 } from '@/stores/return-receive-session'
 import { useCurrentWarehouse, useSettings } from '@/stores/settings'
-import type { ReturnReceiptContainerInput } from '@/types/return'
 
 const activeDrafts = (box: ReturnReceiveBox) =>
   Object.entries(box.drafts).filter(([, d]) => returnDraftActivity(d) > 0)
@@ -60,6 +67,9 @@ export function PdaReturnReceivePage() {
   const skuBarcodes = useDb((s) => s.skuBarcodes)
   const masters = useDb((s) => s.skuMasters)
   const returnReceipts = useDb((s) => s.returnReceipts)
+  const outboundOrders = useDb((s) => s.outboundOrders)
+  const outboundVerifications = useDb((s) => s.outboundVerifications)
+  const outboundPickTasks = useDb((s) => s.outboundPickTasks)
   const { sku, customerCode, customerName } = useLookups()
   const [params, setParams] = useSearchParams()
   const returnNo = params.get('no') ?? undefined
@@ -75,6 +85,7 @@ export function PdaReturnReceivePage() {
   const clearSession = useReturnReceiveSession((s) => s.clear)
 
   const [message, setMessage] = useState<ScanMessage>()
+  const [activeLine, setActiveLine] = useState<number>()
   const activeBox = session.boxes.find((b) => b.key === session.activeKey)
 
   const update = (fn: (s: ReturnReceiveSession) => ReturnReceiveSession) => updateSession(sessionKey, fn)
@@ -101,6 +112,19 @@ export function PdaReturnReceivePage() {
 
   const masterFor = (skuCode: string) => (order ? masters.find((m) => m.customerId === order.customerId && m.code === skuCode) : undefined)
   const skuLabel = (code: string) => (order ? (sku(code, order.customerId)?.name ?? code) : code)
+  const hasSnMismatch = (lineNo: number, draft: ReturnReceiveDraft) => {
+    const line = order?.items.find((item) => item.lineNo === lineNo)
+    return Boolean(
+      line &&
+        order &&
+        isReturnSerialMismatch(
+          { outboundOrders, outboundVerifications, outboundPickTasks },
+          order,
+          line.skuCode,
+          parseReturnSerialNos(draft.rejectedSerialNos),
+        ),
+    )
+  }
 
   const openBox = (input: { containerNo?: string; bulkPiece: boolean }) => {
     if (!order) return false
@@ -261,8 +285,16 @@ export function PdaReturnReceivePage() {
       setMessage({ tone: 'error', text: t('return.receive.skuNotInOrder') })
       return false
     }
-    const line = openLines.find((l) => l.skuCode === hit)
-    if (!line) return false
+    const matchingLines = openLines.filter((candidate) => candidate.skuCode === hit)
+    const line = activeLine
+      ? matchingLines.find((candidate) => candidate.lineNo === activeLine)
+      : matchingLines.length === 1
+        ? matchingLines[0]
+        : undefined
+    if (!line) {
+      setMessage({ tone: 'error', text: t('return.receive.selectPackageLine') })
+      return false
+    }
     const limit = limits[line.lineNo] ?? 0
     const draft = activeBox.drafts[line.lineNo] ?? emptyReturnReceiveDraft()
     if (returnDraftActivity(draft) >= limit) {
@@ -283,7 +315,12 @@ export function PdaReturnReceivePage() {
     for (const box of session.boxes) {
       const drafts = activeDrafts(box)
       if (!drafts.length) continue
-      const missing = drafts.find(([, d]) => num(d.rejectedQty) > 0 && !d.rejectReason.trim())
+      const missing = drafts.find(
+        ([lineNo, d]) =>
+          num(d.rejectedQty) > 0 &&
+          !isOperatorSelectableReturnRejectReason(d.rejectReason) &&
+          !hasSnMismatch(Number(lineNo), d),
+      )
       if (missing) {
         update((s) => ({ ...s, activeKey: box.key }))
         setMessage({ tone: 'error', text: t('return.receive.rejectReasonRequired') })
@@ -295,12 +332,18 @@ export function PdaReturnReceivePage() {
         lines: drafts.map(([lineNo, d]) => {
           const line = order.items.find((item) => item.lineNo === Number(lineNo))!
           return {
+            returnLineNo: line.lineNo,
             skuCode: line.skuCode,
             goodQty: num(d.goodQty),
             defectQty: num(d.defectQty),
             rejectedQty: num(d.rejectedQty),
-            rejectReason: d.rejectReason || undefined,
+            rejectReason: hasSnMismatch(line.lineNo, d)
+              ? RETURN_REJECT_REASON.SN_MISMATCH
+              : isOperatorSelectableReturnRejectReason(d.rejectReason)
+                ? d.rejectReason
+                : undefined,
             batchNo: d.batchNo.trim() || undefined,
+            productionDate: d.productionDate || undefined,
             expiryDate: d.expiryDate || undefined,
             goodSerialNos: parseReturnSerialNos(d.goodSerialNos),
             defectSerialNos: parseReturnSerialNos(d.defectSerialNos),
@@ -427,11 +470,16 @@ export function PdaReturnReceivePage() {
           const draft = activeBox?.drafts[line.lineNo] ?? emptyReturnReceiveDraft()
           const master = masterFor(line.skuCode)
           const limit = limits[line.lineNo] ?? 0
+          const sameSkuLines = openLines.filter((candidate) => candidate.skuCode === line.skuCode)
+          const snMismatch = hasSnMismatch(line.lineNo, draft)
           return (
             <PdaCard key={line.lineNo}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-mono text-base font-semibold">{line.skuCode}</div>
+                  <div className="font-mono text-base font-semibold">
+                    {line.originalPackageNo && `${t('return.receive.originalPackage')} ${line.originalPackageNo} · `}
+                    {line.skuCode}
+                  </div>
                   <div className="text-sm text-muted-foreground">{skuLabel(line.skuCode)}</div>
                 </div>
                 <div className="text-right text-sm text-muted-foreground">
@@ -439,6 +487,16 @@ export function PdaReturnReceivePage() {
                   <div className="text-xl font-semibold text-foreground tabular-nums">{limit}</div>
                 </div>
               </div>
+              {sameSkuLines.length > 1 && (
+                <button
+                  type="button"
+                  aria-pressed={activeLine === line.lineNo}
+                  className={`mt-2 min-h-11 rounded-md border px-3 text-sm ${activeLine === line.lineNo ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
+                  onClick={() => setActiveLine(line.lineNo)}
+                >
+                  {t(activeLine === line.lineNo ? 'return.receive.packageLineSelected' : 'return.receive.selectPackageLineButton')}
+                </button>
+              )}
               {!activeBox ? (
                 <div className="mt-2 text-sm text-muted-foreground">{t('return.receive.bindHint')}</div>
               ) : (
@@ -462,16 +520,29 @@ export function PdaReturnReceivePage() {
                     max={limit}
                     onChange={(v) => setQty(line.lineNo, 'rejectedQty', v)}
                   />
-                  {(num(draft.rejectedQty) > 0 || draft.rejectReason) && (
-                    <label className="flex flex-col gap-1">
-                      <span className="text-sm text-muted-foreground">{t('return.receive.rejectReason')}</span>
-                      <Input
-                        className="h-12 text-base"
-                        value={draft.rejectReason}
-                        placeholder={t('common.inputPlaceholder')}
-                        onChange={(e) => setDraft(line.lineNo, { rejectReason: e.target.value })}
-                      />
-                    </label>
+                  {num(draft.rejectedQty) > 0 && (
+                    <section className="space-y-2" aria-label={t('return.receive.rejectReason')}>
+                      <p className="text-sm text-muted-foreground">{t('return.receive.rejectReason')}</p>
+                      {snMismatch ? (
+                        <PdaCard className="border border-border py-3 text-sm">
+                          {t(RETURN_REJECT_REASON_LABEL_KEYS[RETURN_REJECT_REASON.SN_MISMATCH])}
+                        </PdaCard>
+                      ) : (
+                        RETURN_OPERATOR_REJECT_REASONS.map((reason) => (
+                          <PdaListItem
+                            key={reason}
+                            role="radio"
+                            selectable
+                            selected={draft.rejectReason === reason}
+                            onClick={() => setDraft(line.lineNo, { rejectReason: reason })}
+                          >
+                            <span className="text-base font-medium">
+                              {t(RETURN_REJECT_REASON_LABEL_KEYS[reason])}
+                            </span>
+                          </PdaListItem>
+                        ))
+                      )}
+                    </section>
                   )}
                   {master?.batchEnabled && (
                     <label className="flex flex-col gap-1">
@@ -480,20 +551,42 @@ export function PdaReturnReceivePage() {
                         className="h-12 text-base"
                         value={draft.batchNo}
                         placeholder={t('common.inputPlaceholder')}
+                        required
                         onChange={(e) => setDraft(line.lineNo, { batchNo: e.target.value })}
                       />
                     </label>
                   )}
                   {master?.expiryEnabled && (
-                    <label className="flex flex-col gap-1">
-                      <span className="text-sm text-muted-foreground">{t('inbound.expiryDate')}</span>
-                      <Input
-                        className="h-12 text-base"
-                        type="date"
-                        value={draft.expiryDate}
-                        onChange={(e) => setDraft(line.lineNo, { expiryDate: e.target.value })}
-                      />
-                    </label>
+                    <>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-sm text-muted-foreground">{t('inbound.productionDate')}</span>
+                        <Input
+                          className="h-12 text-base"
+                          type="date"
+                          required
+                          value={draft.productionDate}
+                          onChange={(e) =>
+                            setDraft(
+                              line.lineNo,
+                              updateExpiryDatePair(draft, 'productionDate', e.target.value, master.shelfLifeDays),
+                            )
+                          }
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-sm text-muted-foreground">{t('inbound.expiryDate')}</span>
+                        <Input
+                          className="h-12 text-base"
+                          type="date"
+                          required
+                          value={draft.expiryDate}
+                          onChange={(e) =>
+                            setDraft(line.lineNo, updateExpiryDatePair(draft, 'expiryDate', e.target.value, master.shelfLifeDays))
+                          }
+                        />
+                      </label>
+                      <p className="col-span-2 text-xs text-muted-foreground">{t('inventory.expiryDateCalculationHint')}</p>
+                    </>
                   )}
                   {master?.snEnabled && (
                     <>

@@ -7,6 +7,7 @@ import { findLocation, isFullyRecorded, remainingQty, validatePutawayLocation } 
 import type { PutawayActualLine, PutawayOrder } from '@/types/inbound'
 import type { InventoryLog, InventoryRecord } from '@/types/wms'
 import { syncPutawayContainers } from './container-actions'
+import { containerIdOf } from '@/lib/container-id'
 import type { SeedData } from './seed'
 
 type ActionResult = { ok: true } | { ok: false; errorKey: string }
@@ -147,9 +148,11 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
         r.warehouseCode === order.warehouseCode &&
         r.locationCode === stagingCode &&
         r.customerId === order.customerId &&
+        (r.containerId ?? '') === (order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo) ?? '') &&
         r.skuCode === line.skuCode &&
         r.qualityType === order.qualityType &&
         r.batchNo === plan.batchNo &&
+        r.productionDate === plan.productionDate &&
         r.expiryDate === plan.expiryDate,
     )
     if (stagingIdx < 0 || inventory[stagingIdx].onHandQty < line.qty)
@@ -172,9 +175,11 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
         r.warehouseCode === order.warehouseCode &&
         r.locationCode === line.locationCode &&
         r.customerId === order.customerId &&
+        (r.containerId ?? '') === (order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo) ?? '') &&
         r.skuCode === line.skuCode &&
         r.qualityType === order.qualityType &&
         r.batchNo === plan.batchNo &&
+        r.productionDate === plan.productionDate &&
         r.expiryDate === plan.expiryDate,
     )
     let targetRow: InventoryRecord
@@ -193,9 +198,11 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
         warehouseCode: order.warehouseCode,
         locationCode: line.locationCode,
         customerId: order.customerId,
+        containerId: order.containerId ?? containerIdOf(order.warehouseCode, order.containerNo),
         skuCode: line.skuCode,
         qualityType: order.qualityType,
         batchNo: plan.batchNo,
+        productionDate: plan.productionDate,
         expiryDate: plan.expiryDate,
         serialNos: line.serialNos,
         onHandQty: line.qty,
@@ -232,6 +239,21 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
     submittedBy: input.operator,
   }
   const putawayOrders = replaceOrder(state, next)
+  const containerId = next.containerId ?? containerIdOf(next.warehouseCode, next.containerNo)
+  if (containerId) {
+    const pendingContainerPutaway = putawayOrders.some(
+      (p) =>
+        (p.containerId ?? containerIdOf(p.warehouseCode, p.containerNo)) === containerId && p.status !== 'COMPLETED',
+    )
+    const currentRows = inventory.filter((r) => r.containerId === containerId && r.onHandQty > 0)
+    const currentLocations = new Set(currentRows.map((r) => r.locationCode))
+    if (!pendingContainerPutaway && currentLocations.size > 1) {
+      // 文档定义拆散后原容器已释放；未选择目标容器的库存转为散件。
+      inventory.forEach((r) => {
+        if (r.containerId === containerId) r.containerId = undefined
+      })
+    }
+  }
   /** 来源业务进度：入库单或退货单，二者只更新对应来源 */
   const inbounds =
     order.sourceType === 'INBOUND'
@@ -242,7 +264,9 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
   const returnOrders =
     order.sourceType === 'RETURN'
       ? state.returnOrders.map((o) =>
-          o.returnNo === order.sourceNo ? syncReturnPutawayFromOrders(o, putawayOrders) : o,
+          o.returnNo === order.sourceNo
+            ? syncReturnPutawayFromOrders(o, putawayOrders, state.returnReceipts)
+            : o,
         )
       : state.returnOrders
   return {
@@ -255,7 +279,7 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
       returnOrders,
       inventoryLogs: [...state.inventoryLogs, ...logs],
       serialStocks: updateSerialStocks(state, logs),
-      containers: syncPutawayContainers(state.containers ?? [], next, input.operator, ts),
+      containers: syncPutawayContainers(state.containers ?? [], next, input.operator, ts, putawayOrders, inventory),
     },
   }
 }

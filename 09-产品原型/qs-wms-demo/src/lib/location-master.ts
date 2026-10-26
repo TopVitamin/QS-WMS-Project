@@ -6,6 +6,10 @@ import type {
   ZoneMaster,
   ZoneType,
 } from '@/types/wms'
+import type { InventoryCount } from '@/types/inventory'
+import type { InboundOrder, PutawayOrder, ReceiptRecord } from '@/types/inbound'
+import type { OutboundPickTask, OutboundPutback } from '@/types/outbound'
+import type { ReturnOrder, ReturnReceiptRecord } from '@/types/return'
 
 /** 库区类型 → 作业库位类型；不良隔离在作业侧叫 DEFECT */
 export function zoneTypeToLocationType(zoneType: ZoneType): LocationType {
@@ -57,10 +61,99 @@ export function locationKey(row: Pick<LocationMaster, 'warehouseCode' | 'code'>)
 export function isLocationOccupied(
   loc: LocationMaster,
   inventory: InventoryRecord[],
+  work?: LocationWorkReferences,
 ): boolean {
   if (loc.occupyingCustomerId) return true
-  return inventory.some(
-    (r) => r.warehouseCode === loc.warehouseCode && r.locationCode === loc.code && r.onHandQty > 0,
+  return (
+    inventory.some(
+      (r) =>
+        r.warehouseCode === loc.warehouseCode &&
+        r.locationCode === loc.code &&
+        (r.onHandQty > 0 || (r.lockedQty ?? 0) > 0 || (r.allocatedQty ?? 0) > 0),
+    ) || hasOpenLocationWork(loc, work)
+  )
+}
+
+export interface LocationWorkReferences {
+  inbounds?: InboundOrder[]
+  receiptRecords?: ReceiptRecord[]
+  returnOrders?: ReturnOrder[]
+  returnReceipts?: ReturnReceiptRecord[]
+  putawayOrders?: PutawayOrder[]
+  outboundPickTasks?: OutboundPickTask[]
+  outboundPutbacks?: OutboundPutback[]
+  inventoryCounts?: InventoryCount[]
+}
+
+/** 空库位仍可能被未提交作业引用；这些引用同样阻止停用、换区或随库区停用。 */
+export function hasOpenLocationWork(loc: LocationMaster, refs?: LocationWorkReferences): boolean {
+  if (!refs) return false
+  const sameLocation = (warehouseCode: string, code?: string) =>
+    warehouseCode === loc.warehouseCode && code === loc.code
+  const openInboundNos = new Set(
+    (refs.inbounds ?? [])
+      .filter((o) => o.status !== 'COMPLETED' && o.status !== 'CANCELLED')
+      .map((o) => o.inboundNo),
+  )
+  if (
+    (refs.receiptRecords ?? []).some(
+      (r) => openInboundNos.has(r.inboundNo) && sameLocation(r.warehouseCode, r.stagingLocationCode),
+    )
+  ) return true
+
+  const openReturnNos = new Set(
+    (refs.returnOrders ?? [])
+      .filter((r) => r.status !== 'COMPLETED' && r.status !== 'CANCELLED')
+      .map((r) => r.returnNo),
+  )
+  if (
+    (refs.returnReceipts ?? []).some(
+      (r) => openReturnNos.has(r.returnNo) && sameLocation(r.warehouseCode, r.stagingLocationCode),
+    )
+  ) return true
+
+  if (
+    (refs.putawayOrders ?? []).some(
+      (p) =>
+        p.warehouseCode === loc.warehouseCode &&
+        p.status !== 'COMPLETED' &&
+        (p.stagingLocationCode === loc.code || p.actualLines.some((a) => !a.submitted && a.locationCode === loc.code)),
+    )
+  ) return true
+
+  if (
+    (refs.outboundPickTasks ?? []).some(
+      (t) =>
+        t.warehouseCode === loc.warehouseCode &&
+        (t.status === 'PENDING_PICK' || t.status === 'PICKING') &&
+        (t.stagingCode === loc.code ||
+          t.lines.some(
+            (l) =>
+              l.locationCode === loc.code &&
+              l.plannedQty - l.pickedQty - l.shortageQty > 0,
+          )),
+    )
+  ) return true
+
+  if (
+    (refs.outboundPutbacks ?? []).some(
+      (p) =>
+        p.warehouseCode === loc.warehouseCode &&
+        p.status !== 'COMPLETED' &&
+        p.lines.some(
+          (l) =>
+            l.fromLocation === loc.code ||
+            l.targetLocation === loc.code ||
+            l.placements?.some((placement) => placement.location === loc.code),
+        ),
+    )
+  ) return true
+
+  return (refs.inventoryCounts ?? []).some(
+    (c) =>
+      c.warehouseCode === loc.warehouseCode &&
+      c.status === 'COUNTING' &&
+      c.lines.some((l) => l.locationCode === loc.code),
   )
 }
 

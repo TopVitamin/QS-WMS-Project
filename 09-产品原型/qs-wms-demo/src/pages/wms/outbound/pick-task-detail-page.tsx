@@ -58,6 +58,11 @@ export function OutboundPickTaskDetailPage() {
       col.accessor('lineNo', { header: t('outbound.ui.lineNo'), meta: { align: 'right' } }),
       col.accessor('locationCode', { header: t('outbound.ui.location'), cell: ({ getValue }) => <BizCode>{getValue()}</BizCode> }),
       col.accessor('skuCode', { header: t('outbound.ui.sku'), cell: ({ getValue }) => skuCell(getValue()) }),
+      col.accessor((line) => line.containerId ?? '', {
+        id: 'container',
+        header: t('inventory.containerNo'),
+        cell: ({ getValue }) => getValue().split('::').at(-1) || <Empty />,
+      }),
       col.accessor('batchNo', { header: t('outbound.ui.batch'), cell: ({ getValue }) => getValue() || <Empty /> }),
       col.accessor('expiryDate', {
         header: t('outbound.ui.expiryDate'),

@@ -1,0 +1,840 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - link "库存查询":
+      - /url: "#/wms/inventory/stock"
+      - generic: 库存查询
+    - link "库存流水":
+      - /url: "#/wms/inventory/logs"
+      - generic: 库存流水
+    - link "移库作业":
+      - /url: "#/wms/inventory/moves"
+      - generic: 移库作业
+    - link "盘点单":
+      - /url: "#/wms/inventory/counts"
+      - generic: 盘点单
+    - button "出库管理":
+      - generic: 出库管理
+    - link "出库单":
+      - /url: "#/wms/outbound/orders"
+      - generic: 出库单
+    - link "波次管理":
+      - /url: "#/wms/outbound/waves"
+      - generic: 波次管理
+    - link "拣货任务":
+      - /url: "#/wms/outbound/pick-tasks"
+      - generic: 拣货任务
+    - link "复核工作台":
+      - /url: "#/wms/outbound/verify-station"
+      - generic: 复核工作台
+    - link "返库上架单":
+      - /url: "#/wms/outbound/return-putaway"
+      - generic: 返库上架单
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 出库管理
+    - generic: /
+    - generic: 出库单
+  - button "US-LA-01 美西仓 19:17":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:17
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭" [selected]:
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭":
+    - text: 库存流水
+    - button "关闭":
+  - tab "移库作业 关闭":
+    - text: 移库作业
+    - button "关闭":
+  - tab "盘点单 关闭":
+    - text: 盘点单
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "出库单" [level=1]
+  - button "创建其他出库"
+  - button "OMS Mock"
+  - button "指令处理记录"
+  - button "导出":
+    - text: 导出
+  - generic: 出库单号
+  - textbox "出库单号":
+    - /placeholder: 请输入出库单号
+  - generic: 上游指令号
+  - textbox "上游指令号":
+    - /placeholder: 请输入上游指令号
+  - generic: 业务类型
+  - combobox "业务类型":
+    - generic: 全部
+  - combobox
+  - generic: 货主
+  - combobox "货主":
+    - generic: 全部
+  - combobox
+  - generic: 创建时间
+  - button "创建时间":
+    - generic: 创建时间
+  - button "查询":
+    - text: 查询
+  - button "重置":
+    - text: 重置
+  - button "展开":
+    - text: 展开
+  - tablist "状态筛选":
+    - tab "全部 21" [selected]:
+      - text: 全部
+      - generic: "21"
+    - tab "待处理 10":
+      - text: 待处理
+      - generic: "10"
+    - tab "待拣货 5":
+      - text: 待拣货
+      - generic: "5"
+    - tab "待复核 2":
+      - text: 待复核
+      - generic: "2"
+    - tab "待出库 1":
+      - text: 待出库
+      - generic: "1"
+    - tab "已出库 1":
+      - text: 已出库
+      - generic: "1"
+    - tab "已取消 2":
+      - text: 已取消
+      - generic: "2"
+  - generic: 勾选待处理出库单：按单生成拣货任务，或勾选 ≥2 张同仓同货主 B2C 单组波批量拣货
+  - button "列设置":
+  - table:
+    - rowgroup:
+      - row "全选 出库单号 状态 业务类型 订单品种类型 物流渠道 物流承运商 货主 需求 本单预占 缺货 待拣 已拣 已复核 实发 创建时间 上游指令号":
+        - columnheader "全选":
+          - checkbox "全选"
+        - columnheader "出库单号"
+        - columnheader "状态"
+        - columnheader "业务类型"
+        - columnheader "订单品种类型"
+        - columnheader "物流渠道"
+        - columnheader "物流承运商"
+        - columnheader "货主"
+        - columnheader "需求":
+          - button "需求":
+            - text: 需求
+        - columnheader "本单预占":
+          - button "本单预占":
+            - text: 本单预占
+        - columnheader "缺货":
+          - button "缺货":
+            - text: 缺货
+        - columnheader "待拣":
+          - button "待拣":
+            - text: 待拣
+        - columnheader "已拣":
+          - button "已拣":
+            - text: 已拣
+        - columnheader "已复核":
+          - button "已复核":
+            - text: 已复核
+        - columnheader "实发":
+          - button "实发":
+            - text: 实发
+        - columnheader "创建时间":
+          - button "创建时间":
+            - text: 创建时间
+        - columnheader "上游指令号"
+    - rowgroup:
+      - row "选择本行 OB-20261020-0001 待处理 批发出库 单品多件 - - HOMY Homy Living Co., Ltd. 12 12 0 12 0 0 0 2026-10-19 20:00 OMS-WS-HOMY-003-US-LA-01":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261020-0001":
+          - button "OB-20261020-0001"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "批发出库":
+          - generic: 批发出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "-"
+        - cell "-"
+        - cell "HOMY Homy Living Co., Ltd.":
+          - generic "Homy Living Co., Ltd.":
+            - generic: HOMY
+            - generic: Homy Living Co., Ltd.
+        - cell "12"
+        - cell "12"
+        - cell "0"
+        - cell "12"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-19 20:00"
+        - cell "OMS-WS-HOMY-003-US-LA-01"
+      - row "选择本行 OB-20261015-0020 已取消 B2C出库 多品混合 CH-DHL-ECO DHL 经济线 CAR-DHL DHL Express（演示） ANKR Shenzhen Anker Trading 2 0 2 0 0 0 0 2026-10-15 10:30 OMS-OUT-OB-20261015-0020":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "已取消":
+          - generic: 已取消
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "多品混合":
+          - generic: 多品混合
+        - cell "CH-DHL-ECO DHL 经济线":
+          - generic "DHL 经济线":
+            - generic: CH-DHL-ECO
+            - generic: DHL 经济线
+        - cell "CAR-DHL DHL Express（演示）":
+          - generic "DHL Express（演示）":
+            - generic: CAR-DHL
+            - generic: DHL Express（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "2"
+        - cell "0"
+        - cell "2"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 10:30"
+        - cell "OMS-OUT-OB-20261015-0020"
+      - row "选择本行 OB-20261015-0019 待拣货 B2C出库 多品混合 CH-FEDEX-HD FedEx Home Delivery CAR-FEDEX FedEx Home Delivery（演示） ANKR Shenzhen Anker Trading 4 4 0 4 0 0 0 2026-10-15 10:00 OMS-OUT-OB-20261015-0019":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0019":
+          - button "OB-20261015-0019"
+        - cell "待拣货":
+          - generic: 待拣货
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "多品混合":
+          - generic: 多品混合
+        - cell "CH-FEDEX-HD FedEx Home Delivery":
+          - generic "FedEx Home Delivery":
+            - generic: CH-FEDEX-HD
+            - generic: FedEx Home Delivery
+        - cell "CAR-FEDEX FedEx Home Delivery（演示）":
+          - generic "FedEx Home Delivery（演示）":
+            - generic: CAR-FEDEX
+            - generic: FedEx Home Delivery（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "4"
+        - cell "4"
+        - cell "0"
+        - cell "4"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 10:00"
+        - cell "OMS-OUT-OB-20261015-0019"
+      - row "选择本行 OB-20261015-0018 待拣货 B2C出库 单品多件 CH-UPS-GND UPS Ground CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 5 5 0 3 2 0 0 2026-10-15 09:30 OMS-OUT-OB-20261015-0018":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0018":
+          - button "OB-20261015-0018"
+        - cell "待拣货":
+          - generic: 待拣货
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-UPS-GND UPS Ground":
+          - generic "UPS Ground":
+            - generic: CH-UPS-GND
+            - generic: UPS Ground
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "5"
+        - cell "5"
+        - cell "0"
+        - cell "3"
+        - cell "2"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 09:30"
+        - cell "OMS-OUT-OB-20261015-0018"
+      - row "选择本行 OB-20261015-0017 待处理 B2C出库 单品单件 CH-DHL-EXP DHL 国际快递 CAR-DHL DHL Express（演示） ANKR Shenzhen Anker Trading 1 1 0 1 0 0 0 2026-10-15 09:00 OMS-OUT-OB-20261015-0017":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0017":
+          - button "OB-20261015-0017"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品单件":
+          - generic: 单品单件
+        - cell "CH-DHL-EXP DHL 国际快递":
+          - generic "DHL 国际快递":
+            - generic: CH-DHL-EXP
+            - generic: DHL 国际快递
+        - cell "CAR-DHL DHL Express（演示）":
+          - generic "DHL Express（演示）":
+            - generic: CAR-DHL
+            - generic: DHL Express（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "1"
+        - cell "1"
+        - cell "0"
+        - cell "1"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 09:00"
+        - cell "OMS-OUT-OB-20261015-0017"
+      - row "选择本行 OB-20261015-0016 待复核 FBA转运出库 单品多件 CH-UPS-EX UPS Express CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 10 8 2 0 8 3 0 2026-10-15 08:30 OMS-OUT-OB-20261015-0016":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0016":
+          - button "OB-20261015-0016"
+        - cell "待复核":
+          - generic: 待复核
+        - cell "FBA转运出库":
+          - generic: FBA转运出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-UPS-EX UPS Express":
+          - generic "UPS Express":
+            - generic: CH-UPS-EX
+            - generic: UPS Express
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "10"
+        - cell "8"
+        - cell "2"
+        - cell "0"
+        - cell "8"
+        - cell "3"
+        - cell "0"
+        - cell "2026-10-15 08:30"
+        - cell "OMS-OUT-OB-20261015-0016"
+      - row "选择本行 OB-20261015-0015 待出库 B2C出库 单品多件 CH-FEDEX-HD FedEx Home Delivery CAR-FEDEX FedEx Home Delivery（演示） ANKR Shenzhen Anker Trading 2 2 0 0 2 2 0 2026-10-15 08:00 OMS-OUT-OB-20261015-0015":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0015":
+          - button "OB-20261015-0015"
+        - cell "待出库":
+          - generic: 待出库
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-FEDEX-HD FedEx Home Delivery":
+          - generic "FedEx Home Delivery":
+            - generic: CH-FEDEX-HD
+            - generic: FedEx Home Delivery
+        - cell "CAR-FEDEX FedEx Home Delivery（演示）":
+          - generic "FedEx Home Delivery（演示）":
+            - generic: CAR-FEDEX
+            - generic: FedEx Home Delivery（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "2"
+        - cell "2"
+        - cell "0"
+        - cell "0"
+        - cell "2"
+        - cell "2"
+        - cell "0"
+        - cell "2026-10-15 08:00"
+        - cell "OMS-OUT-OB-20261015-0015"
+      - row "选择本行 OB-20261015-0014 待复核 B2C出库 单品多件 CH-UPS-GND UPS Ground CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 3 3 0 0 3 0 0 2026-10-15 07:30 OMS-OUT-OB-20261015-0014":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0014":
+          - button "OB-20261015-0014"
+        - cell "待复核":
+          - generic: 待复核
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-UPS-GND UPS Ground":
+          - generic "UPS Ground":
+            - generic: CH-UPS-GND
+            - generic: UPS Ground
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "3"
+        - cell "3"
+        - cell "0"
+        - cell "0"
+        - cell "3"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 07:30"
+        - cell "OMS-OUT-OB-20261015-0014"
+      - row "选择本行 OB-20261015-0013 待拣货 B2C出库 单品多件 CH-DHL-EXP DHL 国际快递 CAR-DHL DHL Express（演示） ANKR Shenzhen Anker Trading 4 4 0 4 0 0 0 2026-10-15 07:00 OMS-OUT-OB-20261015-0013":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0013":
+          - button "OB-20261015-0013"
+        - cell "待拣货":
+          - generic: 待拣货
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-DHL-EXP DHL 国际快递":
+          - generic "DHL 国际快递":
+            - generic: CH-DHL-EXP
+            - generic: DHL 国际快递
+        - cell "CAR-DHL DHL Express（演示）":
+          - generic "DHL Express（演示）":
+            - generic: CAR-DHL
+            - generic: DHL Express（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "4"
+        - cell "4"
+        - cell "0"
+        - cell "4"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 07:00"
+        - cell "OMS-OUT-OB-20261015-0013"
+      - row "选择本行 OB-20261015-0012 待处理 B2C出库 单品单件 CH-DHL-ECO DHL 经济线 CAR-DHL DHL Express（演示） ANKR Shenzhen Anker Trading 1 1 0 1 0 0 0 2026-10-15 06:30 OMS-OUT-OB-20261015-0012":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0012":
+          - button "OB-20261015-0012"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品单件":
+          - generic: 单品单件
+        - cell "CH-DHL-ECO DHL 经济线":
+          - generic "DHL 经济线":
+            - generic: CH-DHL-ECO
+            - generic: DHL 经济线
+        - cell "CAR-DHL DHL Express（演示）":
+          - generic "DHL Express（演示）":
+            - generic: CAR-DHL
+            - generic: DHL Express（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "1"
+        - cell "1"
+        - cell "0"
+        - cell "1"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 06:30"
+        - cell "OMS-OUT-OB-20261015-0012"
+      - row "选择本行 OB-20261015-0011 待处理 B2C出库 多品混合 CH-FEDEX-HD FedEx Home Delivery CAR-FEDEX FedEx Home Delivery（演示） ANKR Shenzhen Anker Trading 3 3 0 3 0 0 0 2026-10-15 06:00 OMS-OUT-OB-20261015-0011":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0011":
+          - button "OB-20261015-0011"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "多品混合":
+          - generic: 多品混合
+        - cell "CH-FEDEX-HD FedEx Home Delivery":
+          - generic "FedEx Home Delivery":
+            - generic: CH-FEDEX-HD
+            - generic: FedEx Home Delivery
+        - cell "CAR-FEDEX FedEx Home Delivery（演示）":
+          - generic "FedEx Home Delivery（演示）":
+            - generic: CAR-FEDEX
+            - generic: FedEx Home Delivery（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "3"
+        - cell "3"
+        - cell "0"
+        - cell "3"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 06:00"
+        - cell "OMS-OUT-OB-20261015-0011"
+      - row "选择本行 OB-20261015-0010 待拣货 B2C出库 单品单件 CH-UPS-GND UPS Ground CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 1 1 0 1 0 0 0 2026-10-15 05:30 OMS-OUT-OB-20261015-0010":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0010":
+          - button "OB-20261015-0010"
+        - cell "待拣货":
+          - generic: 待拣货
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品单件":
+          - generic: 单品单件
+        - cell "CH-UPS-GND UPS Ground":
+          - generic "UPS Ground":
+            - generic: CH-UPS-GND
+            - generic: UPS Ground
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "1"
+        - cell "1"
+        - cell "0"
+        - cell "1"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 05:30"
+        - cell "OMS-OUT-OB-20261015-0010"
+      - row "选择本行 OB-20261015-0009 待拣货 B2C出库 单品单件 CH-DHL-EXP DHL 国际快递 CAR-DHL DHL Express（演示） ANKR Shenzhen Anker Trading 1 1 0 1 0 0 0 2026-10-15 05:00 OMS-OUT-OB-20261015-0009":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0009":
+          - button "OB-20261015-0009"
+        - cell "待拣货":
+          - generic: 待拣货
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品单件":
+          - generic: 单品单件
+        - cell "CH-DHL-EXP DHL 国际快递":
+          - generic "DHL 国际快递":
+            - generic: CH-DHL-EXP
+            - generic: DHL 国际快递
+        - cell "CAR-DHL DHL Express（演示）":
+          - generic "DHL Express（演示）":
+            - generic: CAR-DHL
+            - generic: DHL Express（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "1"
+        - cell "1"
+        - cell "0"
+        - cell "1"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 05:00"
+        - cell "OMS-OUT-OB-20261015-0009"
+      - row "选择本行 OB-20261015-0008 已取消 B2C出库 单品多件 CH-DHL-ECO DHL 经济线 CAR-DHL DHL Express（演示） ANKR Shenzhen Anker Trading 2 0 2 0 0 0 0 2026-10-15 04:30 OMS-OUT-OB-20261015-0008":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0008":
+          - button "OB-20261015-0008"
+        - cell "已取消":
+          - generic: 已取消
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-DHL-ECO DHL 经济线":
+          - generic "DHL 经济线":
+            - generic: CH-DHL-ECO
+            - generic: DHL 经济线
+        - cell "CAR-DHL DHL Express（演示）":
+          - generic "DHL Express（演示）":
+            - generic: CAR-DHL
+            - generic: DHL Express（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "2"
+        - cell "0"
+        - cell "2"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 04:30"
+        - cell "OMS-OUT-OB-20261015-0008"
+      - row "选择本行 OB-20261015-0007 已出库 B2C出库 单品单件 CH-FEDEX-HD FedEx Home Delivery CAR-FEDEX FedEx Home Delivery（演示） ANKR Shenzhen Anker Trading 1 1 0 0 1 1 1 2026-10-15 04:00 OMS-OUT-OB-20261015-0007":
+        - cell "选择本行":
+          - checkbox "选择本行" [disabled]
+        - cell "OB-20261015-0007":
+          - button "OB-20261015-0007"
+        - cell "已出库":
+          - generic: 已出库
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品单件":
+          - generic: 单品单件
+        - cell "CH-FEDEX-HD FedEx Home Delivery":
+          - generic "FedEx Home Delivery":
+            - generic: CH-FEDEX-HD
+            - generic: FedEx Home Delivery
+        - cell "CAR-FEDEX FedEx Home Delivery（演示）":
+          - generic "FedEx Home Delivery（演示）":
+            - generic: CAR-FEDEX
+            - generic: FedEx Home Delivery（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "1"
+        - cell "1"
+        - cell "0"
+        - cell "0"
+        - cell "1"
+        - cell "1"
+        - cell "1"
+        - cell "2026-10-15 04:00"
+        - cell "OMS-OUT-OB-20261015-0007"
+      - row "选择本行 OB-20261015-0006 待处理 批发出库 单品多件 CH-UPS-GND UPS Ground CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 3 3 0 3 0 0 0 2026-10-15 03:30 OMS-OUT-OB-20261015-0006":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0006":
+          - button "OB-20261015-0006"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "批发出库":
+          - generic: 批发出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-UPS-GND UPS Ground":
+          - generic "UPS Ground":
+            - generic: CH-UPS-GND
+            - generic: UPS Ground
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "3"
+        - cell "3"
+        - cell "0"
+        - cell "3"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 03:30"
+        - cell "OMS-OUT-OB-20261015-0006"
+      - row "选择本行 OB-20261015-0005 待处理 采购退货出库 单品单件 - - ANKR Shenzhen Anker Trading 1 1 0 1 0 0 0 2026-10-15 03:00 OMS-OUT-OB-20261015-0005":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0005":
+          - button "OB-20261015-0005"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "采购退货出库":
+          - generic: 采购退货出库
+        - cell "单品单件":
+          - generic: 单品单件
+        - cell "-"
+        - cell "-"
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "1"
+        - cell "1"
+        - cell "0"
+        - cell "1"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 03:00"
+        - cell "OMS-OUT-OB-20261015-0005"
+      - row "选择本行 OB-20261015-0004 待处理 调拨出库 单品多件 - - ANKR Shenzhen Anker Trading 2 2 0 2 0 0 0 2026-10-15 02:30 OMS-OUT-OB-20261015-0004":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0004":
+          - button "OB-20261015-0004"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "调拨出库":
+          - generic: 调拨出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "-"
+        - cell "-"
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "2"
+        - cell "2"
+        - cell "0"
+        - cell "2"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 02:30"
+        - cell "OMS-OUT-OB-20261015-0004"
+      - row "选择本行 OB-20261015-0003 待处理 FBA转运出库 单品多件 CH-UPS-EX UPS Express CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 12 8 4 8 0 0 0 2026-10-15 02:00 OMS-OUT-OB-20261015-0003":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0003":
+          - button "OB-20261015-0003"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "FBA转运出库":
+          - generic: FBA转运出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-UPS-EX UPS Express":
+          - generic "UPS Express":
+            - generic: CH-UPS-EX
+            - generic: UPS Express
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "12"
+        - cell "8"
+        - cell "4"
+        - cell "8"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 02:00"
+        - cell "OMS-OUT-OB-20261015-0003"
+      - row "选择本行 OB-20261015-0002 待处理 B2C出库 单品多件 CH-UPS-GND UPS Ground CAR-UPS UPS Ground & Air（演示） ANKR Shenzhen Anker Trading 2 2 0 2 0 0 0 2026-10-15 01:30 OMS-OUT-OB-20261015-0002":
+        - cell "选择本行":
+          - checkbox "选择本行"
+        - cell "OB-20261015-0002":
+          - button "OB-20261015-0002"
+        - cell "待处理":
+          - generic: 待处理
+        - cell "B2C出库":
+          - generic: B2C出库
+        - cell "单品多件":
+          - generic: 单品多件
+        - cell "CH-UPS-GND UPS Ground":
+          - generic "UPS Ground":
+            - generic: CH-UPS-GND
+            - generic: UPS Ground
+        - cell "CAR-UPS UPS Ground & Air（演示）":
+          - generic "UPS Ground & Air（演示）":
+            - generic: CAR-UPS
+            - generic: UPS Ground & Air（演示）
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "2"
+        - cell "2"
+        - cell "0"
+        - cell "2"
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "2026-10-15 01:30"
+        - cell "OMS-OUT-OB-20261015-0002"
+  - generic: 共 21 条
+  - combobox:
+    - generic: 20 条/页
+  - generic: 第 1 / 2 页
+  - button "上一页" [disabled]:
+  - button "下一页":
+- region "Notifications alt+T"
+- text: 解释

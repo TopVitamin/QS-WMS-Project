@@ -1,0 +1,140 @@
+[
+  {
+    "route": "/wms/dashboard",
+    "screenshot": "wms-dashboard.png",
+    "snapshot": "wms-dashboard.txt"
+  },
+  {
+    "route": "/wms/inbound/orders",
+    "title": "入库单",
+    "screenshot": "wms-inbound-orders.png",
+    "snapshot": "wms-inbound-orders.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inbound/putaway",
+    "title": "上架单",
+    "screenshot": "wms-inbound-putaway.png",
+    "snapshot": "wms-inbound-putaway.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inbound/new-sku",
+    "title": "新品维护",
+    "screenshot": "wms-inbound-new-sku.png",
+    "snapshot": "wms-inbound-new-sku.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inbound/unclaimed",
+    "title": "无主货登记",
+    "screenshot": "wms-inbound-unclaimed.png",
+    "snapshot": "wms-inbound-unclaimed.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/returns/orders",
+    "title": "退货单",
+    "screenshot": "wms-returns-orders.png",
+    "snapshot": "wms-returns-orders.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inventory/stock",
+    "title": "库存查询",
+    "screenshot": "wms-inventory-stock.png",
+    "snapshot": "wms-inventory-stock.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inventory/logs",
+    "title": "库存流水",
+    "screenshot": "wms-inventory-logs.png",
+    "snapshot": "wms-inventory-logs.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inventory/moves",
+    "title": "移库作业",
+    "screenshot": "wms-inventory-moves.png",
+    "snapshot": "wms-inventory-moves.txt",
+    "ready": true
+  },
+  {
+    "route": "/wms/inventory/counts",
+    "title": "盘点单",
+    "screenshot": "wms-inventory-counts.png",
+    "snapshot": "wms-inventory-counts.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/receive",
+    "title": "收货",
+    "screenshot": "pda-receive.png",
+    "snapshot": "pda-receive.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/putaway",
+    "title": "上架",
+    "screenshot": "pda-putaway.png",
+    "snapshot": "pda-putaway.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/unclaimed",
+    "title": "无主货登记",
+    "screenshot": "pda-unclaimed.png",
+    "snapshot": "pda-unclaimed.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/return-receive",
+    "title": "退货收货",
+    "screenshot": "pda-return-receive.png",
+    "snapshot": "pda-return-receive.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/inventory",
+    "title": "库存查询",
+    "screenshot": "pda-inventory.png",
+    "snapshot": "pda-inventory.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/move",
+    "title": "移库",
+    "screenshot": "pda-move.png",
+    "snapshot": "pda-move.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/stocktake",
+    "title": "盘点",
+    "screenshot": "pda-stocktake.png",
+    "snapshot": "pda-stocktake.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/pick",
+    "title": "拣货",
+    "screenshot": "pda-pick.png",
+    "snapshot": "pda-pick.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/verify",
+    "title": "复核",
+    "screenshot": "pda-verify.png",
+    "snapshot": "pda-verify.txt",
+    "ready": true
+  },
+  {
+    "route": "/pda/return-putaway",
+    "title": "返库上架",
+    "screenshot": "pda-return-putaway.png",
+    "snapshot": "pda-return-putaway.txt",
+    "ready": true
+  }
+]

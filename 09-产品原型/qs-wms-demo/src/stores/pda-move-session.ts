@@ -11,6 +11,7 @@ export interface PdaMoveLine {
   sourceLocation: string
   targetLocation: string
   batchNo?: string
+  containerId?: string
   qualityType: QualityType
   qty: number
   serialNos: string[]
@@ -19,6 +20,9 @@ export interface PdaMoveLine {
 /** 正在录的一行：已选源库存，数量或 SN，扫过的目标库位 */
 export interface PdaMoveCurrent {
   inventoryId: string
+  /** 保留源容器时写入目标明细；选择转散件后为空。 */
+  containerId?: string
+  asLoose?: boolean
   qty: number
   serialNos: string[]
   targetLocation?: string

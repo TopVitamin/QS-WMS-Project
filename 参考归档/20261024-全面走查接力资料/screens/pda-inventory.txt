@@ -1,0 +1,21 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "库存查询" [level=1]
+  - generic: US-LA-01
+- generic: 扫库位、商品或 SN
+- textbox "扫库位、商品或 SN" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "A-01-01库位"
+- button "CABLE-01多货主"
+- button "690000000003SN-DEMO-01"
+- button "SN00000001在库"
+- generic: 扫库位看批次库存；扫商品按品质看数量和库位分布；扫SN看所在仓库、在库状态和已采集记录。只查询，不改数。
+- region "Notifications alt+T"
+- text: 解释

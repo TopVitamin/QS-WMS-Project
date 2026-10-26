@@ -1,0 +1,571 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - link "库存查询":
+      - /url: "#/wms/inventory/stock"
+      - generic: 库存查询
+    - link "库存流水":
+      - /url: "#/wms/inventory/logs"
+      - generic: 库存流水
+    - link "移库作业":
+      - /url: "#/wms/inventory/moves"
+      - generic: 移库作业
+    - link "盘点单":
+      - /url: "#/wms/inventory/counts"
+      - generic: 盘点单
+    - button "出库管理":
+      - generic: 出库管理
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 库存管理
+    - generic: /
+    - generic: 库存流水
+  - button "US-LA-01 美西仓 19:17":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:17
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭" [selected]:
+    - text: 库存流水
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "库存流水" [level=1]
+  - button "口径说明":
+    - text: 口径说明
+  - button "导出":
+    - text: 导出
+  - generic: 流水号
+  - textbox "流水号"
+  - generic: 流水类型
+  - combobox "流水类型":
+    - generic: 全部
+  - combobox
+  - generic: 来源单号
+  - textbox "来源单号"
+  - generic: SKU编码／名称
+  - textbox "SKU编码／名称":
+    - /placeholder: SKU编码或名称，空格分隔多个
+  - generic: 业务发生时间
+  - button "业务发生时间":
+    - generic: 业务发生日期
+  - button "查询":
+    - text: 查询
+  - button "重置":
+    - text: 重置
+  - button "展开":
+    - text: 展开
+  - button "列设置":
+  - table:
+    - rowgroup:
+      - row "发生时间 流水号 流水类型 数量变化（本行口径） 商品 货主 库位 批次 品质 来源单据 操作者":
+        - columnheader "发生时间":
+          - button "发生时间":
+            - text: 发生时间
+        - columnheader "流水号"
+        - columnheader "流水类型"
+        - columnheader "数量变化（本行口径）":
+          - button "数量变化（本行口径）":
+            - text: 数量变化（本行口径）
+        - columnheader "商品"
+        - columnheader "货主"
+        - columnheader "库位"
+        - columnheader "批次"
+        - columnheader "品质"
+        - columnheader "来源单据"
+        - columnheader "操作者"
+    - rowgroup:
+      - row "2026-10-19 20:00 000139 预占 SKU订单预占 0 → 12（+12） HOMY-003 LED Desk Lamp Homy Living Co., Ltd. - - 良品 OB-20261020-0001 oms-mock":
+        - cell "2026-10-19 20:00"
+        - cell "000139":
+          - button "000139"
+        - cell "预占"
+        - cell "SKU订单预占 0 → 12（+12）":
+          - generic "本条记该 SKU 良品层的订单预占变化；库位、批次不适用。": SKU订单预占
+          - text: 0 → 12（
+          - generic: "+12"
+          - text: ）
+        - cell "HOMY-003 LED Desk Lamp":
+          - generic "LED Desk Lamp":
+            - generic: HOMY-003
+            - generic: LED Desk Lamp
+        - cell "Homy Living Co., Ltd."
+        - cell "-"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261020-0001":
+          - button "OB-20261020-0001"
+        - cell "oms-mock"
+      - row "2026-10-18 18:00 000138 盘点调整 批次库位实际 0 → 1（+1） LOT-DEMO-01 批次效期演示商品 Shenzhen Anker Trading B-03-03 LOT-202612 良品 ST-20261018-0001 Lily Chen":
+        - cell "2026-10-18 18:00"
+        - cell "000138":
+          - button "000138"
+        - cell "盘点调整"
+        - cell "批次库位实际 0 → 1（+1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 0 → 1（
+          - generic: "+1"
+          - text: ）
+        - cell "LOT-DEMO-01 批次效期演示商品":
+          - generic "批次效期演示商品":
+            - generic: LOT-DEMO-01
+            - generic: 批次效期演示商品
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-03"
+        - cell "LOT-202612"
+        - cell "良品":
+          - generic: 良品
+        - cell "ST-20261018-0001":
+          - button "ST-20261018-0001"
+        - cell "Lily Chen"
+      - row "2026-10-18 18:00 000137 盘点调整 批次库位实际 6 → 5（-1） LOT-DEMO-01 批次效期演示商品 Shenzhen Anker Trading C-01-01 LOT-202610 良品 ST-20261018-0001 Lily Chen":
+        - cell "2026-10-18 18:00"
+        - cell "000137":
+          - button "000137"
+        - cell "盘点调整"
+        - cell "批次库位实际 6 → 5（-1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 6 → 5（
+          - generic: "-1"
+          - text: ）
+        - cell "LOT-DEMO-01 批次效期演示商品":
+          - generic "批次效期演示商品":
+            - generic: LOT-DEMO-01
+            - generic: 批次效期演示商品
+        - cell "Shenzhen Anker Trading"
+        - cell "C-01-01"
+        - cell "LOT-202610"
+        - cell "良品":
+          - generic: 良品
+        - cell "ST-20261018-0001":
+          - button "ST-20261018-0001"
+        - cell "Lily Chen"
+      - row "2026-10-18 18:00 000136 盘点调整 批次库位实际 2 → 1（-1） LOT-DEMO-01 批次效期演示商品 Shenzhen Anker Trading B-01-01 LOT-EXPIRED 不良品 ST-20261018-0001 Lily Chen":
+        - cell "2026-10-18 18:00"
+        - cell "000136":
+          - button "000136"
+        - cell "盘点调整"
+        - cell "批次库位实际 2 → 1（-1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 2 → 1（
+          - generic: "-1"
+          - text: ）
+        - cell "LOT-DEMO-01 批次效期演示商品":
+          - generic "批次效期演示商品":
+            - generic: LOT-DEMO-01
+            - generic: 批次效期演示商品
+        - cell "Shenzhen Anker Trading"
+        - cell "B-01-01"
+        - cell "LOT-EXPIRED"
+        - cell "不良品":
+          - generic: 不良品
+        - cell "ST-20261018-0001":
+          - button "ST-20261018-0001"
+        - cell "Lily Chen"
+      - row "2026-10-16 19:00 000135 移库 批次库位实际 0 → 2（+2） SN-DEMO-01 序列号样例 Shenzhen Anker Trading B-03-02 - 良品 MV-20261017-0001 Mike Zhang":
+        - cell "2026-10-16 19:00"
+        - cell "000135":
+          - button "000135"
+        - cell "移库"
+        - cell "批次库位实际 0 → 2（+2）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 0 → 2（
+          - generic: "+2"
+          - text: ）
+        - cell "SN-DEMO-01 序列号样例":
+          - generic "序列号样例":
+            - generic: SN-DEMO-01
+            - generic: 序列号样例
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-02"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "MV-20261017-0001":
+          - button "MV-20261017-0001"
+        - cell "Mike Zhang"
+      - row "2026-10-16 19:00 000134 移库 批次库位实际 8 → 6（-2） SN-DEMO-01 序列号样例 Shenzhen Anker Trading A-01-02 - 良品 MV-20261017-0001 Mike Zhang":
+        - cell "2026-10-16 19:00"
+        - cell "000134":
+          - button "000134"
+        - cell "移库"
+        - cell "批次库位实际 8 → 6（-2）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 8 → 6（
+          - generic: "-2"
+          - text: ）
+        - cell "SN-DEMO-01 序列号样例":
+          - generic "序列号样例":
+            - generic: SN-DEMO-01
+            - generic: 序列号样例
+        - cell "Shenzhen Anker Trading"
+        - cell "A-01-02"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "MV-20261017-0001":
+          - button "MV-20261017-0001"
+        - cell "Mike Zhang"
+      - row "2026-10-16 19:00 000133 移库 批次库位实际 0 → 2（+2） LOT-DEMO-01 批次效期演示商品 Shenzhen Anker Trading B-03-02 LOT-202610 良品 MV-20261017-0001 Mike Zhang":
+        - cell "2026-10-16 19:00"
+        - cell "000133":
+          - button "000133"
+        - cell "移库"
+        - cell "批次库位实际 0 → 2（+2）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 0 → 2（
+          - generic: "+2"
+          - text: ）
+        - cell "LOT-DEMO-01 批次效期演示商品":
+          - generic "批次效期演示商品":
+            - generic: LOT-DEMO-01
+            - generic: 批次效期演示商品
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-02"
+        - cell "LOT-202610"
+        - cell "良品":
+          - generic: 良品
+        - cell "MV-20261017-0001":
+          - button "MV-20261017-0001"
+        - cell "Mike Zhang"
+      - row "2026-10-16 19:00 000132 移库 批次库位实际 8 → 6（-2） LOT-DEMO-01 批次效期演示商品 Shenzhen Anker Trading C-01-01 LOT-202610 良品 MV-20261017-0001 Mike Zhang":
+        - cell "2026-10-16 19:00"
+        - cell "000132":
+          - button "000132"
+        - cell "移库"
+        - cell "批次库位实际 8 → 6（-2）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 8 → 6（
+          - generic: "-2"
+          - text: ）
+        - cell "LOT-DEMO-01 批次效期演示商品":
+          - generic "批次效期演示商品":
+            - generic: LOT-DEMO-01
+            - generic: 批次效期演示商品
+        - cell "Shenzhen Anker Trading"
+        - cell "C-01-01"
+        - cell "LOT-202610"
+        - cell "良品":
+          - generic: 良品
+        - cell "MV-20261017-0001":
+          - button "MV-20261017-0001"
+        - cell "Mike Zhang"
+      - row "2026-10-15 21:00 000131 移库 批次库位实际 7 → 8（+1） CABLE-01 Shenzhen Anker Trading DEFECT-01 - 不良品 MV-20261016-0002 Mike Zhang":
+        - cell "2026-10-15 21:00"
+        - cell "000131":
+          - button "000131"
+        - cell "移库"
+        - cell "批次库位实际 7 → 8（+1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 7 → 8（
+          - generic: "+1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "DEFECT-01"
+        - cell "-"
+        - cell "不良品":
+          - generic: 不良品
+        - cell "MV-20261016-0002":
+          - button "MV-20261016-0002"
+        - cell "Mike Zhang"
+      - row "2026-10-15 21:00 000130 移库 批次库位实际 1 → 0（-1） CABLE-01 Shenzhen Anker Trading B-03-01 - 不良品 MV-20261016-0002 Mike Zhang":
+        - cell "2026-10-15 21:00"
+        - cell "000130":
+          - button "000130"
+        - cell "移库"
+        - cell "批次库位实际 1 → 0（-1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 1 → 0（
+          - generic: "-1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-01"
+        - cell "-"
+        - cell "不良品":
+          - generic: 不良品
+        - cell "MV-20261016-0002":
+          - button "MV-20261016-0002"
+        - cell "Mike Zhang"
+      - row "2026-10-15 20:00 000129 品质转换 批次库位实际 0 → 1（+1） CABLE-01 Shenzhen Anker Trading B-03-01 - 不良品 - Lily Chen":
+        - cell "2026-10-15 20:00"
+        - cell "000129":
+          - button "000129"
+        - cell "品质转换"
+        - cell "批次库位实际 0 → 1（+1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 0 → 1（
+          - generic: "+1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-01"
+        - cell "-"
+        - cell "不良品":
+          - generic: 不良品
+        - cell "-"
+        - cell "Lily Chen"
+      - row "2026-10-15 20:00 000128 品质转换 批次库位实际 5 → 4（-1） CABLE-01 Shenzhen Anker Trading B-03-01 - 良品 - Lily Chen":
+        - cell "2026-10-15 20:00"
+        - cell "000128":
+          - button "000128"
+        - cell "品质转换"
+        - cell "批次库位实际 5 → 4（-1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 5 → 4（
+          - generic: "-1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-01"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "-"
+        - cell "Lily Chen"
+      - row "2026-10-15 19:00 000127 移库 批次库位实际 0 → 5（+5） CABLE-01 Shenzhen Anker Trading B-03-01 - 良品 MV-20261016-0001 Mike Zhang":
+        - cell "2026-10-15 19:00"
+        - cell "000127":
+          - button "000127"
+        - cell "移库"
+        - cell "批次库位实际 0 → 5（+5）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 0 → 5（
+          - generic: "+5"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "B-03-01"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "MV-20261016-0001":
+          - button "MV-20261016-0001"
+        - cell "Mike Zhang"
+      - row "2026-10-15 19:00 000126 移库 批次库位实际 8 → 3（-5） CABLE-01 Shenzhen Anker Trading A-01-02 - 良品 MV-20261016-0001 Mike Zhang":
+        - cell "2026-10-15 19:00"
+        - cell "000126":
+          - button "000126"
+        - cell "移库"
+        - cell "批次库位实际 8 → 3（-5）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 8 → 3（
+          - generic: "-5"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "A-01-02"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "MV-20261016-0001":
+          - button "MV-20261016-0001"
+        - cell "Mike Zhang"
+      - row "2026-10-15 02:00 000104 释放 SKU订单预占 6 → 5（-1） SN-DEMO-01 序列号样例 Shenzhen Anker Trading - - 良品 OB-20261015-0020 seed":
+        - cell "2026-10-15 02:00"
+        - cell "000104":
+          - button "000104"
+        - cell "释放"
+        - cell "SKU订单预占 6 → 5（-1）":
+          - generic "本条记该 SKU 良品层的订单预占变化；库位、批次不适用。": SKU订单预占
+          - text: 6 → 5（
+          - generic: "-1"
+          - text: ）
+        - cell "SN-DEMO-01 序列号样例":
+          - generic "序列号样例":
+            - generic: SN-DEMO-01
+            - generic: 序列号样例
+        - cell "Shenzhen Anker Trading"
+        - cell "-"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "seed"
+      - row "2026-10-15 02:00 000103 释放 SKU订单预占 32 → 31（-1） CABLE-01 Shenzhen Anker Trading - - 良品 OB-20261015-0020 seed":
+        - cell "2026-10-15 02:00"
+        - cell "000103":
+          - button "000103"
+        - cell "释放"
+        - cell "SKU订单预占 32 → 31（-1）":
+          - generic "本条记该 SKU 良品层的订单预占变化；库位、批次不适用。": SKU订单预占
+          - text: 32 → 31（
+          - generic: "-1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "-"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "seed"
+      - row "2026-10-15 02:00 000102 拣货移入出库暂存库位 批次库位实际 0 → 1（+1） SN-DEMO-01 序列号样例 Shenzhen Anker Trading STAGE-OUT-01 - 良品 OB-20261015-0020 seed":
+        - cell "2026-10-15 02:00"
+        - cell "000102":
+          - button "000102"
+        - cell "拣货移入出库暂存库位"
+        - cell "批次库位实际 0 → 1（+1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 0 → 1（
+          - generic: "+1"
+          - text: ）
+        - cell "SN-DEMO-01 序列号样例":
+          - generic "序列号样例":
+            - generic: SN-DEMO-01
+            - generic: 序列号样例
+        - cell "Shenzhen Anker Trading"
+        - cell "STAGE-OUT-01"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "seed"
+      - row "2026-10-15 02:00 000101 拣货移入出库暂存库位 批次库位实际 9 → 8（-1） SN-DEMO-01 序列号样例 Shenzhen Anker Trading A-01-02 - 良品 OB-20261015-0020 seed":
+        - cell "2026-10-15 02:00"
+        - cell "000101":
+          - button "000101"
+        - cell "拣货移入出库暂存库位"
+        - cell "批次库位实际 9 → 8（-1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 9 → 8（
+          - generic: "-1"
+          - text: ）
+        - cell "SN-DEMO-01 序列号样例":
+          - generic "序列号样例":
+            - generic: SN-DEMO-01
+            - generic: 序列号样例
+        - cell "Shenzhen Anker Trading"
+        - cell "A-01-02"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "seed"
+      - row "2026-10-15 02:00 000100 拣货移入出库暂存库位 批次库位实际 9 → 10（+1） CABLE-01 Shenzhen Anker Trading STAGE-OUT-01 - 良品 OB-20261015-0020 seed":
+        - cell "2026-10-15 02:00"
+        - cell "000100":
+          - button "000100"
+        - cell "拣货移入出库暂存库位"
+        - cell "批次库位实际 9 → 10（+1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 9 → 10（
+          - generic: "+1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "STAGE-OUT-01"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "seed"
+      - row "2026-10-15 02:00 000099 拣货移入出库暂存库位 批次库位实际 702 → 701（-1） CABLE-01 Shenzhen Anker Trading A-01-01 - 良品 OB-20261015-0020 seed":
+        - cell "2026-10-15 02:00"
+        - cell "000099":
+          - button "000099"
+        - cell "拣货移入出库暂存库位"
+        - cell "批次库位实际 702 → 701（-1）":
+          - generic "本条只记该库位、批次（有则）、品质的实际数量变化，不代表 SKU 总量；非批次商品的批次为空，仍记在本库位。": 批次库位实际
+          - text: 702 → 701（
+          - generic: "-1"
+          - text: ）
+        - cell "CABLE-01":
+          - generic: CABLE-01
+        - cell "Shenzhen Anker Trading"
+        - cell "A-01-01"
+        - cell "-"
+        - cell "良品":
+          - generic: 良品
+        - cell "OB-20261015-0020":
+          - button "OB-20261015-0020"
+        - cell "seed"
+  - generic: 共 87 条
+  - combobox:
+    - generic: 20 条/页
+  - generic: 第 1 / 5 页
+  - button "上一页" [disabled]:
+  - button "下一页":
+- region "Notifications alt+T"
+- text: 解释

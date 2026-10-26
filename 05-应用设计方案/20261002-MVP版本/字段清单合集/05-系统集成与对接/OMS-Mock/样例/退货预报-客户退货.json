@@ -10,7 +10,9 @@
     "ownerCode": "ANKR",
     "sourceType": "CUSTOMER",
     "trackingNo": "1Z999AA10123456701",
+    "originalSalesNo": "SO-20261015-0007",
     "originalOutboundNo": "OB-20261015-0007",
+    "originalTrackingNo": "1Z999AA10123456700",
     "items": [
       { "skuCode": "CABLE-01", "plannedQty": 2 }
     ],

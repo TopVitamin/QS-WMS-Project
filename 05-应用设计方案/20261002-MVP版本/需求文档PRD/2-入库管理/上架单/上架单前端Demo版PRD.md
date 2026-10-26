@@ -34,9 +34,11 @@
 | `sourceNo` | `string` | 来源单号；替代仅入库可用的 `inboundNo`（`inboundNo` 可保留为兼容别名） |
 | `receiptNo` | `string` | 改为必填；入库来源为 RC 号 |
 | `stagingLocationCode` | `string` | 来源暂存库位，取自收货记录，生成后不变 |
+| `putawayRecommendTiming` | `PutawayRecommendTiming?` | 生成上架单时读取货主配置；`AFTER_RECEIVE`的推荐库位写入应上架行快照 |
 | `remark` | `string?` | PDA 可录 |
 | `PutawayPlanLine.receiptLineNo` | `number` | 对应收货明细行号 |
 | `PutawayPlanLine.productionDate` | `string?` | 启用效期时有值 |
+| `PutawayPlanLine.suggestedLocationCode` | `string?` | `AFTER_RECEIVE`在生成上架单时保存；后续打开作业或保存实际上架明细不重算 |
 | `PutawayActualLine.lineNo` | `number` | 本单内唯一 |
 | `PutawayActualLine.planLineNo` | `number` | 关联应上架行；同SKU不同批次靠它区分 |
 | `PutawayActualLine.serialNos` | `string[]?` | 可选的实际采集SN清单；未采集可空，不能据数量推断SN位置 |

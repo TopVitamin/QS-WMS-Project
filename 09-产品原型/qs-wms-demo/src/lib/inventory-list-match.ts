@@ -48,6 +48,7 @@ export type StockFilters = {
   quality: string
   expiry: string
   batch: string
+  container: string
   allocatable: string
   sn: string
   serialStatus: string
@@ -63,6 +64,7 @@ export const emptyStockFilters: StockFilters = {
   quality: FILTER_ALL,
   expiry: FILTER_ALL,
   batch: '',
+  container: '',
   allocatable: FILTER_ALL,
   sn: '',
   serialStatus: FILTER_ALL,
@@ -91,6 +93,7 @@ export function matchBalance(b: BalanceRow, f: StockFilters, name: Name): boolea
   if (!anyOf(r.qualityType, f.quality)) return false
   if (f.expiry !== FILTER_ALL && (b.expiry ?? 'NONE') !== f.expiry) return false
   if (!contains(r.batchNo, f.batch)) return false
+  if (!contains(r.containerId, f.container)) return false
   if (f.allocatable === 'POSITIVE' && b.allocatable <= 0) return false
   if (f.allocatable === 'ZERO' && b.allocatable !== 0) return false
   return true

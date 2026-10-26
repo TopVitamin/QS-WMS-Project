@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { pdaToast as toast } from '@/lib/pda-toast'
 import { PdaButton, PdaCard, PdaSection } from '@/components/pda/pda-card'
 import { PdaChoiceGroup } from '@/components/pda/pda-choice-group'
@@ -54,25 +55,57 @@ function PackWorkspace({ flow, order }: { flow: VerifyFlow; order: OutboundOrder
   }
 
   const onScanContainer = (code: string) => {
-    update({ containerNo: code })
+    const container = flow.containers.find(
+      (row) =>
+        row.warehouseCode === order.warehouseCode &&
+        row.containerNo.trim().toUpperCase() === code.trim().toUpperCase(),
+    )
+    const nextSession = { ...session, containerNo: code, parentContainerNo: container?.parentContainerNo ?? '' }
+    if (order.type === 'FBA') {
+      const problem = verifyPackProblem(order, nextSession, records, flow.containers)
+      if (problem) {
+        setMessage({ tone: 'error', text: t(`outbound.ui.${problem.key}Detail`) })
+        return false
+      }
+    }
+    update({ containerNo: code, parentContainerNo: container?.parentContainerNo ?? '' })
+    setMessage({ tone: 'success', text: t('outbound.pdaVerify.okContainer', { no: code }) })
+    return true
+  }
+
+  const onScanParent = (code: string) => {
+    const problem = verifyPackProblem(order, { ...session, parentContainerNo: code }, records, flow.containers)
+    if (problem) {
+      setMessage({ tone: 'error', text: t(`outbound.ui.${problem.key}Detail`) })
+      return false
+    }
+    update({ parentContainerNo: code })
     setMessage({ tone: 'success', text: t('outbound.pdaVerify.okContainer', { no: code }) })
     return true
   }
 
   const submit = () => {
-    const problem = verifyPackProblem(order, session, records)
+    const problem = verifyPackProblem(order, session, records, flow.containers)
     if (problem) {
-      const type = t(`outbound.containers.${problem.params?.type ?? session.containerType}`)
-      void flow.notice(t(`outbound.ui.${problem.key}Title`, { type }), t(`outbound.ui.${problem.key}Detail`))
+      const title =
+        problem.key === 'stationContainerNo'
+          ? t('outbound.ui.stationContainerNoTitle', {
+              type: t(`outbound.containers.${problem.params?.type ?? session.containerType}`),
+            })
+          : t(`outbound.ui.${problem.key}Title`)
+      void flow.notice(title, t(`outbound.ui.${problem.key}Detail`))
       return
     }
-    const weight = session.method === 'PACK' && session.weight.trim() ? Number(session.weight) : undefined
+    const weight = order.type === 'B2C' && session.method === 'PACK' && session.weight.trim()
+      ? Number(session.weight)
+      : undefined
     const res = flow.run({
       type: 'VERIFY',
       no: order.no,
       method: session.method,
       containerType: session.containerType,
       containerNo: session.containerType === 'NONE' ? '' : session.containerNo.trim(),
+      parentContainerNo: session.parentContainerNo?.trim() || undefined,
       weightKg: weight,
       remark: session.remark?.trim() || undefined,
       lines: rows.filter((r) => r.qty > 0).map((r) => ({ assignmentId: r.id, qty: r.qty, serialNos: r.serialNos })),
@@ -108,15 +141,34 @@ function PackWorkspace({ flow, order }: { flow: VerifyFlow; order: OutboundOrder
             columns={2}
             value={session.method}
             onChange={changeMethod}
-            options={METHODS.map((value) => ({ value, label: t(`outbound.verifyMethods.${value}`) }))}
+            options={(order.type === 'FBA' ? ['PACK'] as const : METHODS).map((value) => ({
+              value,
+              label: t(`outbound.verifyMethods.${value}`),
+            }))}
           />
         </PdaSection>
         <PdaSection title={t('outbound.ui.containerType')}>
           <PdaChoiceGroup
             value={session.containerType}
-            onChange={(containerType) => update({ containerType })}
-            options={CONTAINERS.map((value) => ({ value, label: t(`outbound.containers.${value}`) }))}
+            options={(
+              order.type === 'FBA'
+                ? ['BOX', 'PALLET'] as const
+                : order.type === 'WHOLESALE'
+                  ? ['NONE', 'BOX', 'PALLET'] as const
+                  : CONTAINERS
+            ).map((value) => ({ value, label: t(`outbound.containers.${value}`) }))}
+            onChange={(containerType) =>
+              update({
+                containerType,
+                parentContainerNo: containerType === 'PALLET' ? '' : session.parentContainerNo,
+              })
+            }
           />
+          {order.type === 'FBA' && (
+            <Link className="mt-2 inline-block text-sm text-primary underline" to="/wms/master/containers">
+              {t('outbound.ui.manageContainers')}
+            </Link>
+          )}
         </PdaSection>
         {session.containerType !== 'NONE' && (
           <>
@@ -132,18 +184,69 @@ function PackWorkspace({ flow, order }: { flow: VerifyFlow; order: OutboundOrder
               label={t('outbound.pdaVerify.scanContainer')}
               onScan={onScanContainer}
               message={message}
-              candidates={[
-                {
-                  value:
-                    session.containerType === 'PACKAGE'
-                      ? defaultPackageNo(order, records)
-                      : `${session.containerType === 'BOX' ? 'BOX' : 'PLT'}-${order.no.slice(-4)}-${records.length + 1}`,
-                },
-              ]}
+              candidates={
+                order.type === 'FBA'
+                  ? flow.containers
+                      .filter(
+                        (container) =>
+                          container.warehouseCode === order.warehouseCode &&
+                          container.customerId === order.customerId &&
+                          container.containerType === (session.containerType === 'BOX' ? 'CARTON' : 'PALLET') &&
+                          (session.containerType !== 'PALLET' || !container.parentContainerNo) &&
+                          (container.status === 'IDLE' ||
+                            (container.status === 'OUTBOUND' &&
+                              records.some(
+                                (record) =>
+                                  record.lines.some((line) => line.effectiveQty > 0) &&
+                                  [record.containerNo, record.parentContainerNo].some(
+                                    (no) => no?.trim().toUpperCase() === container.containerNo.trim().toUpperCase(),
+                                  ),
+                              ))),
+                      )
+                      .map((container) => ({ value: container.containerNo }))
+                  : [
+                      {
+                        value:
+                          session.containerType === 'PACKAGE'
+                            ? defaultPackageNo(order, records)
+                            : `${session.containerType === 'BOX' ? 'BOX' : 'PLT'}-${order.no.slice(-4)}-${records.length + 1}`,
+                      },
+                    ]
+              }
             />
           </>
         )}
-        {session.method === 'PACK' && (
+        {order.type === 'FBA' && session.containerType === 'BOX' && (
+          <>
+            <PdaCard className="flex items-baseline gap-2 py-2">
+              <span className="text-sm text-muted-foreground">{t('outbound.ui.parentContainerNo')}</span>
+              {session.parentContainerNo ? (
+                <span className="min-w-0 truncate font-mono text-lg font-bold">{session.parentContainerNo}</span>
+              ) : (
+                <span className="text-sm text-muted-foreground">{t('common.inputPlaceholder')}</span>
+              )}
+            </PdaCard>
+            <ScanInput
+              label={t('outbound.ui.parentContainerNo')}
+              onScan={onScanParent}
+              candidates={flow.containers
+                .filter(
+                  (container) =>
+                    container.warehouseCode === order.warehouseCode &&
+                    container.customerId === order.customerId &&
+                    container.containerType === 'PALLET' &&
+                    (container.status === 'IDLE' ||
+                      (container.status === 'OUTBOUND' &&
+                        records.some(
+                          (record) =>
+                            record.parentContainerNo?.trim().toUpperCase() === container.containerNo.trim().toUpperCase(),
+                        ))),
+                )
+                .map((container) => ({ value: container.containerNo }))}
+            />
+          </>
+        )}
+        {order.type === 'B2C' && session.method === 'PACK' && (
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium">{t('outbound.ui.weight')}</span>
             <Input

@@ -12,7 +12,9 @@ import {
 export function usePutaway(warehouseCode: string) {
   const putawayOrders = useDb((s) => s.putawayOrders)
   const locations = useDb((s) => s.locations)
+  const locationMasters = useDb((s) => s.locationMasters)
   const inventory = useDb((s) => s.inventory)
+  const skuMasters = useDb((s) => s.skuMasters)
 
   const pendingOrders = useMemo(
     () => listPendingPutawayOrders(warehouseCode, { putawayOrders }),
@@ -25,7 +27,7 @@ export function usePutaway(warehouseCode: string) {
     pendingOrders,
     locations: warehouseLocations,
     /** 货位校验与推荐所需的全量上下文 */
-    locationContext: { locations, inventory, putawayOrders },
+    locationContext: { locations, inventory, putawayOrders, locationMasters, skuMasters },
     savePutawayLine,
     removePutawayLine,
     submitPutawayOrder,

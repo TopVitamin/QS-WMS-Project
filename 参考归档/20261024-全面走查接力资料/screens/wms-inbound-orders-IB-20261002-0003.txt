@@ -1,0 +1,282 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - button "出库管理":
+      - generic: 出库管理
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 入库管理
+    - generic: /
+    - generic: 入库单
+  - button "US-LA-01 美西仓 19:19":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:19
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭":
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+  - tab "退货单 关闭":
+    - text: 退货单
+    - button "关闭":
+  - tab "库存流水 关闭":
+    - text: 库存流水
+    - button "关闭":
+  - tab "移库作业 关闭":
+    - text: 移库作业
+    - button "关闭":
+  - tab "盘点单 关闭":
+    - text: 盘点单
+    - button "关闭":
+  - tab "波次管理 关闭":
+    - text: 波次管理
+    - button "关闭":
+  - tab "拣货任务 关闭":
+    - text: 拣货任务
+    - button "关闭":
+  - tab "复核工作台 关闭":
+    - text: 复核工作台
+    - button "关闭":
+  - tab "返库上架单 关闭":
+    - text: 返库上架单
+    - button "关闭":
+  - tab "仓库管理 关闭":
+    - text: 仓库管理
+    - button "关闭":
+  - tab "库区管理 关闭":
+    - text: 库区管理
+    - button "关闭":
+  - tab "货位管理 关闭":
+    - text: 货位管理
+    - button "关闭":
+  - tab "容器管理 关闭":
+    - text: 容器管理
+    - button "关闭":
+  - tab "商品管理 关闭":
+    - text: 商品管理
+    - button "关闭":
+  - tab "货主管理 关闭":
+    - text: 货主管理
+    - button "关闭":
+  - tab "物流承运商管理 关闭":
+    - text: 物流承运商管理
+    - button "关闭":
+  - tab "物流渠道管理 关闭":
+    - text: 物流渠道管理
+    - button "关闭":
+  - tab "操作记录 关闭":
+    - text: 操作记录
+    - button "关闭":
+  - tab "费用流水 关闭":
+    - text: 费用流水
+    - button "关闭":
+  - tab "计费方案 关闭":
+    - text: 计费方案
+    - button "关闭":
+  - tab "系统参数 关闭":
+    - text: 系统参数
+    - button "关闭":
+  - tab "入库单详情 关闭" [selected]:
+    - text: 入库单详情
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "入库单 · IB-20261002-0003 收货中" [level=1]:
+    - generic: 入库单
+    - generic: ·
+    - generic: IB-20261002-0003
+    - generic: 收货中
+  - link "返回列表":
+    - /url: "#/wms/inbound/orders"
+  - link "Web 端收货":
+    - /url: "#/wms/inbound/orders/IB-20261002-0003/receive"
+  - button "PDA 收货"
+  - button "确认收货完结"
+  - heading "基本信息" [level=2]
+  - generic: 货主
+  - generic "Shenzhen Anker Trading":
+    - generic: ANKR
+    - generic: Shenzhen Anker Trading
+  - generic: 上游单号
+  - generic: OMS-IN-SEED-0003
+  - generic: 业务类型
+  - generic: 正常入库
+  - generic: 仓库
+  - generic "美西仓":
+    - generic: US-LA-01
+    - generic: 美西仓
+  - generic: 到货方式
+  - generic: 整柜
+  - generic: 柜号
+  - generic: MSCU0003
+  - generic: 预计到仓
+  - generic: 2026-10-15
+  - generic: 首次到货
+  - generic: 2026-10-04 02:00
+  - generic: 运单号
+  - generic: TIB-0003
+  - generic: 创建时间
+  - generic: 2026-10-02 03:00
+  - generic: 完成时间
+  - generic: "-"
+  - generic: 收货完结
+  - generic: 未确认
+  - generic: 备注
+  - generic: "-"
+  - heading "作业进度" [level=2]
+  - paragraph: 收货在 PDA 或收货作业台执行，上架在 PDA 或 Web 端上架录入
+  - generic: 收货进度
+  - generic: 55%
+  - progressbar
+  - generic: 600 / 1,100
+  - generic: 上架进度
+  - generic: 98%
+  - progressbar
+  - generic: 590 / 600
+  - term: SKU 种类
+  - definition: "2"
+  - term: 预计数量
+  - definition: 1,100
+  - term: 实收数量
+  - definition: "600"
+  - term: 拒收数量
+  - definition: "5"
+  - term: 未收数量
+  - definition: "495"
+  - term: 已上架
+  - definition: "590"
+  - tablist:
+    - tab "入库明细 2" [selected]:
+      - text: 入库明细
+      - generic: "2"
+    - tab "收货记录 1":
+      - text: 收货记录
+      - generic: "1"
+    - tab "上架单 2":
+      - text: 上架单
+      - generic: "2"
+    - tab "入库异常 1":
+      - text: 入库异常
+      - generic: "1"
+    - tab "上游消息 0":
+      - text: 上游消息
+      - generic: "0"
+    - tab "操作日志 0":
+      - text: 操作日志
+      - generic: "0"
+  - button "列设置":
+  - tabpanel "入库明细 2":
+    - table:
+      - rowgroup:
+        - row "行号 SKU 商品条码 商品名称 状态 预计数量 实收数量 拒收数量 未收数量 实收良品数量 实收不良品数量 已上架数量":
+          - columnheader "行号"
+          - columnheader "SKU"
+          - columnheader "商品条码"
+          - columnheader "商品名称"
+          - columnheader "状态"
+          - columnheader "预计数量"
+          - columnheader "实收数量"
+          - columnheader "拒收数量"
+          - columnheader "未收数量"
+          - columnheader "实收良品数量"
+          - columnheader "实收不良品数量"
+          - columnheader "已上架数量"
+      - rowgroup:
+        - row "1 CABLE-01 690000000001 USB 数据线 收货中 1,000 600 5 395 590 10 590":
+          - cell "1"
+          - cell "CABLE-01"
+          - cell "690000000001"
+          - cell "USB 数据线"
+          - cell "收货中":
+            - generic: 收货中
+          - cell "1,000"
+          - cell "600"
+          - cell "5"
+          - cell "395":
+            - generic: "395"
+          - cell "590"
+          - cell "10"
+          - cell "590"
+        - row "2 SN-DEMO-01 690000000003 序列号样例 待收货 100 0 0 100 0 0 0":
+          - cell "2"
+          - cell "SN-DEMO-01"
+          - cell "690000000003"
+          - cell "序列号样例"
+          - cell "待收货":
+            - generic: 待收货
+          - cell "100"
+          - cell "0"
+          - cell "0"
+          - cell "100":
+            - generic: "100"
+          - cell "0"
+          - cell "0"
+          - cell "0"
+    - generic: 共 2 条
+    - combobox:
+      - generic: 20 条/页
+    - generic: 第 1 / 1 页
+    - button "上一页" [disabled]:
+    - button "下一页" [disabled]:
+- region "Notifications alt+T"
+- text: 解释

@@ -75,6 +75,9 @@ export function VerificationSheet({ record, onClose }: { record?: OutboundVerifi
             <DescriptionItem label={t('outbound.ui.containerNo')}>
               {record.containerNo ? <BizCode>{record.containerNo}</BizCode> : <Empty />}
             </DescriptionItem>
+            <DescriptionItem label={t('outbound.ui.parentContainerNo')}>
+              {record.parentContainerNo ? <BizCode>{record.parentContainerNo}</BizCode> : <Empty />}
+            </DescriptionItem>
             <DescriptionItem label={t('outbound.ui.tracking')}>
               {record.trackingNo ? <BizCode>{record.trackingNo}</BizCode> : <Empty />}
             </DescriptionItem>

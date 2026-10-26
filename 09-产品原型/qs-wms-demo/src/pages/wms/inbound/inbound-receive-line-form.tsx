@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { formatNumber } from '@/lib/format'
+import { updateExpiryDatePair } from '@/lib/expiry-date'
 import {
   emptyReceiveDraft,
   parseSerialNos,
@@ -49,7 +50,7 @@ interface InboundReceiveLineFormProps {
   isNewSku?: (skuCode: string) => boolean
   onGoMeasure?: (skuCode: string) => void
   /** 商品追溯配置：批次/效期/SN 决定本行是否展开采集区 */
-  skuConfig: (skuCode: string) => { batchEnabled?: boolean; expiryEnabled?: boolean; snEnabled?: boolean }
+  skuConfig: (skuCode: string) => { batchEnabled?: boolean; expiryEnabled?: boolean; snEnabled?: boolean; shelfLifeDays?: number }
 }
 
 type ReceiveEditContextValue = {
@@ -249,7 +250,7 @@ function ReceiveTraceCell({
   editable,
 }: {
   line: InboundOrderLine
-  config: { batchEnabled?: boolean; expiryEnabled?: boolean; snEnabled?: boolean }
+  config: { batchEnabled?: boolean; expiryEnabled?: boolean; snEnabled?: boolean; shelfLifeDays?: number }
   editable: boolean
 }) {
   const { t } = useTranslation()
@@ -266,6 +267,7 @@ function ReceiveTraceCell({
             className={fieldClass}
             value={edit.batchNo ?? ''}
             placeholder={t('common.inputPlaceholder')}
+            required
             disabled={!editable}
             onChange={(e) => changeMeta(line.skuCode, { batchNo: e.target.value })}
           />
@@ -279,8 +281,14 @@ function ReceiveTraceCell({
               className={fieldClass}
               type="date"
               value={edit.productionDate ?? ''}
+              required
               disabled={!editable}
-              onChange={(e) => changeMeta(line.skuCode, { productionDate: e.target.value })}
+              onChange={(e) =>
+                changeMeta(
+                  line.skuCode,
+                  updateExpiryDatePair(edit, 'productionDate', e.target.value, config.shelfLifeDays),
+                )
+              }
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -289,10 +297,14 @@ function ReceiveTraceCell({
               className={fieldClass}
               type="date"
               value={edit.expiryDate ?? ''}
+              required
               disabled={!editable}
-              onChange={(e) => changeMeta(line.skuCode, { expiryDate: e.target.value })}
+              onChange={(e) =>
+                changeMeta(line.skuCode, updateExpiryDatePair(edit, 'expiryDate', e.target.value, config.shelfLifeDays))
+              }
             />
           </label>
+          <p className="text-xs text-muted-foreground md:col-span-2">{t('inventory.expiryDateCalculationHint')}</p>
         </>
       )}
       {config.snEnabled && edit.goodQty > 0 && (

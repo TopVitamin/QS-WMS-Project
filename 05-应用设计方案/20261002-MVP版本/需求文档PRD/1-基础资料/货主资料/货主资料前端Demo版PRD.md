@@ -31,7 +31,7 @@ i18n 命名空间 `masterCustomer`（扩展 `MasterDataI18nScope`）：`discard*
 
 菜单：**基础资料 → 货主管理**（`config/menu.ts`：`path: '/wms/master/customers'`，`titleKey: 'menu.customers'`）。列表 `PageContainer` **`title={t('menu.customers')}`**（勿另起 `listTitle`）。
 
-顶栏「当前仓库」不限制货主列表（主 PRD：有仓权限可见全部货主）。
+顶栏「当前仓库」不限制货主列表；一期无登录、角色或用户仓库授权校验。
 
 `router.tsx` 注册顺序：仅列表与 `:code` 详情（无 `new` / `edit` 子路由）。
 

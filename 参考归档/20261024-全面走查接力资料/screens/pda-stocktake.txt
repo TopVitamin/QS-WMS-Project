@@ -1,0 +1,24 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "盘点" [level=1]
+  - generic: US-LA-01
+- generic: 扫描盘点单号
+- textbox "扫描盘点单号" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "ST-20261020-0001"
+- generic: 盘点中（1）
+- button "ST-20261020-0001 计划盘点 盘点中 1 个 SKU 已盘 0/1 行":
+  - generic: ST-20261020-0001
+  - generic: 计划盘点
+  - generic: 盘点中
+  - generic: 1 个 SKU
+  - generic: 已盘 0/1 行
+- region "Notifications alt+T"
+- text: 解释

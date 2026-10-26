@@ -1,0 +1,175 @@
+- complementary:
+  - generic: QS-WMS
+  - generic: QS 海外仓管理系统
+  - navigation:
+    - link "工作台":
+      - /url: "#/wms/dashboard"
+      - text: 工作台
+    - button "入库管理":
+      - generic: 入库管理
+    - link "入库单":
+      - /url: "#/wms/inbound/orders"
+      - generic: 入库单
+    - link "上架单":
+      - /url: "#/wms/inbound/putaway"
+      - generic: 上架单
+    - link "新品维护":
+      - /url: "#/wms/inbound/new-sku"
+      - generic: 新品维护
+    - link "无主货登记":
+      - /url: "#/wms/inbound/unclaimed"
+      - generic: 无主货登记
+    - link "退货管理":
+      - /url: "#/wms/returns/orders"
+      - text: 退货管理
+    - button "库存管理":
+      - generic: 库存管理
+    - button "出库管理":
+      - generic: 出库管理
+    - button "计费结算":
+      - generic: 计费结算
+    - button "基础资料":
+      - generic: 基础资料
+    - button "系统设置":
+      - generic: 系统设置
+- banner:
+  - button "展开或收起侧边栏":
+  - navigation:
+    - generic: 入库管理
+    - generic: /
+    - generic: 新品维护
+  - button "US-LA-01 美西仓 19:17":
+    - generic: US-LA-01
+    - generic: 美西仓
+    - generic: 19:17
+  - button "搜索菜单、功能或快捷操作...":
+  - link "打开 PDA":
+    - /url: "#/pda"
+  - button "语言":
+  - button "消息":
+  - button "LC Lily Chen":
+    - generic: LC
+    - generic: Lily Chen
+- heading "搜索菜单、功能或快捷操作..." [level=2]
+- paragraph: 输入菜单名称或功能快捷直达...
+- tablist "页签":
+  - tab "工作台":
+    - text: 工作台
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "出库单 关闭":
+    - text: 出库单
+    - button "关闭":
+  - tab "库存查询 关闭":
+    - text: 库存查询
+    - button "关闭":
+  - tab "入库单 关闭":
+    - text: 入库单
+    - button "关闭":
+  - tab "上架单 关闭":
+    - text: 上架单
+    - button "关闭":
+  - tab "新品维护 关闭" [selected]:
+    - text: 新品维护
+    - button "关闭":
+  - tab "无主货登记 关闭":
+    - text: 无主货登记
+    - button "关闭":
+- button "页签操作":
+- main:
+  - heading "新品维护" [level=1]
+  - button "导出":
+    - text: 导出
+  - button "新品量方":
+    - text: 新品量方
+  - generic: 维护记录号
+  - textbox "维护记录号":
+    - /placeholder: 请输入维护记录号
+  - generic: 货主
+  - combobox "货主":
+    - generic: 全部
+  - combobox
+  - generic: SKU
+  - textbox "SKU":
+    - /placeholder: 请输入商品编码
+  - generic: 维护仓库
+  - combobox "维护仓库":
+    - generic: 全部
+  - combobox
+  - generic: 维护时间
+  - button "维护时间":
+    - generic: 维护时间
+  - button "查询":
+    - text: 查询
+  - button "重置":
+    - text: 重置
+  - button "展开":
+    - text: 展开
+  - button "列设置":
+  - table:
+    - rowgroup:
+      - row "维护记录号 货主 SKU 商品名称 长×宽×高(inch) 毛重(lb) 维护仓库 来源入库单号 维护时间":
+        - columnheader "维护记录号"
+        - columnheader "货主"
+        - columnheader "SKU"
+        - columnheader "商品名称"
+        - columnheader "长×宽×高(inch)"
+        - columnheader "毛重(lb)"
+        - columnheader "维护仓库"
+        - columnheader "来源入库单号"
+        - columnheader "维护时间":
+          - button "维护时间":
+            - text: 维护时间
+    - rowgroup:
+      - row "NS-20261005-0001 HOMY Homy Living Co., Ltd. CABLE-01 CABLE-01 5.91×3.15×0.79 inch 0.176 lb US-LA-01 美西仓 - 2026-10-05 03:20":
+        - cell "NS-20261005-0001":
+          - button "NS-20261005-0001"
+        - cell "HOMY Homy Living Co., Ltd.":
+          - generic "Homy Living Co., Ltd.":
+            - generic: HOMY
+            - generic: Homy Living Co., Ltd.
+        - cell "CABLE-01"
+        - cell "CABLE-01"
+        - cell "5.91×3.15×0.79 inch"
+        - cell "0.176 lb"
+        - cell "US-LA-01 美西仓"
+        - cell "-"
+        - cell "2026-10-05 03:20"
+      - row "NS-20261006-0001 HOMY Homy Living Co., Ltd. HOMY-003 LED Desk Lamp 11.02×7.28×4.72 inch 2.769 lb DE-FRA-01 德国仓 - 2026-10-05 03:20":
+        - cell "NS-20261006-0001":
+          - button "NS-20261006-0001"
+        - cell "HOMY Homy Living Co., Ltd.":
+          - generic "Homy Living Co., Ltd.":
+            - generic: HOMY
+            - generic: Homy Living Co., Ltd.
+        - cell "HOMY-003"
+        - cell "LED Desk Lamp"
+        - cell "11.02×7.28×4.72 inch"
+        - cell "2.769 lb"
+        - cell "DE-FRA-01 德国仓"
+        - cell "-"
+        - cell "2026-10-05 03:20"
+      - row "NS-20261004-0001 ANKR Shenzhen Anker Trading CABLE-01 CABLE-01 5.91×3.15×0.79 inch 0.176 lb US-LA-01 美西仓 IB-20261002-0003 2026-10-04 02:00":
+        - cell "NS-20261004-0001":
+          - button "NS-20261004-0001"
+        - cell "ANKR Shenzhen Anker Trading":
+          - generic "Shenzhen Anker Trading":
+            - generic: ANKR
+            - generic: Shenzhen Anker Trading
+        - cell "CABLE-01"
+        - cell "CABLE-01"
+        - cell "5.91×3.15×0.79 inch"
+        - cell "0.176 lb"
+        - cell "US-LA-01 美西仓"
+        - cell "IB-20261002-0003":
+          - button "IB-20261002-0003"
+        - cell "2026-10-04 02:00"
+  - generic: 共 3 条
+  - combobox:
+    - generic: 20 条/页
+  - generic: 第 1 / 1 页
+  - button "上一页" [disabled]:
+  - button "下一页" [disabled]:
+- region "Notifications alt+T"
+- text: 解释

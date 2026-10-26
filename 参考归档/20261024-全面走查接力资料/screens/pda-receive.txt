@@ -1,0 +1,41 @@
+- group "模拟机型":
+  - button "5.7″ · 720×1440" [pressed]
+  - button "5″ · 720×1280"
+  - button "4″ · 480×800"
+- generic: 19:19
+- banner:
+  - button "返回":
+  - heading "收货" [level=1]
+  - generic: US-LA-01
+- generic: 请扫描入库单号或柜号
+- textbox "请扫描入库单号或柜号" [active]:
+  - /placeholder: 等待扫描…
+- button "键盘输入":
+- generic: 模拟扫码 · 没有扫描枪时，点击下面的候选值模拟扫码
+- button "IB-20261002-0001"
+- button "IB-20261002-0003"
+- button "IB-20261002-0009"
+- button "IB-20261002-9001"
+- generic: 可收货入库单 (5)
+- button "IB-20261002-0001 待收货 Shenzhen Anker Trading · 1 种商品 · 待收 500":
+  - generic: IB-20261002-0001
+  - generic: 待收货
+  - generic: Shenzhen Anker Trading · 1 种商品 · 待收 500
+- button "IB-20261002-0003 收货中 Shenzhen Anker Trading · 2 种商品 · 待收 495":
+  - generic: IB-20261002-0003
+  - generic: 收货中
+  - generic: Shenzhen Anker Trading · 2 种商品 · 待收 495
+- button "IB-20261002-0009 收货中 Shenzhen Anker Trading · 2 种商品 · 待收 70":
+  - generic: IB-20261002-0009
+  - generic: 收货中
+  - generic: Shenzhen Anker Trading · 2 种商品 · 待收 70
+- button "IB-20261002-9001 待收货 QS 自营 · 1 种商品 · 待收 20":
+  - generic: IB-20261002-9001
+  - generic: 待收货
+  - generic: QS 自营 · 1 种商品 · 待收 20
+- button "IB-20261002-9002 待收货 Shenzhen Anker Trading · 3 种商品 · 待收 30":
+  - generic: IB-20261002-9002
+  - generic: 待收货
+  - generic: Shenzhen Anker Trading · 3 种商品 · 待收 30
+- region "Notifications alt+T"
+- text: 解释

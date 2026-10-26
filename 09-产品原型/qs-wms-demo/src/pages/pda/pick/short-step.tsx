@@ -54,7 +54,7 @@ function ShortEditor({ flow, task, line }: { flow: PickFlow; task: OutboundPickT
       void flow.notice(t('outbound.pdaPick.shortFailed'), t(res.errorKey, res.params))
       return
     }
-    const moved = replacementStops(before, flow.latestTask(task.no)?.lines ?? [])
+    const moved = replacementStops(before, flow.latestTask(task.no)?.lines ?? [], flow.locationMasters, task.warehouseCode)
     beep(true)
     toast.success(
       moved.length

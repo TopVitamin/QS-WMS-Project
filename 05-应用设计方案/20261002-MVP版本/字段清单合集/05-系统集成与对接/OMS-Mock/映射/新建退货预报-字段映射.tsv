@@ -3,16 +3,17 @@ source	消息信封	消息来源	是	固定 OMS_MOCK
 messageId	消息信封	消息标识	是	来源内唯一；重发同标识同内容返回原结论
 messageType	消息信封	消息类别	是	CREATE_RETURN_FORECAST
 businessType	消息信封	业务类型	是	RETURN
-upstreamNo	消息信封	上游退货预报号	是	客户退货/平台仓退件必填；派送失败由 WMS 建单
+upstreamNo	消息信封	上游退货预报号	是（消息信封）	用于对象定位和幂等；Demo自动生成，不作为操作员表单中的业务必填项；派送失败由 WMS 建单
 expectedVersion	消息信封	预期对象版本	是	首次固定 0
 payload.warehouseCode	退货单	仓库编码	是	退回本仓
 payload.ownerCode	退货单	货主编码	是	须为启用货主
 payload.sourceType	退货单	退货来源	是	CUSTOMER｜PLATFORM
-payload.trackingNo	退货单	退货运单号	条件必填	客户退货建议填写；平台仓按平台规则
+payload.trackingNo	退货单	退货运单号	客户退货必填；平台仓选填	客户退货必填；平台仓退件可按预报提供
 payload.originalOutboundNo	退货单	原出库单号	否	有原出库时用于 SN 核对
 payload.originalSalesNo	退货单	原销售单号	否	上游业务追溯
-payload.platformReturnNo	退货单	平台侧退货单号	条件必填	平台仓退件填写
+payload.originalTrackingNo	退货单	原运单号	否	上游业务追溯；客户退货可选填
+payload.platformReturnNo	退货单	平台侧退货单号	平台仓退件必填	平台仓退件用于识别和追溯
 payload.items	退货单明细	商品明细	是	至少一行
 payload.items[].skuCode	退货单明细	SKU 编码	是	须为该货主启用商品
 payload.items[].plannedQty	退货单明细	预计退货数量	是	正整数
-payload.remark	退货单	备注	否	上游备注
+payload.remark	退货单	备注	否	上游备注；FBA线索沿用现有平台/来源字段及备注记录，不新增字段或流程

@@ -16,6 +16,7 @@ export interface WebVerifySession {
   method: OutboundVerification['method']
   containerType: OutboundVerification['containerType']
   containerNo: string
+  parentContainerNo?: string
   weight: string
   /** 复核备注（PDA 装箱页可填） */
   remark?: string

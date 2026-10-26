@@ -9,7 +9,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 页面 | 退货单列表 |
-| 建议路由 | `/wms/returns/orders` |
+| 确认路由 | `/wms/returns/orders` |
 | 入口 | 退货管理 → 退货单 |
 | 目标 | 查询当前仓退货单，查看三类来源、数量进度和待办操作 |
 | 页头 | OMS Mock（Demo）、派送失败建单、导出 Mock |
@@ -60,9 +60,9 @@
 
 | 操作 | 显示条件 | 行为 |
 | --- | --- | --- |
-| Web 端收货 | 待收货／收货中，且有收货权限 | 进入 `/wms/returns/orders/:returnNo/receive` |
-| PDA 收货 | 待收货／收货中，且有收货权限 | 进入 `/pda/return-receive`，带入退货单号 |
-| 确认收货完结 | 收货中、累计实收大于 0、满足收货完结权限 | 打开弹窗；正文列出仍未收行和将定型的最终短少 |
+| Web 端收货 | 待收货／收货中 | 进入 `/wms/returns/orders/:returnNo/receive` |
+| PDA 收货 | 待收货／收货中 | 进入 `/pda/return-receive`，带入退货单号 |
+| 确认收货完结 | 收货中、累计实收大于 0 | 打开弹窗；正文列出仍未收行和将定型的最终短少 |
 | 查看 | 不单独提供 | 点击退货单号进入详情 |
 
 已完成、已取消单的操作列为空；上架操作从详情的共用上架单页签进入，不在退货单列表重复放“上架”按钮。
@@ -75,7 +75,7 @@
 | 派送失败建单成功 | `toast.success(return.createFromTrackingSuccess)`，关闭 Dialog，刷新并定位新 RT |
 | 重复原运单 | `toast.error(return.originalTrackingActiveDuplicate)`，展示原 RT 号 |
 | 当前状态已变化 | `toast.error(return.stale)`，不关闭已有录入页 |
-| 当前仓／权限不符 | 提示无权访问并返回列表 |
+| 当前仓库与单据仓库不符 | 不展示单据并返回列表 |
 
 ## 7. 列表走查
 
