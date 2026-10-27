@@ -622,9 +622,17 @@ export function applyDeliveryFailedReturn(
   state: SeedData,
   input: { outboundNo: string; operator: string },
 ): ActionResult & { patch?: Partial<SeedData>; returnNo?: string } {
-  const outboundNo = input.outboundNo.trim()
-  if (!outboundNo) return { ok: false, errorKey: 'return.error.originalOutboundRequired' }
-  const outbound = state.outboundOrders.find((o) => o.no.toUpperCase() === outboundNo.toUpperCase())
+  const inputNo = input.outboundNo.trim()
+  if (!inputNo) return { ok: false, errorKey: 'return.error.originalOutboundRequired' }
+  const upper = inputNo.toUpperCase()
+  // 管理端可按原 B2C 出库单号建单；PDA/扫码场景也可直接扫原出库运单号。
+  const outbound =
+    state.outboundOrders.find((o) => o.no.toUpperCase() === upper) ??
+    state.outboundOrders.find((o) =>
+      state.outboundVerifications.some(
+        (v) => v.orderNo === o.no && !v.deleted && v.trackingNo?.trim().toUpperCase() === upper,
+      ),
+    )
   if (!outbound) return { ok: false, errorKey: 'return.error.outboundNotFound' }
   if (outbound.type !== 'B2C') return { ok: false, errorKey: 'return.error.outboundNotB2C' }
   if (outbound.status !== 'SHIPPED') return { ok: false, errorKey: 'return.error.outboundNotShipped' }

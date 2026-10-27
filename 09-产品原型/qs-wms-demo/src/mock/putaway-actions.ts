@@ -1,7 +1,6 @@
 import { serialsInWarehouse, updateSerialStocks } from '@/lib/serial-stock'
 import { stagingLocationCode, syncInboundPutawayFromOrders } from '@/lib/inbound-derive'
 import { syncReturnPutawayFromOrders } from '@/lib/return-derive'
-import { countingStocktake } from '@/lib/inventory-derive'
 import { balanceLog, pairLogs } from '@/lib/inventory-ledger'
 import { findLocation, isFullyRecorded, remainingQty, validatePutawayLocation } from '@/lib/putaway'
 import type { PutawayActualLine, PutawayOrder } from '@/types/inbound'
@@ -121,12 +120,6 @@ export function applySubmitPutawayOrder(state: SeedData, input: { putawayNo: str
   const order = found
   if (order.actualLines.length === 0 || !isFullyRecorded(order))
     return { ok: false, errorKey: 'pdaPutaway.error.planMismatch' }
-  if (
-    order.planLines.some((l) =>
-      countingStocktake(state.inventoryCounts, order.warehouseCode, order.customerId, l.skuCode),
-    )
-  )
-    return { ok: false, errorKey: 'outbound.error.countFrozen' }
   for (const line of order.actualLines) {
     const locationError = validatePutawayLocation(order, line.locationCode, state)
     if (locationError) return { ok: false, errorKey: locationError }

@@ -1,4 +1,4 @@
-import { Download, Radio } from 'lucide-react'
+import { Download, Radio, Truck } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -22,7 +22,7 @@ import { emptyReturnListFilters, matchReturn } from '@/lib/return-list-match'
 import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { ReturnOrder, ReturnOrderStatus, ReturnSourceType } from '@/types/return'
-import { ReturnForecastDialog } from './return-dialogs'
+import { ReturnDeliveryFailedDialog, ReturnForecastDialog } from './return-dialogs'
 
 const STATUSES: ReturnOrderStatus[] = ['PENDING_RECEIVE', 'RECEIVING', 'PUTAWAYING', 'COMPLETED', 'CANCELLED']
 const SOURCES: ReturnSourceType[] = ['CUSTOMER', 'PLATFORM', 'DELIVERY_FAILED']
@@ -37,6 +37,7 @@ export function ReturnListPage() {
   const list = useUrlListState(emptyReturnListFilters, STATUSES)
   const { draft, setDraft, filters } = list
   const [forecastOpen, setForecastOpen] = useState(false)
+  const [deliveryFailedOpen, setDeliveryFailedOpen] = useState(false)
 
   const filtered = useMemo(
     () => orders.filter((o) => matchReturn(o, warehouseCode, filters)),
@@ -151,6 +152,10 @@ export function ReturnListPage() {
             <Radio data-icon="inline-start" />
             {t('return.forecast.action')}
           </Button>
+          <Button variant="outline" onClick={() => setDeliveryFailedOpen(true)}>
+            <Truck data-icon="inline-start" />
+            {t('return.deliveryFailed.action')}
+          </Button>
           <Button variant="outline" onClick={() => toast.info(t('common.exportMock'))}>
             <Download data-icon="inline-start" />
             {t('common.export')}
@@ -213,6 +218,12 @@ export function ReturnListPage() {
       {forecastOpen && (
         <ReturnForecastDialog
           onClose={() => setForecastOpen(false)}
+          onCreated={(no) => navigate(`/wms/returns/orders/${no}`)}
+        />
+      )}
+      {deliveryFailedOpen && (
+        <ReturnDeliveryFailedDialog
+          onClose={() => setDeliveryFailedOpen(false)}
           onCreated={(no) => navigate(`/wms/returns/orders/${no}`)}
         />
       )}

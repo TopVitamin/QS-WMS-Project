@@ -83,4 +83,4 @@ Demo 版 PRD 的 FilterBar 表须写清：每个筛选项控件类型及是否�
 | 业务单据详情（概览卡 + 多页签） | `inbound-order-detail-page.tsx`、`putaway-detail-page.tsx` |
 | Dialog 维护、无表单状态 | `carrier-form-dialog.tsx`、`channel-form-dialog.tsx` |
 
-改写任一对象 Demo 版 PRD 时，在文首「样式与组件」段增加一句：**布局与占位须符合 [需求文档 PRD / AGENTS.md](../AGENTS.md) 「布局硬规则」一节**。
+改写任一对象 Demo 版 PRD 时，在文首「样式与组件」段增加一句：**布局与占位须符合 [需求文档 PRD / AGENTS.md](AGENTS.md) 「布局硬规则」一节**。

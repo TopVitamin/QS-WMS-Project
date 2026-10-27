@@ -67,8 +67,7 @@ export function findLocation(locations: Location[], warehouseCode: string, code:
 
 function fitsQuality(order: PutawayOrder, location: Location): boolean {
   if (order.qualityType === 'DEFECTIVE') return location.type === 'DEFECT'
-  /** 退货来源良品只放存储库位；入库来源良品放存储或拣货 */
-  if (order.sourceType === 'RETURN') return location.type === 'STORAGE'
+  // 一期简化：良品（含退货来源）只区分存储/拣货，不按来源再分叉。
   return location.type === 'STORAGE' || location.type === 'PICK'
 }
 
@@ -172,9 +171,7 @@ export function validatePutawayLocation(
   if (!fitsQuality(order, location)) {
     return order.qualityType === 'DEFECTIVE'
       ? 'pdaPutaway.error.defectOnly'
-      : order.sourceType === 'RETURN'
-        ? 'pdaPutaway.error.returnStorageOnly'
-        : 'pdaPutaway.error.goodToDefect'
+      : 'pdaPutaway.error.goodToDefect'
   }
   if (occupiedByOtherOwner(order, location.code, ctx.inventory, ctx.putawayOrders)) return 'pdaPutaway.error.otherOwner'
   return null

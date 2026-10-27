@@ -28,10 +28,15 @@ const chronological = (logs: InventoryLog[]) =>
     .sort((a, b) => a.l.createdAt.localeCompare(b.l.createdAt) || a.index - b.index)
     .map(({ l }) => l)
 const detailKey = (
-  l: Pick<InventoryLog, 'warehouseCode' | 'customerId' | 'skuCode' | 'locationCode' | 'batchNo'> & {
+  l: Pick<InventoryLog, 'warehouseCode' | 'customerId' | 'skuCode' | 'locationCode' | 'batchNo' | 'containerId' | 'expiryDate' | 'inventoryId'> & {
     qualityType?: string
+    productionDate?: string
   },
-) => [l.warehouseCode, l.customerId, l.skuCode, l.locationCode, l.batchNo ?? '', l.qualityType ?? ''].join('|')
+) => [
+  l.warehouseCode, l.customerId, l.skuCode, l.locationCode, l.containerId ?? '', l.batchNo ?? '',
+  l.productionDate ?? seed.inventory.find((r) => r.id === l.inventoryId)?.productionDate ?? '',
+  l.expiryDate ?? '', l.qualityType ?? '',
+].join('|')
 
 describe('SKU库存按品质分行（库存查询主PRD 第二节）', () => {
   it('良品库存＝订单预占＋可用，不良品预占与可用均为0，汇总等于批次库存', () => {
@@ -117,9 +122,8 @@ describe('SN 库存', () => {
 })
 
 describe('盘点阻断', () => {
-  it('洛杉矶仓线材有进行中拣货任务、返库上架单和已分配；演示商品已在盘点中', () => {
-    const kinds = stocktakeBlockers(seed, LA, [{ customerId: ANKR, skuCode: 'CABLE-01' }]).map((b) => b.kind)
-    expect(kinds).toEqual(expect.arrayContaining(['PICK_TASK', 'PUTBACK', 'ALLOCATED']))
+  it('只有同一 SKU 已在盘点中才阻断，已有任务不阻断', () => {
+    expect(stocktakeBlockers(seed, LA, [{ customerId: ANKR, skuCode: 'CABLE-01' }])).toEqual([])
     expect(stocktakeBlockers(seed, LA, [{ customerId: HOMY, skuCode: 'HOMY-003' }]).map((b) => b.kind)).toEqual([
       'COUNTING',
     ])
@@ -142,9 +146,38 @@ describe('种子流水（库存流水主PRD）', () => {
     last.forEach((l, key) => expect(l.afterQty, key).toBe(current.get(key) ?? 0))
   })
 
-  it('同一余额维度（仓库、货主、SKU、库位、批次、品质）只有一行库存明细', () => {
+  it('同一完整余额维度（含容器、生产日期和有效期）只有一行库存明细', () => {
     const keys = seed.inventory.map(detailKey)
     expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('同库位的箱内库存与散件分别保留，箱内收货和上架流水可回溯', () => {
+    const carton = seed.inventory.find((r) => r.containerId === 'US-LA-01::C-A01' && r.qualityType === 'GOOD')!
+    const loose = seed.inventory.find((r) => r.warehouseCode === LA && r.customerId === ANKR &&
+      r.skuCode === carton.skuCode && r.locationCode === carton.locationCode && !r.containerId && r.qualityType === 'GOOD')!
+    expect(carton.onHandQty).toBeGreaterThan(0)
+    expect(loose.onHandQty).toBeGreaterThan(0)
+    expect(carton.id).not.toBe(loose.id)
+    expect(seed.inventoryLogs.find((l) => l.type === 'PUTAWAY' && l.qtyChange > 0 && l.inventoryId === carton.id))
+      .toMatchObject({ containerId: carton.containerId, beforeQty: 0, afterQty: 590 })
+  })
+
+  it('种子收货流水保留实录批次，不因商品当前开关丢失余额维度', () => {
+    const logs = seed.inventoryLogs.filter((l) => l.jobNo === 'RC-20261005-0001')
+    expect(logs.map((l) => [l.batchNo, l.beforeQty, l.afterQty])).toEqual([
+      ['BATCH-2026-A', 0, 500], ['BATCH-2026-B', 0, 300],
+    ])
+  })
+
+  it('多品质上架或多库位拆散后容器已释放，目标库存和流水均为散件', () => {
+    for (const containerNo of ['C-C05', 'C-SN01']) {
+      expect(seed.containers.find((c) => c.warehouseCode === LA && c.containerNo === containerNo)?.status).toBe('RELEASED')
+      const orders = seed.putawayOrders.filter((p) => p.containerNo === containerNo)
+      const targetLogs = seed.inventoryLogs.filter((l) => orders.some((p) => p.putawayNo === l.jobNo) && l.qtyChange > 0)
+      expect(targetLogs.length).toBeGreaterThan(1)
+      expect(targetLogs.every((l) => !l.containerId)).toBe(true)
+      expect(seed.inventory.some((r) => r.containerId === `US-LA-01::${containerNo}` && r.onHandQty > 0)).toBe(false)
+    }
   })
 
   it('订单占用流水逐条累加，最后等于各 SKU 未结案出库单的预占合计', () => {

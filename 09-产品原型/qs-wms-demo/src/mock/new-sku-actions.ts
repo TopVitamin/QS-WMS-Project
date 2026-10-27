@@ -2,7 +2,7 @@ import { nextDocNo } from '@/lib/doc-no'
 import { findNewSkuRecord } from '@/lib/new-sku'
 import { lengthToCm, weightToKg } from '@/lib/unit'
 import type { NewSkuRecord } from '@/types/inbound'
-import type { SkuMaster, UnitSystem } from '@/types/wms'
+import type { UnitSystem } from '@/types/wms'
 import type { SeedData } from './seed'
 
 export interface SubmitNewSkuMeasureInput {
@@ -37,7 +37,7 @@ function validMeasure(value: number, maxDecimals: number): boolean {
 
 /**
  * 新品量方提交（新品维护主PRD 第四节）：提交时重新检查货主、商品启用与该货主SKU无记录；
- * 成功生成 NS 号、写入仓内规格（商品资料留痕）。管理端量方弹窗与 PDA 量方屏共用本动作。
+ * 成功生成 NS 号并保存实测规格；不覆盖商品资料初始规格。管理端量方弹窗与 PDA 量方屏共用本动作。
  */
 export function applySubmitNewSkuMeasure(
   state: SeedData,
@@ -84,19 +84,5 @@ export function applySubmitNewSkuMeasure(
     requestId: input.requestId,
   }
 
-  const skuMasters: SkuMaster[] = state.skuMasters.map((m) =>
-    m.customerId === input.customerId && m.code === input.skuCode
-      ? {
-          ...m,
-          lengthCm: record.lengthCm,
-          widthCm: record.widthCm,
-          heightCm: record.heightCm,
-          grossWeightKg: record.grossWeightKg,
-          updatedAt: ts,
-          updatedBy: input.operator,
-        }
-      : m,
-  )
-
-  return { ok: true, record, patch: { newSkuRecords: [record, ...records], skuMasters } }
+  return { ok: true, record, patch: { newSkuRecords: [record, ...records] } }
 }

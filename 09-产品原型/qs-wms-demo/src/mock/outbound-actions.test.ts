@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { resetOutboundSeedInventory } from './outbound-seed'
 import { createSeedData, type SeedData } from './seed'
 import { applyInventoryAction } from './inventory-actions'
+import { createContainerAction } from './container-actions'
 import { warehouseSerialStocks } from '@/lib/serial-stock'
 import { applyOutboundAction, emptyOutboundData, outboundAvailable, orderAssignments } from './outbound-actions'
 import type { InventoryCommand } from '@/types/inventory'
@@ -81,13 +82,28 @@ function pickAll(s: SeedData, no: string) {
   ok(s, { type: 'FINISH_PICK', no })
 }
 function verify(s: SeedData, no: string) {
+  const order = s.outboundOrders.find((order) => order.no === no)!
+  const isFba = order.type === 'FBA'
+  const isWholesale = order.type === 'WHOLESALE'
+  const containerNo = isFba ? `BOX-${no}` : isWholesale ? '' : `PKG-${no}`
+  if (isFba && !s.containers.some((c) => c.warehouseCode === order.warehouseCode && c.containerNo === containerNo)) {
+    const created = createContainerAction(s, {
+      warehouseCode: order.warehouseCode,
+      customerId: order.customerId,
+      containerNo,
+      containerType: 'CARTON',
+      source: 'OUTBOUND_PACK',
+    }, 'tester')
+    expect(created.ok).toBe(true)
+    Object.assign(s, created.patch)
+  }
   return ok(s, {
     type: 'VERIFY',
     no,
     method: 'PACK',
-    containerType: 'PACKAGE',
-    containerNo: `PKG-${no}`,
-    weightKg: 0.5,
+    containerType: isFba ? 'BOX' : isWholesale ? 'NONE' : 'PACKAGE',
+    containerNo,
+    weightKg: isFba || isWholesale ? undefined : 0.5,
     lines: orderAssignments(s, no)
       .filter((a) => a.activeQty)
       .map((a) => ({ assignmentId: a.id, qty: a.activeQty, serialNos: a.activeSerialNos })),
@@ -98,6 +114,50 @@ function total(s: SeedData) {
 }
 
 describe('outbound inventory contract', () => {
+  it('fresh seed binds FBA review to a registered owner carton and preserves unused cartons', () => {
+    const s = createSeedData()
+    const reviews = s.outboundVerifications.filter((v) => s.outboundOrders.find((o) => o.no === v.orderNo)?.type === 'FBA')
+    expect(reviews.length).toBeGreaterThan(0)
+    for (const review of reviews) {
+      const order = s.outboundOrders.find((o) => o.no === review.orderNo)!
+      expect(review).toMatchObject({ method: 'PACK', containerType: 'BOX', weightKg: undefined })
+      const container = s.containers.find((c) => c.warehouseCode === order.warehouseCode && c.containerNo === review.containerNo)!
+      expect(container)
+        .toMatchObject({ customerId: order.customerId, containerType: 'CARTON', status: 'OUTBOUND', createdBy: 'seed' })
+      expect(container.createdAt <= container.updatedAt).toBe(true)
+    }
+    expect(s.containers.find((c) => c.containerNo === 'BOX-OB-20261015-0003')).toMatchObject({ status: 'IDLE' })
+  })
+  it.each([
+    ['missing', 'outbound.error.fbaContainerMissing'],
+    ['warehouse', 'outbound.error.fbaContainerWarehouse'],
+    ['owner', 'outbound.error.fbaContainerOwner'],
+    ['type', 'outbound.error.fbaContainerType'],
+    ['status', 'outbound.error.fbaContainerBusy'],
+    ['package', 'outbound.error.fbaContainerType'],
+    ['weight', 'outbound.error.fbaWeight'],
+  ])('fresh seed still rejects invalid FBA container %s atomically', (invalid, errorKey) => {
+    const s = createSeedData()
+    const no = 'OB-20261015-0016'
+    const review = s.outboundVerifications.find((v) => v.orderNo === no)!
+    const container = s.containers.find((c) => c.containerNo === review.containerNo)!
+    if (invalid === 'missing') s.containers = s.containers.filter((c) => c !== container)
+    if (invalid === 'warehouse') container.warehouseCode = 'US-NJ-01'
+    if (invalid === 'owner') container.customerId = 'C10031'
+    if (invalid === 'type') container.containerType = 'PALLET'
+    if (invalid === 'status') container.status = 'DISABLED'
+    const before = structuredClone(s)
+    expect(act(s, {
+      type: 'VERIFY',
+      no,
+      method: 'PACK',
+      containerType: invalid === 'package' ? 'PACKAGE' : 'BOX',
+      containerNo: review.containerNo,
+      weightKg: invalid === 'weight' ? 0.4 : undefined,
+      lines: [{ assignmentId: review.lines[0].assignmentId, qty: 1, serialNos: [] }],
+    })).toMatchObject({ ok: false, errorKey })
+    expect(s).toEqual(before)
+  })
   it('SN wave cancellation keeps the other order and supports split return placements without moving drafts', () => {
     const s = fixture()
     const a = create(s, 'B2C', 'SN-DEMO-01', 2),
@@ -184,7 +244,9 @@ describe('outbound inventory contract', () => {
     const task = ok(s, { type: 'ALLOCATE', no })
     pickAll(s, task)
     verify(s, no)
+    expect(s.containers.find((c) => c.containerNo === `BOX-${no}`)?.status).toBe('OUTBOUND')
     ok(s, { type: 'SHIP', no })
+    expect(s.containers.find((c) => c.containerNo === `BOX-${no}`)?.status).toBe('SHIPPED')
     expect(s.outboundResults[0].items[0]).toEqual({ skuCode: 'LOT-DEMO-01', shippedQty: 8, unshippedQty: 4 })
     // 预占留作缺货追溯（缺货＝需求－预占＝4）；已出库单不再占可用量
     expect(s.outboundOrders[0].items[0].reservedQty).toBe(8)
@@ -485,23 +547,17 @@ describe('outbound inventory contract', () => {
     expect(s.outboundHandovers).toHaveLength(2)
     expect(s.inventory).toEqual(stock)
   })
-  it('stocktake excludes staging and blocks shipping until supervisor confirms even zero difference', () => {
+  it('stocktake excludes staging and allows existing shipping', () => {
     const s = fixture()
     const no = create(s)
     pickAll(s, ok(s, { type: 'ALLOCATE', no }))
     verify(s, no)
-    const countNo = inv(s, { type: 'CREATE_STOCKTAKE', warehouseCode: 'US-LA-01', skus: CABLE })
+    inv(s, { type: 'CREATE_STOCKTAKE', warehouseCode: 'US-LA-01', skus: CABLE })
     const count = s.inventoryCounts[0]
     expect(
       count.lines.every((l) => !s.inventory.find((r) => r.id === l.inventoryId)!.locationCode.startsWith('STAGE')),
     ).toBe(true)
-    expect(act(s, { type: 'SHIP', no }).ok).toBe(false)
-    inv(s, {
-      type: 'SAVE_COUNTS',
-      no: countNo,
-      entries: count.lines.map((l) => ({ lineNo: l.lineNo, qty: l.bookQty, serialNos: [] })),
-    })
-    inv(s, { type: 'CONFIRM_STOCKTAKE', no: countNo })
+    // Q12：盘点只暂停新单/新分配，已生成任务可继续出库
     ok(s, { type: 'SHIP', no })
   })
   it('damaged picked goods convert to defective and return to isolation', () => {

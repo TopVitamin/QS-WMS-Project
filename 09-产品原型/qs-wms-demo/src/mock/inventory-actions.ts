@@ -244,7 +244,7 @@ export function applyInventoryAction(
         const r = row(c.inventoryId)
         if (r.qualityType !== 'GOOD') reject('notGood')
         const usage = location(r.warehouseCode, r.locationCode)?.usage
-        if (usage !== 'PICK' && usage !== 'STORAGE') reject('convertLocation')
+        if (usage !== 'PICK' && usage !== 'STORAGE' && usage !== 'OUTBOUND_STAGING') reject('convertLocation')
         const frozen = frozenBy(r)
         if (frozen) reject('counting', { sku: r.skuCode, no: frozen.no })
         const max = r.onHandQty - (r.allocatedQty ?? 0)

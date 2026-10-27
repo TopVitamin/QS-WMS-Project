@@ -105,12 +105,22 @@ describe('退货收货', () => {
     expect(after.status).toBe('RECEIVING')
   })
 
+  it('客户退货预报缺少运单号时拒收，且不新增单据', () => {
+    const before = structuredClone(useDb.getState().returnOrders)
+    expect(useDb.getState().mockReturnForecast({
+      customerId: 'C10028', warehouseCode: 'US-LA-01', sourceType: 'CUSTOMER',
+      upstreamNo: 'OMS-RT-NO-TRACKING', skuCode: 'CABLE-01', plannedQty: 1,
+    })).toEqual({ ok: false, errorKey: 'return.error.trackingRequired' })
+    expect(useDb.getState().returnOrders).toEqual(before)
+  })
+
   it('OMS Mock 退货预报生成退货单，重复预报返回原单', () => {
     const input = {
       customerId: 'C10028',
       warehouseCode: 'US-LA-01',
       sourceType: 'CUSTOMER' as const,
       upstreamNo: 'OMS-RT-TEST-001',
+      trackingNo: 'RT-TRACK-TEST-001',
       skuCode: 'CABLE-01',
       plannedQty: 4,
     }
@@ -127,11 +137,12 @@ describe('退货收货', () => {
     expect(useDb.getState().returnOrders.find((o) => o.returnNo === order.returnNo)!.status).toBe('CANCELLED')
 
     const another = useDb.getState().returnOrders.find((o) => o.status === 'PENDING_RECEIVE')!
-    useDb.getState().receiveReturn({
+    const received = useDb.getState().receiveReturn({
       returnNo: another.returnNo,
       containers: [{ bulkPiece: true, lines: [{ skuCode: another.items[0].skuCode, goodQty: 1, defectQty: 0 }] }],
       operator: 'tester',
     })
+    expect(received).toEqual({ ok: true })
     expect(useDb.getState().cancelReturnOrder(another.returnNo).ok).toBe(false)
   })
 
@@ -203,9 +214,13 @@ describe('退货收货补齐（多容器、派送失败、SN 核对）', () => {
   })
 
   it('派送失败扫原 B2C 出库单建退货单，按已发数量生成明细', () => {
-    const outbound = useDb.getState().outboundOrders.find((o) => o.status === 'SHIPPED' && o.type === 'B2C')!
+    const state = useDb.getState()
+    // 种子已有一张派送失败退货单；本场景另选未建退货的出库单，实际验证新增。
+    const outbound = state.outboundOrders.find((o) => o.status === 'SHIPPED' && o.type === 'B2C' &&
+      !state.returnOrders.some((r) => r.sourceType === 'DELIVERY_FAILED' && r.originalOutboundNo === o.no))!
     const result = useDb.getState().createDeliveryFailedReturn({ outboundNo: outbound.no, operator: 'tester' })
     expect(result.ok).toBe(true)
+    expect(useDb.getState().returnOrders).toHaveLength(state.returnOrders.length + 1)
     const order = useDb.getState().returnOrders.find((o) => o.returnNo === result.returnNo)!
     expect(order.sourceType).toBe('DELIVERY_FAILED')
     expect(order.originalOutboundNo).toBe(outbound.no)
@@ -241,6 +256,7 @@ describe('退货收货补齐（多容器、派送失败、SN 核对）', () => {
       warehouseCode: outbound.warehouseCode,
       sourceType: 'CUSTOMER',
       upstreamNo: 'OMS-RT-SN-TEST',
+      trackingNo: 'RT-TRACK-SN-TEST',
       skuCode: sku,
       plannedQty: 1,
       originalOutboundNo: outbound.no,

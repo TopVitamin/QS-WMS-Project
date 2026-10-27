@@ -96,12 +96,16 @@ export function StocktakeConfirmDialog({ count, onClose }: { count: InventoryCou
     warehouses,
   ])
   const noDiff = summary.gains.lines === 0 && summary.losses.lines === 0
+  const [submitting, setSubmitting] = useState(false)
 
   const submit = () => {
+    if (submitting) return
+    setSubmitting(true)
     const result = run({ type: 'CONFIRM_STOCKTAKE', no: count.no }, (no) =>
       t('inventory.stocktake.confirmSuccess', { no }),
     )
     if (result) onClose()
+    else setSubmitting(false)
   }
 
   return (
@@ -149,7 +153,7 @@ export function StocktakeConfirmDialog({ count, onClose }: { count: InventoryCou
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={submit} disabled={summary.negative.length > 0}>
+          <Button onClick={submit} disabled={summary.negative.length > 0 || submitting}>
             {t('inventory.stocktake.confirm')}
           </Button>
         </DialogFooter>

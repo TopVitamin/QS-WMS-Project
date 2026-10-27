@@ -21,7 +21,7 @@ import { useDb, useLookups } from '@/mock/db'
 import { useSettings } from '@/stores/settings'
 import type { OutboundWave } from '@/types/outbound'
 
-const STATUSES = ['ALLOCATED', 'RELEASED', 'COMPLETED', 'CANCELLED'] as const
+const STATUSES = ['RELEASED', 'COMPLETED', 'CANCELLED'] as const
 type Row = OutboundWave & { status: (typeof STATUSES)[number]; planned: number; picked: number }
 
 /** 波次列表（波次前端Demo版PRD 第三节）：只读查询，组波入口在出库单列表 */
@@ -40,11 +40,15 @@ export function OutboundWaveListPage() {
     () =>
       waves
         .filter((w) => matchWave(w, warehouseCode, list.filters))
-        .map((w) => {
+        .map((w): Row | null => {
+          const status = waveStatus(w, tasks)
+          // 一期不产生「已分配」波次；预留状态不进入列表和页签。
+          if (status === 'ALLOCATED') return null
           const task = tasks.find((x) => x.no === w.taskNo)
           const qty = task ? taskTotals(task) : { planned: 0, picked: 0 }
-          return { ...w, status: waveStatus(w, tasks), planned: qty.planned, picked: qty.picked }
-        }),
+          return { ...w, status, planned: qty.planned, picked: qty.picked }
+        })
+        .filter((row): row is Row => row !== null),
     [waves, tasks, warehouseCode, list.filters],
   )
   const rows = useMemo(() => {

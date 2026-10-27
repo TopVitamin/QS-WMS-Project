@@ -47,6 +47,9 @@ export function UnclaimedDetailSheet({ record, onClose }: { record?: UnclaimedRe
               <DescriptionItem label={t('unclaimed.cartonQty')}>
                 <Num value={record.cartonQty} />
               </DescriptionItem>
+              <DescriptionItem label={t('unclaimed.stagingLocation')}>
+                {record.stagingLocationCode ? <BizCode>{record.stagingLocationCode}</BizCode> : <Empty />}
+              </DescriptionItem>
               <DescriptionItem label={t('unclaimed.description')} className="col-span-4" multiline>
                 {record.description || <Empty />}
               </DescriptionItem>

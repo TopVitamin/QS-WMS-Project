@@ -1,8 +1,15 @@
 import type { ReturnOrder } from '@/types/return'
 import { recomputeReturnOrder } from '@/lib/return-derive'
+import type { OutboundData } from '@/types/outbound'
 
 /** 一期 Demo：三类来源各一条待收货退货单，现场从列表或 PDA 进入收货 */
-export function createReturnSeed(): ReturnOrder[] {
+export function createReturnSeed(outbound: Pick<OutboundData, 'outboundOrders' | 'outboundVerifications'>): ReturnOrder[] {
+  const shipped = outbound.outboundOrders.find(
+    (order) => order.warehouseCode === 'US-LA-01' && order.customerId === 'C10028' && order.type === 'B2C' && order.status === 'SHIPPED',
+  )
+  const shippedItem = shipped?.items.find((item) => item.shippedQty > 0)
+  const trackingNo = outbound.outboundVerifications.find((v) => v.orderNo === shipped?.no && !v.deleted)?.trackingNo
+  if (!shipped || !shippedItem || !trackingNo) throw new Error('return seed: shipped B2C order and tracking number required')
   const base = (
     returnNo: string,
     warehouseCode: string,
@@ -54,10 +61,10 @@ export function createReturnSeed(): ReturnOrder[] {
       'US-LA-01',
       'C10028',
       'DELIVERY_FAILED',
-      'OB-20261018-0002',
-      'CABLE-01',
-      2,
-      { originalOutboundNo: 'OB-20261018-0002', trackingNo: '1Z999AA10123456702' },
+      shipped.no,
+      shippedItem.skuCode,
+      shippedItem.shippedQty,
+      { originalOutboundNo: shipped.no, trackingNo },
     ),
     base(
       'RT-20261019-0003',
@@ -67,7 +74,7 @@ export function createReturnSeed(): ReturnOrder[] {
       'OMS-RT-20261019-0003',
       'CABLE-01',
       3,
-      { trackingNo: '1Z999AA10123456703' },
+      { platformReturnNo: 'AMZ-RT-20261019-0003', trackingNo: '1Z999AA10123456703' },
     ),
   ]
 }

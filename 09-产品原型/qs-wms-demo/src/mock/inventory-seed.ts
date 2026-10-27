@@ -53,15 +53,8 @@ const balanceKey = (k: BalanceKey) =>
  */
 function openingLedger(seed: SeedData): InventoryLog[] {
   const moves: Movement[] = []
-  /** 批次属性只对启用批次或效期管理的商品保留；其他商品收货登记的批次不分库存明细 */
-  const lot = (customerId: string, skuCode: string, batchNo?: string, productionDate?: string, expiryDate?: string) => {
-    const m = seed.skuMasters.find((x) => x.customerId === customerId && x.code === skuCode)
-    return {
-      batchNo: m?.batchEnabled || m?.expiryEnabled ? batchNo : undefined,
-      productionDate: m?.expiryEnabled ? productionDate : undefined,
-      expiryDate: m?.expiryEnabled ? expiryDate : undefined,
-    }
-  }
+  const releasedContainers = new Set(seed.containers.filter((c) => c.status === 'RELEASED')
+    .map((c) => containerIdOf(c.warehouseCode, c.containerNo)))
   seed.receiptRecords.forEach((r) =>
     r.lines.forEach((l) =>
       (
@@ -81,7 +74,9 @@ function openingLedger(seed: SeedData): InventoryLog[] {
               locationCode: r.stagingLocationCode,
               containerId: l.containerId ?? containerIdOf(r.warehouseCode, l.containerNo),
               qualityType,
-              ...lot(r.customerId, l.skuCode, l.batchNo, l.productionDate, l.expiryDate),
+              batchNo: l.batchNo,
+              productionDate: l.productionDate,
+              expiryDate: l.expiryDate,
             },
             change: qty,
             refNo: r.inboundNo,
@@ -115,12 +110,15 @@ function openingLedger(seed: SeedData): InventoryLog[] {
             warehouseCode: p.warehouseCode,
             customerId: p.customerId,
             skuCode: a.skuCode,
-            containerId: p.containerId ?? containerIdOf(p.warehouseCode, p.containerNo),
             qualityType: p.qualityType,
-            ...lot(p.customerId, a.skuCode, plan?.batchNo, plan?.productionDate, plan?.expiryDate),
+            batchNo: plan?.batchNo,
+            productionDate: plan?.productionDate,
+            expiryDate: plan?.expiryDate,
           }
-          moves.push({ ...base, key: { ...key, locationCode: p.stagingLocationCode }, change: -a.qty })
-          moves.push({ ...base, key: { ...key, locationCode: a.locationCode }, change: a.qty })
+          const containerId = p.containerId ?? containerIdOf(p.warehouseCode, p.containerNo)
+          moves.push({ ...base, key: { ...key, containerId, locationCode: p.stagingLocationCode }, change: -a.qty })
+          // 已拆散容器的落位库存为散件，与种子库存最终使用的余额维度一致。
+          moves.push({ ...base, key: { ...key, containerId: releasedContainers.has(containerId) ? undefined : containerId, locationCode: a.locationCode }, change: a.qty })
         }),
     )
   // 期初：出库种子直接写入的演示库存没有来源单据，算作回放前已有的数量；
@@ -365,7 +363,7 @@ export function playInventorySeedFlows(seed: SeedData): SeedData {
             qty: 2,
             serialNos: [],
           },
-          { inventoryId: sn.id, targetLocation: 'B-03-02', qty: 2, serialNos: (sn.serialNos ?? []).slice(-2) },
+          { inventoryId: sn.id, targetLocation: 'B-03-03', qty: 2, serialNos: (sn.serialNos ?? []).slice(-2) },
         ],
       },
       at(17, 2),

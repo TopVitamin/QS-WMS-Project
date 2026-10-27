@@ -48,9 +48,6 @@ export function StocktakeCreateDialog({
   const locations = useDb((s) => s.locations)
   const locationMasters = useDb((s) => s.locationMasters)
   const inventoryCounts = useDb((s) => s.inventoryCounts)
-  const outboundPickTasks = useDb((s) => s.outboundPickTasks)
-  const outboundPutbacks = useDb((s) => s.outboundPutbacks)
-  const putawayOrders = useDb((s) => s.putawayOrders)
   const { sku, customerCode } = useLookups()
   const [owner, setOwner] = useState(FILTER_ALL)
   const [zone, setZone] = useState(FILTER_ALL)
@@ -94,23 +91,8 @@ export function StocktakeCreateDialog({
   }, [owner, search, sku, stockRows, zone, zoneOf])
 
   const blockers = useMemo(
-    () =>
-      stocktakeBlockers(
-        { inventory, inventoryCounts, outboundPickTasks, outboundPutbacks, putawayOrders, locations, locationMasters },
-        warehouseCode,
-        selected,
-      ),
-    [
-      inventory,
-      inventoryCounts,
-      locationMasters,
-      locations,
-      outboundPickTasks,
-      outboundPutbacks,
-      putawayOrders,
-      selected,
-      warehouseCode,
-    ],
+    () => stocktakeBlockers({ inventoryCounts }, warehouseCode, selected),
+    [inventoryCounts, selected, warehouseCode],
   )
   const isSelected = (k: StocktakeSku) => selected.some((s) => keyOf(s) === keyOf(k))
   const toggle = (k: StocktakeSku, checked: boolean) =>

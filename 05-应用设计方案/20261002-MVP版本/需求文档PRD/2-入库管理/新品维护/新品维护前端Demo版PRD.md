@@ -141,7 +141,7 @@ Props：`mode: 'standalone' | 'receive'`、`customerId?`、`skuCode?`、`sourceI
 
 | Action | 入参 | 结果 |
 | --- | --- | --- |
-| `submitNewSkuMeasure` | `customerId`、`skuCode`、`warehouseCode`、`sourceInboundNo?`、四个实测值（按仓库单位）、`photos`、`remark?`、`requestId`、`operator` | 已有同 `requestId` 记录 → 返回原记录；货主或商品停用 → `newSku.error.inactive`；已有同货主SKU记录 → `{ ok: false, errorKey: 'newSku.error.exists', data: 已有记录 }`；否则换算为 cm、kg，生成 NS 号，写入 `newSkuRecords`，并把 `lengthCm`、`widthCm`、`heightCm`、`grossWeightKg` 写回 `skuMasters` 中该货主商品，更新其 `updatedAt`、`updatedBy` |
+| `submitNewSkuMeasure` | `customerId`、`skuCode`、`warehouseCode`、`sourceInboundNo?`、四个实测值（按仓库单位）、`photos`、`remark?`、`requestId`、`operator` | 已有同 `requestId` 记录 → 返回原记录；货主或商品停用 → `newSku.error.inactive`；已有同货主SKU记录 → `{ ok: false, errorKey: 'newSku.error.exists', data: 已有记录 }`；否则换算为 cm、kg，生成 NS 号，只写入 `newSkuRecords`；不修改 `skuMasters` 的初始 `lengthCm`、`widthCm`、`heightCm`、`grossWeightKg` 及 `updatedAt` |
 
 NS 号沿用 `mock/db.ts` 现有单号生成（UTC 日期 + 四仓共用序列）。
 
@@ -165,12 +165,12 @@ en-US 同步维护。
 
 ## 九、Mock 种子与走查
 
-种子：已有 2 条 NS 记录（`NS-20261004-0001` ANKR CABLE-01，美西仓维护；`NS-20261005-0001` HOMY HOMY-003，法兰克福仓独立维护）；种子入库单 `RK-20261002-0009` 同等品含已维护的 CABLE-01 与未维护的 SN-DEMO-01（新品），收货作业台行内显示「新品待量方」并可就地量方；HOMY 的 CABLE-01 同编码但无记录，用于独立量方的候选。
+种子：已有 2 条 NS 记录（`NS-20261004-0001` ANKR CABLE-01，美西仓维护；`NS-20261005-0001` HOMY HOMY-003，法兰克福仓独立维护）；种子入库单 `IB-20261002-0009` 同等品含已维护的 CABLE-01 与未维护的 SN-DEMO-01（新品），收货作业台行内显示「新品待量方」并可就地量方；HOMY 的 CABLE-01 同编码但无记录，用于独立量方的候选。
 
 | 步骤 | 操作 | 预期 |
 | --- | --- | --- |
 | 1 | 顶栏切到英制仓，打开新品维护列表 | 列头为 inch、lb；公制仓维护的记录按英制换算展示 |
-| 2 | 进入 `RK-20261002-0009` 收货作业台（或 PDA 收货同单），录新品SKU后提交 | 整次提交被阻断，提示「{{skuCode}} 为新品，请先完成新品维护再收货」；只录 CABLE-01 则可提交 |
+| 2 | 进入 `IB-20261002-0009` 收货作业台（或 PDA 收货同单），录新品SKU后提交 | 整次提交被阻断，提示「{{skuCode}} 为新品，请先完成新品维护再收货」；只录 CABLE-01 则可提交 |
 | 3 | 新品行点「去量方」，录数提交 | 生成 NS 记录，来源入库单号为该单；标签消失，可以收货；入库数量与库存不因量方变化 |
 | 4 | 列表页头「新品量方」，选另一货主同编码SKU | 该SKU在候选内，可独立量方，来源入库单号为空 |
 | 5 | 切到另一仓，对步骤3的货主SKU发起独立量方 | 商品候选里不再出现；该仓收货不再阻断 |

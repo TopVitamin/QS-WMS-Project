@@ -136,6 +136,7 @@ export function applyOutboundAction(
   const finish = (no?: string): OutboundActionResult => {
     const issue = negativeInventoryIssue(s)
     if (issue) reject('negativeInventory', issue)
+    patch.containers = s.containers
     patch.serialStocks = updateSerialStocks(state, s.inventoryLogs.slice(state.inventoryLogs.length))
     return { ok: true, no, patch }
   }
@@ -188,8 +189,6 @@ export function applyOutboundAction(
   const ensureLive = (o: OutboundOrder) => {
     if (o.status === 'SHIPPED' || o.status === 'CANCELLED') reject('terminal')
   }
-  const frozen = (warehouse: string, owner: string, sku: string) =>
-    Boolean(countingStocktake(s.inventoryCounts, warehouse, owner, sku))
   const block = (warehouse: string, owner: string, sku: string) => {
     if (allocationBlocked(s, warehouse, owner, sku)) reject('pending', { sku })
   }
@@ -231,7 +230,6 @@ export function applyOutboundAction(
     quality?: InventoryRecord['qualityType'],
   ) => {
     const from = inventory(id)
-    if (frozen(from.warehouseCode, from.customerId, from.skuCode)) reject('countFrozen')
     if (
       from.onHandQty < qty ||
       serialNos.some(
@@ -521,7 +519,6 @@ export function applyOutboundAction(
   ) => {
     const target = loc(p.warehouseCode, location) ?? reject('target')
     if (!target.enabled || !['PICK', 'STORAGE', 'DEFECT'].includes(target.type)) reject('target')
-    if (frozen(p.warehouseCode, p.customerId, l.skuCode)) reject('countFrozen')
     if (target.type === 'DEFECT' && l.qualityType !== 'DEFECTIVE') reject('target')
     const occupied = s.inventory.filter(
       (r) => r.warehouseCode === p.warehouseCode && r.locationCode === location && r.onHandQty > 0,
@@ -752,7 +749,6 @@ export function applyOutboundAction(
         if (!openTask(t)) reject('terminal')
         const l = t.lines.find((l) => l.id === c.lineId) ?? reject('notFound')
         const r = inventory(l.inventoryId)
-        if (frozen(t.warehouseCode, t.customerId, l.skuCode)) reject('pending', { sku: l.skuCode })
         const master = skuMaster(t.customerId, l.skuCode)
         if (expiryLevel(r.expiryDate, master, localDate(t.warehouseCode)) === 'EXPIRED') reject('expiredStock')
         const barcode = s.skuBarcodes.some(
@@ -1100,9 +1096,6 @@ export function applyOutboundAction(
       case 'SHIP': {
         const o = order(c.no)
         ensureLive(o)
-        o.items.forEach((i) => {
-          if (frozen(o.warehouseCode, o.customerId, i.skuCode)) reject('pending', { sku: i.skuCode })
-        })
         if (s.outboundPickTasks.some((t) => openTask(t) && taskOrderNos(t).includes(o.no))) reject('unfinished')
         const shortAllowed = o.type === 'FBA' || o.type === 'WHOLESALE'
         if (
@@ -1311,11 +1304,8 @@ export function applyOutboundAction(
         const placed = (l.placements ?? []).flatMap((pl) => pl.serialNos)
         const left = l.serialNos.filter((sn) => !placed.includes(sn))
         if (
-          l.serialNos.length &&
-          c.serialNos &&
-          (c.serialNos.length !== c.qty ||
-            new Set(c.serialNos).size !== c.qty ||
-            c.serialNos.some((sn) => !left.includes(sn)))
+          c.serialNos?.length &&
+          (new Set(c.serialNos).size !== c.serialNos.length || c.serialNos.some((sn) => !left.includes(sn)))
         )
           reject('serial')
         l.placements = [

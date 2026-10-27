@@ -60,6 +60,11 @@ export function resolvePageTab(pathname: string): PageTab | undefined {
     return { path: pathname, titleKey: 'masterLocation.tabDetail' }
   }
 
+  const containerDetail = pathname.match(/^\/wms\/master\/containers\/([^/]+)$/)
+  if (containerDetail) {
+    return { path: pathname, titleKey: 'container.detailTitle' }
+  }
+
   const customerDetail = pathname.match(/^\/wms\/master\/customers\/([^/]+)$/)
   if (customerDetail) {
     return { path: pathname, titleKey: 'masterCustomer.tabDetail' }

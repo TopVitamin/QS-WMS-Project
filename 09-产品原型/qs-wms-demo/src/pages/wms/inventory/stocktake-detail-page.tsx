@@ -41,7 +41,7 @@ export function StocktakeDetailPage() {
   const auditLogs = useDb((s) => s.auditLogs)
   const warehouses = useDb((s) => s.warehouseMasters)
   const masters = useDb((s) => s.skuMasters)
-  const { sku, customerCode, customerName } = useLookups()
+  const { sku, customerCode } = useLookups()
   const usageOf = useLocationUsage()
   const [lineFilter, setLineFilter] = useState<LineFilter>('ALL')
   const [dialog, setDialog] = useState<'entry' | 'confirm' | 'cancel'>()
@@ -75,6 +75,21 @@ export function StocktakeDetailPage() {
   const lineColumns = useMemo(() => {
     const col = createDataColumns<StocktakeLine>()
     return col.columns([
+      col.accessor('lineNo', {
+        header: t('inventory.stocktake.lineNo'),
+        meta: { align: 'right' },
+        cell: ({ getValue }) => <Num value={getValue()} />,
+      }),
+      col.accessor((l) => (l.countedQty === undefined ? 'UNCOUNTED' : (lineDiff(l) ?? 0) !== 0 ? 'DIFF' : 'COUNTED'), {
+        id: 'countStatus',
+        header: t('inventory.stocktake.countStatus'),
+        cell: ({ getValue }) =>
+          getValue() === 'UNCOUNTED'
+            ? t('inventory.stocktake.uncounted')
+            : getValue() === 'DIFF'
+              ? t('inventory.stocktake.filterDiff')
+              : t('inventory.stocktake.counted'),
+      }),
       col.accessor('locationCode', {
         header: t('inventory.location'),
         meta: { pin: 'left' },
@@ -141,7 +156,7 @@ export function StocktakeDetailPage() {
         meta: { align: 'right' },
         cell: ({ row }) =>
           row.original.countedQty === undefined ? (
-            <span className="text-muted-foreground">{t('inventory.stocktake.uncounted')}</span>
+            <Empty />
           ) : (
             <Num value={row.original.countedQty} />
           ),
@@ -352,7 +367,7 @@ export function StocktakeDetailPage() {
             <DescriptionItem label={t('inventory.stocktake.skus')} multiline>
               <span className="flex flex-wrap gap-x-3 gap-y-1">
                 {count.skus.map((k) => (
-                  <CodeName key={`${k.customerId}::${k.skuCode}`} code={k.skuCode} name={customerName(k.customerId)} />
+                  <CodeName key={`${k.customerId}::${k.skuCode}`} code={k.skuCode} name={sku(k.skuCode)?.name} />
                 ))}
               </span>
             </DescriptionItem>

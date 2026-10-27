@@ -48,6 +48,7 @@ export function LedgerDetailSheet({ log, no, onClose }: { log?: InventoryLog; no
         <Descriptions columns={3}>
           <DescriptionItem label={t('inventory.logs.type')}>{t(`inventory.type.${log.type}`)}</DescriptionItem>
           <DescriptionItem label={t('inventory.logs.object')}>{t(`inventory.object.${object}`)}</DescriptionItem>
+          <DescriptionItem label={t('inventory.logs.status')}>{t('inventory.logs.effective')}</DescriptionItem>
           <DescriptionItem label={t('inventory.logs.change')}>
             <SignedNum value={ledgerChange(log)} />
           </DescriptionItem>
@@ -99,6 +100,9 @@ export function LedgerDetailSheet({ log, no, onClose }: { log?: InventoryLog; no
           <DescriptionItem label={t('inventory.logs.jobNo')}>
             <DocLink no={log.jobNo} />
           </DescriptionItem>
+          <DescriptionItem label={t('inventory.logs.inventoryId')}>
+            {log.inventoryId ? <BizCode>{log.inventoryId}</BizCode> : <Empty />}
+          </DescriptionItem>
           <DescriptionItem label={t('inventory.logs.actionId')}>
             {log.actionId ? <BizCode>{log.actionId}</BizCode> : <Empty />}
           </DescriptionItem>
@@ -115,9 +119,6 @@ export function LedgerDetailSheet({ log, no, onClose }: { log?: InventoryLog; no
       )}
       <Section title={t('inventory.logs.reason')}>
         <Descriptions columns={3}>
-          <DescriptionItem label={t('inventory.logs.reasonCode')}>
-            {log.reasonCode ? t(`inventory.reason.${log.reasonCode}`) : <Empty />}
-          </DescriptionItem>
           <DescriptionItem label={t('inventory.logs.ownerNotice')}>
             {log.ownerNotice ? t(`inventory.ownerNotice.${log.ownerNotice}`) : <Empty />}
           </DescriptionItem>

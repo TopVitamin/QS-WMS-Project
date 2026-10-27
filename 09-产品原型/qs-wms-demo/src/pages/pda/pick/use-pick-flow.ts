@@ -14,7 +14,7 @@ import type { OutboundCommand, OutboundPickTask, PickLine } from '@/types/outbou
 export const PICK_STEPS = ['list', 'work', 'short', 'done'] as const
 
 /**
- * PDA 拣货各步共用的数据与动作（《PDA拣货前端Demo版PRD》）：
+ * PDA拣货各步共用的数据与动作（《PDA拣货前端Demo版PRD》）：
  * 按库位一站一站拣，扫商品计数，数满自动确认下架并跳到下一站；全部拣完后提交任务。
  * 下架、缺货、提交都走 mock/db 的 outboundAction，与管理端拣货录入共用同一套校验。
  */

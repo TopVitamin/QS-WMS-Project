@@ -573,7 +573,7 @@ describe('新品维护量方（新品维护主PRD 第二～四节）', () => {
     expect(useDb.getState().newSkuRecords.filter((r) => r.requestId === 'test-ns-1')).toHaveLength(1)
   })
 
-  it('写入仓内规格并把 cm、kg 存到商品资料，展示按仓库单位换算', () => {
+  it('实测规格单独记在 NS 记录，不覆盖商品资料初始规格', () => {
     const before = useDb.getState().skuMasters.find((m) => m.customerId === 'C10028' && m.code === 'SN-DEMO-01')!
     const res = useDb.getState().submitNewSkuMeasure({
       customerId: 'C10028',
@@ -590,11 +590,12 @@ describe('新品维护量方（新品维护主PRD 第二～四节）', () => {
     expect(res.record?.lengthCm).toBe(30)
     expect(res.record?.grossWeightKg).toBe(1.25)
     const after = useDb.getState().skuMasters.find((m) => m.customerId === 'C10028' && m.code === 'SN-DEMO-01')!
-    expect(after.lengthCm).toBe(30)
-    expect(after.grossWeightKg).toBe(1.25)
-    expect(before.updatedAt).not.toBe(after.updatedAt)
-    expect(cmToLength(after.lengthCm!, 'imperial')).toBe(11.81)
-    expect(kgToWeight(after.grossWeightKg!, 'imperial')).toBe(2.756)
+    // 实测规格单独记在 NS 记录，不覆盖商品资料初始规格
+    expect(after.lengthCm).toBe(before.lengthCm)
+    expect(after.grossWeightKg).toBe(before.grossWeightKg)
+    expect(after.updatedAt).toBe(before.updatedAt)
+    expect(cmToLength(res.record!.lengthCm, 'imperial')).toBe(11.81)
+    expect(kgToWeight(res.record!.grossWeightKg, 'imperial')).toBe(2.756)
   })
 
   it('已有同货主SKU记录时阻断并返回已有记录', () => {

@@ -142,6 +142,11 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Section title={t('dashboard.inboundTrend')} className="lg:col-span-2">
+          {data.trend.every((d) => d.count === 0) ? (
+            <div className="flex h-44 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+              {t('dashboard.inboundTrendEmpty')}
+            </div>
+          ) : (
           <div className="flex h-44 items-end gap-3">
             {data.trend.map((d) => (
               <div key={d.label} className="flex flex-1 flex-col items-center gap-1.5">
@@ -154,6 +159,7 @@ export function DashboardPage() {
               </div>
             ))}
           </div>
+          )}
         </Section>
 
         <Section

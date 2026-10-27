@@ -131,14 +131,17 @@ export function createOutboundSeed(
         firstInboundAt: SEED_DAY,
         ...extra,
       }
-      // 入库种子已有同一余额键（仓库＋货主＋SKU＋库位＋批次＋品质）时并成一行，库存明细不出现重复行
+      // 仅合并完整余额键相同的库存；同库位的不同容器不能合并或丢失容器身份。
       const dup = inventory.findIndex(
         (r) =>
           r.warehouseCode === row.warehouseCode &&
           r.customerId === row.customerId &&
           r.skuCode === row.skuCode &&
           r.locationCode === row.locationCode &&
+          (r.containerId ?? '') === (row.containerId ?? '') &&
           (r.batchNo ?? '') === (row.batchNo ?? '') &&
+          (r.productionDate ?? '') === (row.productionDate ?? '') &&
+          (r.expiryDate ?? '') === (row.expiryDate ?? '') &&
           r.qualityType === row.qualityType,
       )
       if (dup >= 0) {
@@ -247,6 +250,13 @@ export function createOutboundSeed(
       // 0019、0020：两个库位（A-01-01 线材、A-01-02 SN 商品），演示 PDA 按库位自动跳站与管理端录入
       order('B2C', [{ skuCode: 'CABLE-01', demandQty: 3 }, { skuCode: 'SN-DEMO-01', demandQty: 1 }])
       order('B2C', [{ skuCode: 'CABLE-01', demandQty: 1 }, { skuCode: 'SN-DEMO-01', demandQty: 1 }])
+      // 0021～0026：波次演示；两两一组，覆盖已完成、全部取消、单成员取消
+      order('B2C', 'CABLE-01', 1)
+      order('B2C', 'CABLE-01', 1)
+      order('B2C', 'CABLE-01', 1)
+      order('B2C', 'CABLE-01', 1)
+      order('B2C', 'CABLE-01', 1)
+      order('B2C', 'CABLE-01', 1)
     }
   })
   return d
@@ -299,13 +309,14 @@ export function playOutboundSeedFlows(seed: SeedData): SeedData {
         return [{ assignmentId: a.id, qty, serialNos: a.activeSerialNos.slice(0, qty) }]
       })
     if (lines.length === 0) return
+    const isFba = s.outboundOrders.find((order) => order.no === orderNo)!.type === 'FBA'
     run({
       type: 'VERIFY',
       no: orderNo,
       method: 'PACK',
-      containerType: 'PACKAGE',
-      containerNo: `PKG-${orderNo}`,
-      weightKg: 0.4,
+      containerType: isFba ? 'BOX' : 'PACKAGE',
+      containerNo: isFba ? `BOX-${orderNo}` : `PKG-${orderNo}`,
+      weightKg: isFba ? undefined : 0.4,
       lines,
     })
   }
@@ -379,6 +390,59 @@ export function playOutboundSeedFlows(seed: SeedData): SeedData {
       reason: 'Address change after picking (demo)',
     })
     run({ type: 'ALLOCATE', no: la('0019') })
+
+    // 0021～0026：波次三态演示；组波后分别走完成、全部取消、单成员取消。
+    const waveDone = run({ type: 'WAVE', orderNos: [la('0021'), la('0022')] })
+    const doneTask = s.outboundWaves.find((w) => w.no === waveDone)!.taskNo
+    finishPick(doneTask)
+    run({ type: 'WAVE', orderNos: [la('0023'), la('0024')] })
+    for (const no of [la('0023'), la('0024')]) {
+      const order = s.outboundOrders.find((o) => o.no === no)!
+      run({
+        type: 'CANCEL',
+        no,
+        messageId: `MSG-SEED-WAVE-CANCEL-${no}`,
+        version: order.version,
+        reason: 'Wave member cancelled for demo',
+      })
+    }
+    run({ type: 'WAVE', orderNos: [la('0025'), la('0026')] })
+    const partialOrder = s.outboundOrders.find((o) => o.no === la('0025'))!
+    run({
+      type: 'CANCEL',
+      no: partialOrder.no,
+      messageId: `MSG-SEED-WAVE-PARTIAL-${partialOrder.no}`,
+      version: partialOrder.version,
+      reason: 'One wave member cancelled for demo',
+    })
+  }
+
+  // 补齐出库侧演示留痕，避免详情“操作日志”页签全为 0；真实业务由出库动作写日志。
+  const seedLog = (
+    refType: 'OUTBOUND' | 'WAVE' | 'PICK_TASK',
+    refNo: string,
+    command: string,
+    detail: string,
+    createdAt: string,
+  ) =>
+    s.auditLogs.push({
+      id: `AUD-SEED-${refType}-${refNo}`,
+      refType,
+      refNo,
+      action: 'OUTBOUND_ACTION',
+      command,
+      operator: 'seed',
+      detail,
+      createdAt,
+    })
+  for (const [warehouseCode, nos] of byWarehouse) {
+    const [shipped, cancelled, waveA, waveB] = nos.slice(6, 10)
+    seedLog('OUTBOUND', shipped, 'SHIP', 'Demo shipped', at)
+    seedLog('OUTBOUND', cancelled, 'CANCEL', 'Customer cancelled after picking (demo)', at)
+    const wave = s.outboundWaves.find((w) => w.warehouseCode === warehouseCode && w.members.includes(waveA))
+    if (wave) seedLog('WAVE', wave.no, 'WAVE', `${waveA}, ${waveB}`, wave.createdAt)
+    const task = s.outboundPickTasks.find((t) => t.orderNo === shipped)
+    if (task) seedLog('PICK_TASK', task.no, 'FINISH_PICK', 'Demo pick finished', at)
   }
   return s
 }

@@ -221,17 +221,19 @@ describe('盘点单（盘点单主PRD）', () => {
     expect(s.inventoryLogs).toHaveLength(logCount + 1)
   })
 
-  it('有进行中的拣货任务、返库上架单、上架单时整次不建，不静默跳过 SKU', () => {
+  it('已有拣货、返库上架、上架任务时仍可建盘点，任务继续', () => {
     const s = createSeedData()
+    const taskCount = s.outboundPickTasks.length
     const r = act(s, {
       type: 'CREATE_STOCKTAKE',
       warehouseCode: LA,
       skus: [...homyCable, { customerId: ANKR, skuCode: 'CABLE-01' }],
     })
-    expect(r).toMatchObject({ ok: false, errorKey: expect.stringMatching(/^inventory\.error\.stocktakeBlocked\./) })
+    expect(r.ok).toBe(true)
     expect(
       s.inventoryCounts.filter((c) => c.skus.some((k) => k.customerId === HOMY && k.skuCode === 'CABLE-01')),
-    ).toHaveLength(0)
+    ).toHaveLength(1)
+    expect(s.outboundPickTasks).toHaveLength(taskCount)
   })
 
   it('同 SKU 已在盘点中时发现差异只追加依据；取消不调账、待核对保留，完成才解除', () => {

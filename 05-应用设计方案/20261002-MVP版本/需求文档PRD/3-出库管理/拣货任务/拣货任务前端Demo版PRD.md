@@ -28,6 +28,8 @@
 | --- | --- | --- |
 | 行短拣 | `shortageQty − replacedQty` | 应拣明细、列表短拣 |
 | 应拣、实拣、上报缺货、短拣总数 | 各行之和 | 列表、汇总卡 |
+
+- 任务原始应拣取生成时的计划行之和，换位行不增加原始应拣；`replacedQty` 作为替代分配单独展示。进度分母使用有效应拣（原始应拣减已取消成员未拣份额），实拣含替代行已拣；短拣仍按 `shortageQty − replacedQty`。
 | 行剩余 | `plannedQty − pickedQty − shortageQty`（`pickLineRemaining`） | 录入页、PDA |
 | 拣货路径 | 剩余大于 0 的行按库位编号自然顺序排（`pickLinesInRouteOrder` / `pickStops`，`lib/outbound-pick-route.ts`） | 录入页应拣行下拉与待拣明细顺序、PDA 逐站 |
 | 已处理 | 实拣 + 上报缺货 | 录入进度卡 |

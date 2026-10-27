@@ -41,7 +41,7 @@
 
 ### 2.1 标题与状态
 
-`<DetailTitle title={t('inbound.detailTitle')} code={inboundNo} status={inboundOrderStatusMeta[status]} />`，渲染为「入库单 · RK-… [状态]」。单号与状态不再在基本信息里重复。
+`<DetailTitle title={t('inbound.detailTitle')} code={inboundNo} status={inboundOrderStatusMeta[status]} />`，渲染为「入库单 · IB-… [状态]」。单号与状态不再在基本信息里重复。
 
 ### 2.2 页头按钮矩阵
 

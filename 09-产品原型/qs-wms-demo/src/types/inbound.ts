@@ -232,6 +232,8 @@ export interface UnclaimedRecord {
   registerNo: string
   status: UnclaimedStatus
   warehouseCode: string
+  /** 无主货专用暂存库位（实体位置参考，不形成库存账） */
+  stagingLocationCode?: string
   trackingNos: string[]
   cartonMarks: string[]
   containerNo?: string

@@ -45,6 +45,7 @@ const ACTIONS: AuditAction[] = [
   'RETURN_CANCEL',
   'MASTER_MOCK_PUSH',
   'SKU_MASTER_EDIT',
+  'CONTAINER_SAVE',
   'PUTAWAY_SAVE',
   'PUTAWAY_REMOVE',
   'PUTAWAY',
@@ -111,7 +112,7 @@ export function OperationLogPage() {
         cell: ({ getValue }) => t(`audit.refType.${getValue()}`),
       }),
       col.accessor('refNo', {
-        header: t('inbound.inboundNo'),
+        header: t('audit.refNo'),
         cell: ({ getValue }) => <BizCode>{getValue()}</BizCode>,
       }),
       col.accessor('operator', {
@@ -142,10 +143,10 @@ export function OperationLogPage() {
     >
       <Panel className="p-4">
         <FilterBar columns={6} onSearch={applySearch} onReset={reset}>
-          <FilterItem label={t('inbound.inboundNo')}>
+          <FilterItem label={t('audit.refNo')}>
             <Input
               value={draft.refNo}
-              placeholder={t('common.inputPlaceholder')}
+              placeholder={t('audit.refNoPlaceholder')}
               onChange={(e) => setDraft({ ...draft, refNo: e.target.value })}
             />
           </FilterItem>

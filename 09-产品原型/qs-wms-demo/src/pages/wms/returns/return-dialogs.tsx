@@ -20,7 +20,7 @@ import { returnSourceMeta } from '@/config/status'
 import { codeNameText, EMPTY_TEXT } from '@/lib/typography'
 import { canConfirmReturnReceiptClose, returnLineUnreceived } from '@/lib/return-derive'
 import { useDb } from '@/mock/db'
-import { useCurrentWarehouse } from '@/stores/settings'
+import { useCurrentWarehouse, useSettings } from '@/stores/settings'
 import type { ReturnOrder, ReturnSourceType } from '@/types/return'
 
 const SOURCES: ReturnSourceType[] = ['CUSTOMER', 'PLATFORM']
@@ -170,6 +170,71 @@ export function ReturnForecastDialog({
             {t('common.cancel')}
           </Button>
           <Button onClick={submit}>{t('return.forecast.submit')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function ReturnDeliveryFailedDialog({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: (returnNo: string) => void
+}) {
+  const { t } = useTranslation()
+  const operator = useSettings((s) => s.operator)
+  const create = useDb((s) => s.createDeliveryFailedReturn)
+  const [outboundNo, setOutboundNo] = useState('')
+  const [error, setError] = useState<string>()
+
+  const submit = () => {
+    const result = create({ outboundNo, operator })
+    if (!result.ok) {
+      setError(t(result.errorKey ?? 'return.error.outboundNotFound'))
+      return
+    }
+    if (result.returnNo) {
+      toast.success(t('return.deliveryFailed.success', { no: result.returnNo }))
+      onCreated(result.returnNo)
+    }
+    onClose()
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('return.deliveryFailed.title')}</DialogTitle>
+          <DialogDescription>{t('return.deliveryFailed.hint')}</DialogDescription>
+        </DialogHeader>
+        <FormField label={t('return.deliveryFailed.outboundNo')} required>
+          <Input
+            value={outboundNo}
+            placeholder={t('return.deliveryFailed.placeholder')}
+            onChange={(e) => {
+              setOutboundNo(e.target.value)
+              setError(undefined)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submit()
+            }}
+          />
+        </FormField>
+        <p className="text-xs text-muted-foreground">{t('return.deliveryFailed.packageHint')}</p>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={submit} disabled={!outboundNo.trim()}>
+            {t('return.deliveryFailed.submit')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

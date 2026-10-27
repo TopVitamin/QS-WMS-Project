@@ -795,7 +795,7 @@ const ui = {
   stationSubmittedDone: ['{{no}} 已全部复核，扫描下一张出库单', '{{no}} fully verified. Scan the next order'],
   problemFbaContainer: ['FBA箱托档案或SKU／批次／SN内容未闭合', 'FBA container archives or SKU, batch or serial contents are incomplete'],
 } as const
-/** PDA 拣货：按库位一站一站拣（PDA拣货前端Demo版PRD） */
+/** PDA拣货：按库位一站一站拣（PDA拣货前端Demo版PRD） */
 const pdaPick = {
   title: ['拣货', 'Picking'],
   scanTask: ['混合波次扫描波次号；单任务可扫任务号或出库单号', 'Scan the wave number for a mixed wave; scan a task or outbound number for a single-order task.'],

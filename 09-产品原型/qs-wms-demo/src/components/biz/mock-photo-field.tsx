@@ -3,11 +3,15 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Empty } from '@/components/biz/display'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 /**
  * Mock 照片上传（新品维护、无主货登记共用）：一期不接附件服务，
- * 只保留文件名并做本地预览，不校大小与张数。
+ * 最多 10 张、单张不超过 10MB、仅图片格式；只保留文件名并做本地预览。
  */
+const MAX_PHOTOS = 10
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024
+
 export function MockPhotoField({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -24,8 +28,18 @@ export function MockPhotoField({ value, onChange }: { value: string[]; onChange:
 
   const add = (files: FileList | null) => {
     if (!files || files.length === 0) return
+    const selected = Array.from(files)
+    const remaining = MAX_PHOTOS - value.length
+    if (remaining <= 0 || selected.length > remaining) {
+      toast.error(t('common.photoLimit', { max: MAX_PHOTOS }))
+      return
+    }
+    if (selected.some((file) => !file.type.startsWith('image/') || file.size > MAX_PHOTO_BYTES)) {
+      toast.error(t('common.photoInvalid', { max: MAX_PHOTOS, size: '10MB' }))
+      return
+    }
     const names: string[] = []
-    Array.from(files).forEach((file) => {
+    selected.forEach((file) => {
       names.push(file.name)
       const previous = previewUrls.current[file.name]
       if (previous) URL.revokeObjectURL(previous)

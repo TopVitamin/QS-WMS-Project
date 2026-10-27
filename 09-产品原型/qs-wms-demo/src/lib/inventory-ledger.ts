@@ -66,8 +66,8 @@ export const ledgerObject = (l: InventoryLog): 'ACTUAL' | 'RESERVED' => (l.level
 export const ledgerChange = (l: InventoryLog) => (l.level === 'SKU' ? (l.reservedChange ?? 0) : l.qtyChange)
 
 /**
- * 流水号：系统内部编号，不设业务前缀（单据术语与生成规则）。流水只追加不删改，按写入顺序编号，
- * 显示与筛选都用它；内部 id 只做关联。
+ * 流水号：沿用系统统一编号规则，不单独维护一套流水序列（单据术语与生成规则）。
+ * 流水只追加不删改，按写入顺序编号，显示与筛选都用它；内部 id 只做关联。
  */
 export function ledgerNumbers(logs: InventoryLog[]): Map<string, string> {
   return new Map(logs.map((l, i) => [l.id, String(i + 1).padStart(6, '0')]))

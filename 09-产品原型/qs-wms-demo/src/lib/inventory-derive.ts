@@ -80,7 +80,7 @@ export function locationInfo(
 
 /** 一库位一货主：库位上已有其他货主实物，或其他货主未提交的落位（移库目标、盘点新增行共用） */
 export function occupiedByOtherOwner(
-  s: Pick<SeedData, 'inventory' | 'putawayOrders'>,
+  s: Pick<SeedData, 'inventory' | 'putawayOrders' | 'outboundPutbacks'>,
   warehouseCode: string,
   locationCode: string,
   customerId: string,
@@ -99,6 +99,17 @@ export function occupiedByOtherOwner(
         p.customerId !== customerId &&
         p.status !== 'COMPLETED' &&
         p.actualLines.some((a) => !a.submitted && a.locationCode === locationCode),
+    ) ||
+    s.outboundPutbacks.some(
+      (p) =>
+        p.warehouseCode === warehouseCode &&
+        p.customerId !== customerId &&
+        p.status !== 'COMPLETED' &&
+        p.lines.some(
+          (l) =>
+            (l.targetLocation === locationCode && l.savedQty < l.qty) ||
+            (l.placements ?? []).some((pl) => pl.location === locationCode),
+        ),
     )
   )
 }
@@ -110,7 +121,7 @@ export type MoveTargetIssue = 'TARGET' | 'SAME' | 'QUALITY' | 'OCCUPIED'
  * 没有其他货主占用。PDA 扫目标位时先查，提交时动作逐行按同一规则再查。
  */
 export function moveTargetIssue(
-  s: Pick<SeedData, 'locations' | 'locationMasters' | 'inventory' | 'putawayOrders'>,
+  s: Pick<SeedData, 'locations' | 'locationMasters' | 'inventory' | 'putawayOrders' | 'outboundPutbacks'>,
   r: Pick<InventoryRecord, 'warehouseCode' | 'customerId' | 'locationCode' | 'qualityType'>,
   targetCode: string,
 ): MoveTargetIssue | undefined {
@@ -119,6 +130,16 @@ export function moveTargetIssue(
   if (target.code === r.locationCode) return 'SAME'
   if ((target.usage === 'DEFECT') !== (r.qualityType === 'DEFECTIVE')) return 'QUALITY'
   if (occupiedByOtherOwner(s, r.warehouseCode, target.code, r.customerId)) return 'OCCUPIED'
+  // Q30：目标位已有已分配未拣库存，视为未完结作业占用；盘点冻结不纳入。
+  if (
+    s.inventory.some(
+      (row) =>
+        row.warehouseCode === r.warehouseCode &&
+        row.locationCode === target.code &&
+        (row.allocatedQty ?? 0) > 0,
+    )
+  )
+    return 'OCCUPIED'
   return undefined
 }
 
@@ -471,54 +492,15 @@ export interface StocktakeBlocker {
  * 快照范围内还有已分配（其他出库指定或拣货分配）。有任一原因整次不建，不静默跳过 SKU。
  */
 export function stocktakeBlockers(
-  s: Pick<
-    SeedData,
-    | 'inventory'
-    | 'inventoryCounts'
-    | 'outboundPickTasks'
-    | 'outboundPutbacks'
-    | 'putawayOrders'
-    | 'locations'
-    | 'locationMasters'
-  >,
+  s: Pick<SeedData, 'inventoryCounts'>,
   warehouseCode: string,
   skus: StocktakeSku[],
 ): StocktakeBlocker[] {
+  // 一期简化：盘点建单只阻断“同一 SKU 已在盘点中”；已有拣货、上架、返库任务可继续。
   const out: StocktakeBlocker[] = []
   skus.forEach(({ customerId, skuCode }) => {
-    const push = (kind: StocktakeBlockerKind, ref: string) => out.push({ customerId, skuCode, kind, ref })
     const counting = countingStocktake(s.inventoryCounts, warehouseCode, customerId, skuCode)
-    if (counting) push('COUNTING', counting.no)
-    s.outboundPickTasks
-      .filter(
-        (t) =>
-          t.warehouseCode === warehouseCode &&
-          t.customerId === customerId &&
-          (t.status === 'PENDING_PICK' || t.status === 'PICKING') &&
-          t.lines.some((l) => l.skuCode === skuCode),
-      )
-      .forEach((t) => push('PICK_TASK', t.no))
-    s.outboundPutbacks
-      .filter(
-        (p) =>
-          p.warehouseCode === warehouseCode &&
-          p.customerId === customerId &&
-          p.status !== 'COMPLETED' &&
-          p.lines.some((l) => l.skuCode === skuCode),
-      )
-      .forEach((p) => push('PUTBACK', p.no))
-    s.putawayOrders
-      .filter(
-        (p) =>
-          p.warehouseCode === warehouseCode &&
-          p.customerId === customerId &&
-          p.status !== 'COMPLETED' &&
-          p.planLines.some((l) => l.skuCode === skuCode),
-      )
-      .forEach((p) => push('PUTAWAY', p.putawayNo))
-    snapshotRows(s, warehouseCode, [{ customerId, skuCode }])
-      .filter((r) => (r.allocatedQty ?? 0) > 0)
-      .forEach((r) => push('ALLOCATED', r.locationCode))
+    if (counting) out.push({ customerId, skuCode, kind: 'COUNTING', ref: counting.no })
   })
   return out
 }

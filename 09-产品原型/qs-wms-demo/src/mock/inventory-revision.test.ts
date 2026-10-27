@@ -156,6 +156,9 @@ describe('库存查询修订的跨流程回归', () => {
       status: 'PENDING' as const,
       qualityType: 'GOOD' as const,
       stagingLocationCode: 'STAGE-IN-01',
+      // 本场景是散件暂存，不继承模板上架单的容器身份。
+      containerNo: undefined,
+      containerId: undefined,
       planLines: [{ lineNo: 1, receiptLineNo: 1, skuCode: 'SN-DEMO-01', planQty: 2 }],
       actualLines: [],
     }
@@ -208,6 +211,16 @@ describe('库存查询修订的跨流程回归', () => {
 
   it('来源暂存不足时上架整次失败，不能截零并凭空增加目标位数量', () => {
     const s = putawayFixture(1)
+    const before = structuredClone(s)
+    const result = applySubmitPutawayOrder(s, { putawayNo: 'PA-UNLOCATED-SN', operator: 'tester' })
+    expect(result).toMatchObject({ ok: false, errorKey: 'pdaPutaway.error.stockInsufficient' })
+    expect(result.patch).toBeUndefined()
+    expect(s).toEqual(before)
+  })
+
+  it('散件暂存数量足够也不能用于另一容器的上架单', () => {
+    const s = putawayFixture()
+    s.putawayOrders[0].containerNo = 'OTHER-CONTAINER'
     const before = structuredClone(s)
     const result = applySubmitPutawayOrder(s, { putawayNo: 'PA-UNLOCATED-SN', operator: 'tester' })
     expect(result).toMatchObject({ ok: false, errorKey: 'pdaPutaway.error.stockInsufficient' })

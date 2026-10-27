@@ -300,7 +300,6 @@ export function createSeedData(): SeedData {
       })),
       at: o.completedAt ?? o.updatedAt,
     }))
-  const returnOrders = createReturnSeed()
   const newSkuRecords = createNewSkuSeed()
   const unclaimedRecords = createUnclaimedSeed()
   const auditLogs: AuditLog[] = []
@@ -464,7 +463,7 @@ export function createSeedData(): SeedData {
       })
     })
 
-  const withOutbound = playOutboundSeedFlows({
+  const beforeOutbound: SeedData = {
     ...createOutboundSeed(
       inventory,
       locations,
@@ -489,7 +488,7 @@ export function createSeedData(): SeedData {
     inboundExceptions,
     inboundMessages,
     inboundResults,
-    returnOrders,
+    returnOrders: [],
     returnReceipts: [],
     returnExceptions: [],
     returnResults: [],
@@ -502,7 +501,10 @@ export function createSeedData(): SeedData {
     auditLogs,
     masterMessages: [],
     containers: [],
-  })
+  }
+  beforeOutbound.containers = createContainerSeed(beforeOutbound)
+  const withOutbound = playOutboundSeedFlows(beforeOutbound)
+  withOutbound.returnOrders = createReturnSeed(withOutbound)
   const seeded = playInventorySeedFlows(withOutbound)
   return {
     ...seeded,
